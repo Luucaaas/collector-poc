@@ -92,4 +92,4 @@ deploy/k8s               manifests (NetworkPolicies, ClusterIssuer, applications
 
 - Il maîtrise surtout **Python**. React/TypeScript, Kubernetes, Helm et GitHub Actions sont nouveaux pour lui : explique les choix et les commandes, car il devra les défendre à l'oral.
 - Il est sur **macOS**. Les commandes qui demandent son mot de passe (Homebrew, `mkcert -install`) et les réglages de Docker Desktop sont à faire par lui.
-- Avancement : phase 0 en cours. Repo créé, comptes SonarCloud et GHCR prêts. Restent l'installation des outils et la question à poser à l'intervenant sur le cluster local (critère 5).
+- Avancement : phase 0 en cours. Repo créé, comptes SonarCloud et GHCR prêts. Script `deploy/local/check-tools.sh` prêt (vérifie les outils ; `--cluster` valide un cluster k3d de test). Restent l'installation des outils sur le Mac (à valider avec ce script) et la question à poser à l'intervenant sur le cluster local (critère 5).

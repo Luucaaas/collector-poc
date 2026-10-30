@@ -55,6 +55,19 @@ Hors périmètre (architecture cible seulement) : paiement, chat, notation, reco
 | Hébergement | **Tout en local sur le Mac** : Kubernetes **k3d** (1 server + 2 agents), Helm, ingress-nginx, cert-manager (CA locale via mkcert, domaines `*.127.0.0.1.sslip.io`), **Argo CD** en GitOps |
 | Observabilité | kube-prometheus-stack (Prometheus + Grafana) |
 
+Décisions de la phase 1 (détail dans `docs/02-architecture/contrats.md` et les ADR) :
+
+- **Transactional outbox** dans `catalog-service` : l'article et l'événement sont écrits dans la même transaction, puis un relais publie (`FOR UPDATE SKIP LOCKED`). Consommateurs idempotents par la table `processed_events`.
+- RabbitMQ : exchange `topic` `article.events`, une *quorum queue* par consommateur (`notification.article-events`, `fraud.article-events`), DLQ après 5 tentatives.
+- **Aucun appel HTTP entre services** : les événements transportent l'état utile, et `notification-service` tient une projection locale (`article_snapshots`).
+- Contrôle automatique synchrone : non conforme → `REJECTED` (201, motifs `CONTACT_EMAIL`, `CONTACT_PHONE`) ; requête mal formée → 422. Prix modifié par `PUT /articles/{id}/price` (idempotent).
+- Montants en chaîne décimale (`"120.00"`), erreurs au format RFC 9457, routes `/api/v1`, Ingress sur `app.`, `api.` (`/catalog`, `/notification`, `/fraud`) et `auth.127.0.0.1.sslip.io`.
+- Les services récupèrent les clés JWKS par l'URL interne de Keycloak, mais vérifient `iss` avec l'URL publique.
+- Composants avec état (PostgreSQL, RabbitMQ, Keycloak) placés sur le nœud server, car le stockage `local-path` est lié à un nœud. La démo d'arrêt porte sur un agent.
+- Comptes de démo du realm : `admin`, `alice` (seller + buyer), `bob` (seller), `chloe` (buyer).
+- Gherkin en français (`# language: fr`, validé avec pytest-bdd 9).
+- Diagrammes : Mermaid dans les `.md`, export SVG par `docs/02-architecture/export-diagrams.sh` (mermaid-cli 11.17.0, car la 12 exige Node 22).
+
 Choix écartés (à justifier dans les ADR) : Kafka (surdimensionné pour la V1), Django (trop monolithique), front HTMX/Jinja et Streamlit (Lucas veut une techno classique), cloud avec crédits d'essai (l'infra doit être 100 % gratuite).
 
 **Migration cloud** : uniquement si l'intervenant refuse le cluster local pour le critère 5. Cible : Oracle OKE Always Free, avec les mêmes charts Helm.
@@ -92,4 +105,7 @@ deploy/k8s               manifests (NetworkPolicies, ClusterIssuer, applications
 
 - Il maîtrise surtout **Python**. React/TypeScript, Kubernetes, Helm et GitHub Actions sont nouveaux pour lui : explique les choix et les commandes, car il devra les défendre à l'oral.
 - Il est sur **macOS**. Les commandes qui demandent son mot de passe (Homebrew, `mkcert -install`) et les réglages de Docker Desktop sont à faire par lui.
-- Avancement : phase 0 en cours. Repo créé, comptes SonarCloud et GHCR prêts. Script `deploy/local/check-tools.sh` prêt (vérifie les outils ; `--cluster` valide un cluster k3d de test). Restent l'installation des outils sur le Mac (à valider avec ce script) et la question à poser à l'intervenant sur le cluster local (critère 5).
+- Avancement :
+  - **Phase 0** : repo, comptes SonarCloud et GHCR, script `deploy/local/check-tools.sh`, Python 3.12 (uv). Restent `mkcert -install`, Docker Desktop (8 Go, 4 CPU), Node 22 recommandé, `check-tools.sh --cluster`, et la question à l'intervenant sur le cluster local (critère 5).
+  - **Phase 1 terminée** (30/10/2026) : `docs/03-backlog` (35 EF, 31 ENF, 9 RM, 6 stories pour 31 points), 6 fichiers `.feature` (36 scénarios), `docs/02-architecture` (cible, POC, contrats, 8 SVG, ADR 0001 à 0006).
+  - Prochaine étape : phase 2 (processus qualité, compétences).

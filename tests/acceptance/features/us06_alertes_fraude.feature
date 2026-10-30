@@ -46,6 +46,21 @@ Fonctionnalité: US-06 Consulter et traiter les alertes de fraude
       | CONFIRMED |
       | DISMISSED |
 
+  Scénario: Une alerte déjà traitée ne peut plus changer de statut
+    Étant donné une alerte au statut "DISMISSED" existe
+    Et l'utilisateur "admin" authentifié
+    Quand il passe l'alerte au statut "CONFIRMED"
+    Alors la réponse a le statut 409
+    Et l'alerte a le statut "DISMISSED"
+
+  @ENF-07
+  Scénario: Un statut d'alerte inconnu est refusé
+    Étant donné une alerte au statut "OPEN" existe
+    Et l'utilisateur "admin" authentifié
+    Quand il passe l'alerte au statut "ARCHIVED"
+    Alors la réponse a le statut 422
+    Et l'alerte a le statut "OPEN"
+
   @RM-09
   Scénario: Un événement livré deux fois ne produit qu'une alerte
     Quand le même événement "article.published" au prix de 15000.00 € est livré deux fois

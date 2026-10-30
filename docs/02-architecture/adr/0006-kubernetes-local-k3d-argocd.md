@@ -37,9 +37,14 @@ Où et comment déployer le POC ?
 - **A. Push** : la CI exécute `helm upgrade` sur le cluster.
 - **B. Pull (GitOps)** : Argo CD, installé dans le cluster, synchronise l'état du cluster avec le dépôt Git.
 
+**Contrôleur d'Ingress**
+
+- **Traefik**, installé et maintenu avec k3s.
+- **ingress-nginx**, longtemps le contrôleur le plus répandu.
+
 ## Décision
 
-**k3d avec 1 server et 2 agents** sur le poste de développement, ingress-nginx et cert-manager (CA locale générée par mkcert, domaines `*.127.0.0.1.sslip.io`), charts **Helm** pour l'infrastructure et les services, et **Argo CD en GitOps (option B)**.
+**k3d avec 1 server et 2 agents** sur le poste de développement, **Traefik** comme contrôleur d'Ingress (celui fourni par k3s) et cert-manager (CA locale générée par mkcert, domaines `*.127.0.0.1.sslip.io`), charts **Helm** pour l'infrastructure et les services, et **Argo CD en GitOps (option B)**.
 
 **Repli prévu : Oracle OKE Always Free**, avec les mêmes charts Helm, si l'intervenant refuse le cluster local comme « environnement managé » pour le critère 5.
 
@@ -58,8 +63,8 @@ Où et comment déployer le POC ?
 ### Confirmation
 
 - Le script `deploy/local/check-tools.sh --cluster` crée un cluster de test et vérifie que les 3 nœuds sont `Ready`.
-- Un protocole d'expérimentation couvre le cluster k3d, ingress-nginx et cert-manager (certificat émis automatiquement pour un Ingress), puis l'installation d'Argo CD et la synchronisation d'une application depuis le dépôt.
-- La démonstration de disponibilité arrête un agent pendant un test de charge et mesure le taux d'erreur.
+- Un protocole d'expérimentation couvre le cluster k3d, Traefik et cert-manager (certificat émis automatiquement pour un Ingress), puis l'installation d'Argo CD et la synchronisation d'une application depuis le dépôt.
+- La démonstration de disponibilité porte sur un agent, pendant un test de charge, avec deux scénarios. En maintenance (`kubectl drain`), le PodDisruptionBudget s'applique et aucune erreur n'est attendue. En panne brutale (`docker stop`), on mesure le taux d'erreur pendant la fenêtre de détection du nœud.
 
 ## Avantages et inconvénients des options
 
@@ -88,6 +93,14 @@ Où et comment déployer le POC ?
 - ✅ Kubernetes managé, gratuit sans limite de durée, nœuds ARM.
 - ❌ Ressources gratuites limitées, inscription avec vérification par carte bancaire, disponibilité des instances gratuites variable selon la région. Démonstration dépendante du réseau de la salle.
 - Retenu comme **repli**, et non comme choix principal.
+
+### Traefik plutôt qu'ingress-nginx
+
+- ✅ Traefik est installé par défaut par k3s et suit ses mises à jour. Il est exposé par ServiceLB, le répartiteur intégré à k3s, et configuré par un `HelmChartConfig` : 2 réplicas sur les agents, redirection HTTP → HTTPS. C'est un composant de moins à installer.
+- ✅ Il gère la ressource standard `Ingress`, que cert-manager sait équiper d'un certificat, et propose des middlewares utiles au POC : `StripPrefix`, `RateLimit` (piste pour ENF-11) et `Retry`.
+- ✅ Il implémente aussi Gateway API, le successeur d'`Ingress`, ce qui ménage une évolution sans changer de contrôleur.
+- ❌ **ingress-nginx est retiré** : le SIG Network de Kubernetes a annoncé en novembre 2025 la fin de sa maintenance, sans correctifs de sécurité après mars 2026 ([annonce](https://www.kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/)). Pour un projet qui fait de la sécurité une exigence de premier plan, déployer un composant exposé à Internet et non maintenu serait une faute, que Trivy signalerait d'ailleurs.
+- ❌ Traefik ne génère pas d'en-tête `X-Request-ID` : les services le créent eux-mêmes (voir `contrats.md`).
 
 ### Déploiement en push (`helm upgrade` depuis la CI)
 

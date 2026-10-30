@@ -32,8 +32,10 @@ Fonctionnalité: US-03 Publier un article avec contrôle automatique
   Plan du scénario: Un article contenant un numéro de téléphone est rejeté quel que soit son format
     Étant donné l'utilisateur "alice" authentifié
     Quand il publie dans la boutique "Jouets des années 80" un article dont la description est "Figurine Boba Fett 1979 en boîte, appelez le <telephone>"
-    Alors l'article retourné a le statut "REJECTED"
+    Alors la réponse a le statut 201
+    Et l'article retourné a le statut "REJECTED"
     Et les motifs de rejet contiennent "CONTACT_PHONE"
+    Et aucun événement "article.published" n'est émis pour cet article
 
     Exemples:
       | telephone          |

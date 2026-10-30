@@ -10,11 +10,15 @@ Fonctionnalité: US-05 Centres d'intérêt, préférences et notifications de l'
     Et la catégorie "Baskets" existe
     Et la boutique "Jouets des années 80" de "alice" existe
 
-  Scénario: L'acheteur déclare ses centres d'intérêt
+  @EF-16
+  Scénario: L'acheteur déclare ses centres d'intérêt et ses préférences
     Étant donné l'utilisateur "chloe" authentifié
     Quand il déclare les catégories "Baskets" et "Figurines" comme centres d'intérêt
     Alors la réponse a le statut 200
-    Et ses centres d'intérêt sont "Baskets" et "Figurines"
+    Quand il active l'envoi des notifications par email
+    Alors la réponse a le statut 200
+    Et ses centres d'intérêt contiennent les identifiants des catégories "Baskets" et "Figurines"
+    Et ses préférences indiquent l'envoi par email activé
 
   @EF-13 @RM-08 @ENF-14
   Scénario: L'acheteur est notifié d'un nouvel article correspondant à ses centres d'intérêt
@@ -26,12 +30,20 @@ Fonctionnalité: US-05 Centres d'intérêt, préférences et notifications de l'
     Et "alice" n'a aucune notification
 
   @EF-14 @RM-08
-  Scénario: L'acheteur qui suit un article est notifié d'un changement de prix
+  Scénario: L'acheteur suit un article et est notifié d'un changement de prix
     Étant donné "alice" a publié l'article "Boba Fett Kenner 1979" au prix de 120.00 €
-    Et "chloe" suit l'article "Boba Fett Kenner 1979"
     Et "chloe" a activé les notifications "PRICE_CHANGED"
+    Et l'utilisateur "chloe" authentifié
+    Quand il suit l'article "Boba Fett Kenner 1979"
+    Alors la réponse a le statut 204
     Quand "alice" modifie le prix de l'article "Boba Fett Kenner 1979" à 95.00 €
     Alors en moins de 2 secondes "chloe" a une notification "PRICE_CHANGED" pour l'article "Boba Fett Kenner 1979" de 120.00 € à 95.00 €
+
+  @EF-14
+  Scénario: Suivre un article inconnu est refusé
+    Étant donné l'utilisateur "chloe" authentifié
+    Quand il suit l'article d'identifiant "00000000-0000-0000-0000-000000000000"
+    Alors la réponse a le statut 404
 
   @EF-15 @RM-08
   Scénario: L'acheteur ne reçoit pas les types de notification qu'il a désactivés
@@ -48,12 +60,16 @@ Fonctionnalité: US-05 Centres d'intérêt, préférences et notifications de l'
     Quand le même événement "article.published" pour la catégorie "Figurines" est livré deux fois
     Alors après 2 secondes "chloe" a exactement 1 notification
 
-  @ENF-02
-  Scénario: Un visiteur non authentifié ne peut pas consulter de notifications
-    Étant donné "chloe" a 1 notification
-    Et un visiteur non authentifié
+  @ENF-02 @ENF-03
+  Plan du scénario: Les routes de l'acheteur exigent le rôle buyer
+    Étant donné <acteur>
     Quand il consulte ses notifications
-    Alors la réponse a le statut 401
+    Alors la réponse a le statut <statut>
+
+    Exemples:
+      | acteur                            | statut |
+      | un visiteur non authentifié       | 401    |
+      | l'utilisateur "bob" authentifié   | 403    |
 
   @ENF-03
   Scénario: Un acheteur ne voit que ses propres notifications
@@ -62,3 +78,9 @@ Fonctionnalité: US-05 Centres d'intérêt, préférences et notifications de l'
     Quand il consulte ses notifications
     Alors la réponse a le statut 200
     Et aucune notification de "chloe" n'est retournée
+
+  @ENF-07
+  Scénario: Une liste de centres d'intérêt trop longue est refusée
+    Étant donné l'utilisateur "chloe" authentifié
+    Quand il déclare 21 catégories comme centres d'intérêt
+    Alors la réponse a le statut 422

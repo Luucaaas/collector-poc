@@ -27,10 +27,17 @@ Fonctionnalité: US-01 Créer une catégorie
     Et la catégorie "B" n'existe pas
 
   @ENF-02
-  Scénario: Un visiteur non authentifié ne peut pas créer de catégorie
-    Étant donné un visiteur non authentifié
+  Plan du scénario: Une requête sans jeton valide est refusée
+    Étant donné <acteur>
     Quand il crée la catégorie "Vinyles"
     Alors la réponse a le statut 401
+    Et la catégorie "Vinyles" n'existe pas
+
+    Exemples:
+      | acteur                                                    |
+      | un visiteur non authentifié                               |
+      | l'utilisateur "admin" avec un jeton expiré                |
+      | l'utilisateur "admin" avec un jeton à signature falsifiée |
 
   @ENF-03
   Scénario: Un vendeur ne peut pas créer de catégorie

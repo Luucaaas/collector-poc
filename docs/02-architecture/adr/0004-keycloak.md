@@ -31,7 +31,7 @@ Comment gérer l'authentification et les rôles ?
 
 ## Décision
 
-**Option 1 : Keycloak**, avec un realm `collector`, les rôles de realm `buyer`, `seller` et `admin`, un client public `collector-web` (*Authorization Code* + PKCE) pour le front et une audience `collector-api` pour les services. La configuration du realm est exportée en JSON et versionnée, sans secret, pour être reproductible.
+**Option 1 : Keycloak**, avec un realm `collector`, les rôles de realm `buyer`, `seller` et `admin`, un client public `collector-web` (*Authorization Code* + PKCE) pour le front et une audience `collector-api` pour les services. Keycloak n'émet pas cette audience par défaut : un *client scope* dédié, rattaché au client `collector-web`, porte un mapper « Audience » qui l'ajoute au claim `aud`. La configuration du realm est exportée en JSON et versionnée, sans secret, pour être reproductible.
 
 ### Conséquences
 
@@ -45,7 +45,7 @@ Comment gérer l'authentification et les rôles ?
 
 ### Confirmation
 
-Un protocole d'expérimentation déploie Keycloak dans le cluster derrière l'Ingress en TLS, importe le realm, puis vérifie le flux PKCE depuis le navigateur et la validation du jeton par un service. Les tests d'acceptation couvrent les cas 401 (jeton absent, expiré, falsifié) et 403 (rôle insuffisant).
+Un protocole d'expérimentation déploie Keycloak dans le cluster derrière Traefik en TLS, importe le realm, puis vérifie le flux PKCE depuis le navigateur et la validation du jeton par un service. Les tests d'acceptation couvrent les cas 401 (jeton absent, expiré, falsifié) et 403 (rôle insuffisant).
 
 ## Avantages et inconvénients des options
 

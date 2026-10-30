@@ -28,9 +28,11 @@ Quelle technologie retenir pour le front ?
 4. **Pages rendues côté serveur** (HTMX et gabarits Jinja servis par FastAPI).
 5. **Streamlit**.
 
+Pour la gestion des jetons, une variante a aussi été étudiée : un **BFF** (*Backend for Frontend*), qui fait l'échange OIDC côté serveur et ne donne au navigateur qu'un cookie de session `HttpOnly`.
+
 ## Décision
 
-**Option 1 : React + TypeScript**, construit avec Vite et servi en fichiers statiques par nginx. Bibliothèques : MUI (composants accessibles), React Router, TanStack Query (cache et rafraîchissement des données serveur), React Hook Form + Zod (formulaires et validation), react-i18next (français et anglais), react-oidc-context (OIDC + PKCE, jetons en mémoire). Tests : Vitest pour les composants, Playwright pour les parcours de bout en bout.
+**Option 1 : React + TypeScript**, construit avec Vite et servi en fichiers statiques par nginx. Bibliothèques : MUI (composants accessibles), React Router, TanStack Query (cache et rafraîchissement des données serveur), React Hook Form + Zod (formulaires et validation), react-i18next (français et anglais), react-oidc-context (OIDC + PKCE). Par défaut, cette bibliothèque (via oidc-client-ts) conserve la session dans `sessionStorage` : on configure explicitement un `userStore` en mémoire (`InMemoryWebStorage`). Tests : Vitest pour les composants, Playwright pour les parcours de bout en bout.
 
 ### Conséquences
 
@@ -39,7 +41,7 @@ Quelle technologie retenir pour le front ?
 - ✅ MUI fournit des composants qui respectent déjà les patrons ARIA, ce qui fait gagner du temps sur ENF-25.
 - ✅ La SPA ne dépend d'aucun service backend : elle s'adresse à toutes les API derrière l'Ingress.
 - ❌ **Nouvelle compétence pour le Lead Developer**, qui maîtrise surtout Python. Atténuation : périmètre d'interface volontairement réduit, et action de formation prévue dans le plan de compétences (`docs/05-competences`).
-- ❌ Une SPA expose ses jetons au JavaScript de la page. Atténuation : PKCE, jetons gardés en mémoire uniquement (jamais dans `localStorage`), durée de vie courte, et politique de sécurité de contenu (CSP) en cible.
+- ❌ Une SPA expose ses jetons au JavaScript de la page. La mémoire évite qu'un jeton persiste dans le stockage du navigateur, mais **ne protège pas d'un XSS actif**, qui peut appeler l'API avec le jeton en cours. Atténuation dans le POC : PKCE, durée de vie courte (5 min), échappement systématique par React. En cible : politique de sécurité de contenu (CSP) et passage à un BFF (voir ci-dessous).
 - ❌ Le rendu côté client pénalise le référencement du catalogue public. C'est sans importance pour le POC, mais important pour une place de marché : la cible pourra passer le catalogue public en rendu serveur (Next.js) en gardant les mêmes composants React.
 
 ### Confirmation
@@ -64,10 +66,16 @@ Les tests Playwright déroulent le parcours de démonstration (connexion, public
 - ❌ Lie l'interface à un service backend particulier, ce qui va à l'encontre du découpage (ADR 0001).
 - ❌ Technologie moins classique en entreprise : écartée pour la pérennité et le recrutement.
 
+### BFF (*Backend for Frontend*) pour les jetons
+
+- ✅ Les jetons ne sont jamais accessibles au JavaScript : le navigateur ne détient qu'un cookie `HttpOnly`, `Secure`, `SameSite`. C'est la recommandation de l'IETF pour les applications navigateur les plus sensibles (*OAuth 2.0 for Browser-Based Applications*).
+- ❌ Un composant de plus, avec un état de session à stocker et à répliquer, et une protection CSRF à mettre en place.
+- Écarté pour le POC, **retenu pour la cible** dans le plan de remédiation, puisque la plateforme traitera des paiements.
+
 ### Streamlit
 
 - ✅ Très rapide pour un prototype de données.
 - ❌ Conçu pour des tableaux de bord, pas pour une application grand public : pas de contrôle fin de l'accessibilité, de l'internationalisation ni du flux OIDC.
 
 > [!TIP]
-> **À défendre à l'oral.** Le front n'est pas le cœur de l'évaluation, mais il doit être crédible pour une vraie place de marché : React + TypeScript est le standard du marché, MUI apporte l'accessibilité et react-oidc-context implémente PKCE avec des jetons gardés en mémoire. On assume que c'est une technologie nouvelle pour soi, et c'est précisément l'objet de l'action de formation.
+> **À défendre à l'oral.** Le front n'est pas le cœur de l'évaluation, mais il doit être crédible pour une vraie place de marché : React + TypeScript est le standard du marché, MUI apporte l'accessibilité et react-oidc-context implémente PKCE, avec des jetons gardés en mémoire une fois le stockage configuré. On sait aussi dire ce que la mémoire ne protège pas (un XSS actif) et quelle est la réponse cible : un BFF. On assume que c'est une technologie nouvelle pour soi, et c'est précisément l'objet de l'action de formation.

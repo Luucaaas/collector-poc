@@ -15,14 +15,14 @@ Ce document fixe les contrats entre les composants du POC : API REST de chaque s
 | `auth.127.0.0.1.sslip.io` | Keycloak, realm `collector` |
 | `grafana.127.0.0.1.sslip.io`, `argocd.127.0.0.1.sslip.io` | Outils d'exploitation |
 
-L'Ingress retire le préfixe du service (`/catalog`, `/notification`, `/fraud`). Chaque service expose donc ses routes sous `/api/v1`. Le domaine `sslip.io` résout `*.127.0.0.1.sslip.io` vers `127.0.0.1`, ce qui évite de modifier `/etc/hosts`.
+Traefik, le contrôleur d'Ingress fourni par k3s, route par hôte et par chemin, puis retire le préfixe du service (`/catalog`, `/notification`, `/fraud`) grâce à un middleware `StripPrefix`. Chaque service expose donc ses routes sous `/api/v1`. Le domaine `sslip.io` résout `*.127.0.0.1.sslip.io` vers `127.0.0.1`, ce qui évite de modifier `/etc/hosts`.
 
-Les sondes `/health/live` et `/health/ready`, ainsi que `/metrics`, ne sont pas routées par l'Ingress. Elles sont réservées au kubelet et à Prometheus, à l'intérieur du cluster.
+Les sondes `/health/live` et `/health/ready`, ainsi que `/metrics`, ne sont pas routées par Traefik. Elles sont réservées au kubelet et à Prometheus, à l'intérieur du cluster.
 
 ### 1.2 Authentification et autorisation
 
 - Chaque requête protégée porte `Authorization: Bearer <jeton d'accès>`, un JWT émis par Keycloak.
-- Chaque service vérifie localement la signature RS256 avec les clés publiques du realm (endpoint JWKS, mises en cache), puis `iss`, `aud = collector-api` et `exp` (ENF-02).
+- Chaque service vérifie localement la signature RS256 avec les clés publiques du realm (endpoint JWKS, mises en cache), puis `iss`, `aud = collector-api` et `exp` (ENF-02). Keycloak n'ajoute pas cette audience par défaut : un *client scope* dédié porte un mapper « Audience » qui l'insère dans le jeton du client `collector-web`.
 - Les rôles sont lus dans `realm_access.roles`. L'identifiant de l'utilisateur est le claim `sub`.
 - Jeton absent, invalide ou expiré → **401**. Rôle insuffisant ou ressource appartenant à un autre utilisateur → **403** (ENF-03).
 - Une ressource non publiée, consultée par un autre utilisateur que son propriétaire ou un admin, renvoie **404** et non 403. On ne révèle pas son existence.
@@ -47,7 +47,7 @@ Les sondes `/health/live` et `/health/ready`, ainsi que `/metrics`, ne sont pas 
 }
 ```
 
-- **Corrélation.** L'en-tête `X-Request-ID` est généré par l'Ingress, ou repris s'il est déjà fourni. Il est écrit dans chaque log JSON, renvoyé dans la réponse et recopié dans le champ `correlation_id` des événements émis (ENF-08).
+- **Corrélation.** L'en-tête `X-Request-ID` est repris s'il est fourni par l'appelant, sinon généré par le service à l'entrée de la requête (middleware ASGI). Traefik ne génère pas cet identifiant nativement. Il est écrit dans chaque log JSON, renvoyé dans la réponse et recopié dans le champ `correlation_id` des événements émis (ENF-08).
 - Le contrat OpenAPI 3.1 est généré par FastAPI à `/api/v1/openapi.json` (ENF-27).
 
 ## 2. Endpoints REST
@@ -60,10 +60,10 @@ Codes communs à tous les endpoints protégés, non répétés dans les tableaux
 | --- | --- | --- | --- | --- |
 | GET | `/api/v1/categories` | public | 200 | US-01, US-03, US-05 |
 | POST | `/api/v1/categories` | `admin` | 201, 403, 409 (nom déjà utilisé) | US-01 |
-| POST | `/api/v1/shops` | `seller` | 201, 403, 409 (nom déjà utilisé), 422 (dont `CONTACT_INFO_FORBIDDEN`) | US-02 |
+| POST | `/api/v1/shops` | `seller` | 201, 403, 409 (nom déjà utilisé), 422 (dont `CONTACT_EMAIL`, `CONTACT_PHONE`) | US-02 |
 | GET | `/api/v1/shops/me` | `seller` | 200, 403 | US-02 |
 | GET | `/api/v1/shops/{shop_id}` | public | 200, 404 | US-02 |
-| POST | `/api/v1/articles` | `seller`, propriétaire de la boutique | 201 (`PUBLISHED` ou `REJECTED`), 403, 422 | US-03 |
+| POST | `/api/v1/articles` | `seller`, propriétaire de la boutique | 201 (`PUBLISHED` ou `REJECTED`), 403 (boutique d'un autre vendeur), 422 (dont `SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) | US-03 |
 | GET | `/api/v1/articles?category_id=&shop_id=&limit=&offset=` | public, articles `PUBLISHED` seulement | 200 | US-03 |
 | GET | `/api/v1/articles/{article_id}` | public si `PUBLISHED`, sinon propriétaire ou `admin` | 200, 404 | US-03, US-04 |
 | PUT | `/api/v1/articles/{article_id}/price` | `seller`, propriétaire de l'article | 200, 403, 404, 409 (article non publié), 422 | US-04 |
@@ -106,6 +106,8 @@ Réponse 201, article conforme :
 
 Si le contrôle échoue (RM-02), la réponse est aussi un 201, avec `"status": "REJECTED"` et `"rejection_reasons": ["CONTACT_EMAIL"]`. Les motifs possibles sont `CONTACT_EMAIL` et `CONTACT_PHONE`.
 
+**Codes de motif.** Le même vocabulaire sert partout : `rejection_reasons` d'un article rejeté, et `errors[].code` d'un refus 422. Une boutique ou une catégorie inexistante, référencée dans le corps de la requête, donne un 422 (`SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) et non un 404 : c'est le contenu de la requête qui est invalide, pas l'URL. Une boutique qui contient des coordonnées est refusée en 422 (`CONTACT_EMAIL`, `CONTACT_PHONE`) au lieu d'être enregistrée : elle n'a pas de cycle de modération (RM-05).
+
 **Exemple : modification du prix** (`PUT /api/v1/articles/{article_id}/price`)
 
 ```json
@@ -137,17 +139,21 @@ Tous les chemins sont sous `/me` : l'utilisateur est toujours celui du jeton (`s
 
 Sans préférences enregistrées, les deux types de notification sont actifs et l'email est désactivé.
 
+`notification-service` ne connaît pas la liste des catégories, et n'appelle pas le catalogue de façon synchrone (ADR 0001). `PUT /me/interests` vérifie donc le format des identifiants, mais pas leur existence. Le front ne propose que des catégories existantes, lues sur `GET /categories`, et un identifiant inconnu n'a pas d'autre effet que de ne jamais déclencher de notification. La cible ajoutera un événement `category.created` pour tenir une projection locale des catégories.
+
 ### 2.3 fraud-service
 
 | Méthode | Chemin | Rôle requis | Codes de retour | Story |
 | --- | --- | --- | --- | --- |
 | GET | `/api/v1/alerts?status=&rule=&limit=&offset=` | `admin` | 200, 403 | US-06 |
-| PATCH | `/api/v1/alerts/{alert_id}` | `admin` | 200, 403, 404, 409 (alerte déjà traitée) | US-06 |
+| PATCH | `/api/v1/alerts/{alert_id}` | `admin` | 200, 403, 404, 409 (alerte déjà traitée), 422 (statut inconnu) | US-06 |
 
 ```jsonc
 // PATCH /api/v1/alerts/{alert_id}
 { "status": "CONFIRMED" }
 ```
+
+Chaque alerte de la liste porte sa règle, sa sévérité, l'article et le vendeur concernés, les valeurs qui ont déclenché la règle (`details`) et l'identifiant de l'événement source : la liste suffit à l'admin, sans endpoint de détail.
 
 Transitions autorisées : `OPEN → CONFIRMED` et `OPEN → DISMISSED`. Toute autre transition renvoie 409. L'auteur et la date de la décision sont enregistrés.
 
@@ -156,7 +162,7 @@ Transitions autorisées : `OPEN → CONFIRMED` et `OPEN → DISMISSED`. Toute au
 | Méthode | Chemin | Usage |
 | --- | --- | --- |
 | GET | `/health/live` | Sonde *liveness* : le processus répond. Ne teste aucune dépendance, pour éviter des redémarrages en cascade |
-| GET | `/health/ready` | Sonde *readiness* : base de données et broker joignables. En cas d'échec, le pod est retiré du Service sans être redémarré |
+| GET | `/health/ready` | Sonde *readiness* : la base de données du service est joignable. En cas d'échec, le pod est retiré du Service sans être redémarré. Le broker n'en fait **pas** partie : si RabbitMQ est arrêté, le catalogue continue d'accepter les publications (l'outbox conserve les événements), et notification et fraud continuent de servir leurs API. La connexion AMQP se rétablit automatiquement (connexion robuste d'aio-pika), et son état est exposé par une métrique et dans les logs |
 | GET | `/metrics` | Métriques Prometheus (latence, débit et erreurs HTTP, plus les compteurs métier : articles publiés et rejetés, notifications créées, alertes créées) |
 
 ## 3. Événements
@@ -171,15 +177,15 @@ flowchart LR
     X -- "article.*" --> QF[["file fraud.article-events"]]
     QN --> N[notification-service]
     QF --> F[fraud-service]
-    QN -. "rejet après 5 tentatives" .-> DLX{{"exchange article.events.dlx"}}
-    QF -. "rejet après 5 tentatives" .-> DLX
-    DLX --> DQN[["notification.article-events.dlq"]]
-    DLX --> DQF[["fraud.article-events.dlq"]]
+    QN -. "après 5 tentatives<br/>clé notification.article-events" .-> DLX{{"exchange article.events.dlx<br/>(direct)"}}
+    QF -. "après 5 tentatives<br/>clé fraud.article-events" .-> DLX
+    DLX -- "notification.article-events" --> DQN[["notification.article-events.dlq"]]
+    DLX -- "fraud.article-events" --> DQF[["fraud.article-events.dlq"]]
 ```
 
 - **Exchange `article.events` de type `topic`.** Chaque consommateur a sa propre file, liée par le motif `article.*`. Chaque file reçoit une copie de chaque événement (*publish/subscribe*). Ajouter un consommateur, par exemple un futur service de recommandations, revient à créer une file et une liaison, sans modifier le producteur (EF-35).
 - **Fiabilité (ENF-18).** Exchange et files durables, messages persistants (`delivery_mode = 2`), *publisher confirms* activés côté producteur. Côté consommateur : acquittement manuel après la validation de la transaction en base, et `prefetch = 10`.
-- **Échecs.** Les files sont des *quorum queues* avec `x-delivery-limit = 5`. Au-delà, le message part dans la *dead-letter queue* du consommateur, où il peut être analysé et rejoué.
+- **Échecs.** Les files sont des *quorum queues* avec `x-delivery-limit = 5`. Au-delà, le message part dans la *dead-letter queue* de **son** consommateur. Pour cela, chaque file déclare `x-dead-letter-exchange = article.events.dlx` (exchange `direct`) et une `x-dead-letter-routing-key` égale à son propre nom. Sans cette clé, le message garderait sa clé d'origine (`article.published`) et serait copié dans les deux DLQ. Les files déclarent aussi `x-dead-letter-strategy = at-least-once`, qui impose `x-overflow = reject-publish` : sans ces réglages, le transfert vers la DLQ d'une quorum queue est « au plus une fois » et un message pourrait être perdu en route.
 - **Propriétés AMQP.** `message_id = event_id`, `type = event_type`, `content_type = application/json` et l'en-tête `x-correlation-id`.
 
 ### 3.2 Garanties de livraison
@@ -238,7 +244,7 @@ Tous les événements partagent une enveloppe inspirée de CloudEvents 1.0. Seul
         "seller_id": { "type": "string", "minLength": 1, "description": "claim sub Keycloak du vendeur" },
         "category_id": { "type": "string", "format": "uuid" },
         "title": { "type": "string", "minLength": 5, "maxLength": 120 },
-        "price": { "type": "string", "pattern": "^[0-9]{1,7}\\.[0-9]{2}$" },
+        "price": { "type": "string", "pattern": "^(?!0+\\.00$)[0-9]{1,7}\\.[0-9]{2}$" },
         "shipping_fee": { "type": "string", "pattern": "^[0-9]{1,7}\\.[0-9]{2}$" },
         "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
       }
@@ -300,8 +306,8 @@ L'événement transporte tout ce dont les consommateurs ont besoin (*event-carri
         "seller_id": { "type": "string", "minLength": 1 },
         "category_id": { "type": "string", "format": "uuid" },
         "title": { "type": "string", "minLength": 5, "maxLength": 120 },
-        "old_price": { "type": "string", "pattern": "^[0-9]{1,7}\\.[0-9]{2}$" },
-        "new_price": { "type": "string", "pattern": "^[0-9]{1,7}\\.[0-9]{2}$" },
+        "old_price": { "type": "string", "pattern": "^(?!0+\\.00$)[0-9]{1,7}\\.[0-9]{2}$" },
+        "new_price": { "type": "string", "pattern": "^(?!0+\\.00$)[0-9]{1,7}\\.[0-9]{2}$" },
         "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
         "changed_by": { "type": "string", "minLength": 1, "description": "claim sub de l'auteur de la modification" }
       }
@@ -332,6 +338,8 @@ Exemple :
   }
 }
 ```
+
+Les motifs des montants imposent deux décimales et excluent un prix nul (`(?!0+\.00$)`), conformément à RM-01. Les frais de port peuvent être nuls. Les mots-clés `format` (`uuid`, `date-time`) ne sont que des annotations en JSON Schema 2020-12 : les tests de contrat les vérifient en activant explicitement un *format checker*.
 
 `old_price` et `new_price` permettent à `fraud-service` de calculer la variation (règle `PRICE_SPIKE`) sans historique local.
 

@@ -38,13 +38,13 @@ Fonctionnalité: US-02 Créer une boutique
     Étant donné l'utilisateur "alice" authentifié
     Quand il crée la boutique "Ma collection" avec la description "<description>"
     Alors la réponse a le statut 422
-    Et le motif de refus est "CONTACT_INFO_FORBIDDEN"
+    Et les motifs de refus contiennent "<motif>"
     Et la boutique "Ma collection" n'existe pas
 
     Exemples:
-      | description                                   |
-      | Écrivez-moi à collector.fan@example.com       |
-      | Appelez le 06 12 34 56 78 pour négocier       |
+      | description                                   | motif         |
+      | Écrivez-moi à collector.fan@example.com       | CONTACT_EMAIL |
+      | Appelez le 06 12 34 56 78 pour négocier       | CONTACT_PHONE |
 
   @ENF-02 @ENF-03
   Plan du scénario: Seul un vendeur authentifié peut créer une boutique

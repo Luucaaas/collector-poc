@@ -10,13 +10,13 @@ Les identifiants EF, ENF et RM renvoient à [exigences.md](exigences.md). Chaque
 | --- | --- | --- | --- | --- |
 | US-01 | Admin : créer une catégorie | Must | 2 | EF-09, EF-27, RM-06 |
 | US-02 | Vendeur : créer une boutique | Must | 3 | EF-02, EF-05, EF-09, RM-02, RM-05 |
-| US-03 | Vendeur : publier un article (contrôle automatique) | Must | 8 | EF-01, EF-03, EF-04, EF-05, EF-23, RM-01 à RM-03, ENF-18 |
+| US-03 | Vendeur : publier un article (contrôle automatique) | Must | 8 | EF-01, EF-03, EF-04, EF-05, EF-23, RM-01 à RM-03 |
 | US-04 | Vendeur : modifier le prix d'un article (historique conservé) | Must | 5 | EF-06, EF-23, RM-04, ENF-08 |
 | US-05 | Acheteur : définir ses centres d'intérêt et préférences, recevoir les notifications | Must | 8 | EF-10, EF-12 à EF-16, RM-08, RM-09, ENF-14, ENF-19 |
-| US-06 | Admin : consulter et traiter les alertes de fraude | Should | 5 | EF-24, EF-25, EF-26, RM-07, RM-09 |
+| US-06 | Admin : consulter et traiter les alertes de fraude | Should | 5 | EF-24, EF-26, RM-07, RM-09 |
 | | **Total** | | **31** | |
 
-Toutes les stories couvrent aussi ENF-02 (authentification), ENF-03 (autorisation) et ENF-07 (validation des entrées), vérifiées par les critères d'erreur 401, 403 et 422.
+Chaque story vérifie aussi ENF-02 (authentification), ENF-03 (autorisation) et ENF-07 (validation des entrées) par des critères d'erreur 401, 403 et 422. Les jetons expirés ou falsifiés sont testés une fois, dans US-01 : la vérification du JWT est le même code dans les trois services, et chaque service la couvre aussi par ses tests unitaires.
 
 **Priorisation MoSCoW.** Les stories 1 à 5 forment la chaîne minimale qui démontre la fonctionnalité de bout en bout : sans catégorie ni boutique, aucun article ; sans article, aucun événement. US-06 est en *Should* : le service anti-fraude détecte et enregistre les alertes dès US-03 et US-04 (EF-23, EF-24), seule leur consultation par l'admin peut être reportée sans casser la chaîne.
 
@@ -42,7 +42,7 @@ Les critères utilisent des comptes provisionnés dans le realm Keycloak `collec
 
 ### Exigences transverses sans story dédiée
 
-Quatre exigences du périmètre POC ne correspondent pas à une fonctionnalité isolée. Elles sont garanties par la DoD ou par l'architecture :
+Ces exigences du périmètre POC ne correspondent pas à une fonctionnalité isolée. Elles sont garanties par la DoD ou par l'architecture :
 
 | Exigence | Où elle est garantie |
 | --- | --- |
@@ -50,6 +50,8 @@ Quatre exigences du périmètre POC ne correspondent pas à une fonctionnalité 
 | EF-33 Internationalisation | DoD : écrans traduits en français et en anglais (react-i18next) |
 | EF-34 Accessibilité | DoD : contrôle axe dans les tests Playwright (ENF-25) |
 | EF-35 Évolutivité fonctionnelle | Architecture orientée événements (ADR 0001), démontrée par les deux consommateurs indépendants de US-05 et US-06 |
+| EF-25 Outil anti-fraude interne ou acheté | Contrat d'événements versionné, seule dépendance du service anti-fraude (ADR 0001, ENF-28) |
+| ENF-18 Aucun événement perdu | Test d'intégration (broker arrêté pendant une publication, puis événement reçu à son redémarrage), plus adapté qu'un test d'acceptation |
 
 ---
 
@@ -66,7 +68,7 @@ Quatre exigences du périmètre POC ne correspondent pas à une fonctionnalité 
 | 1 | **Étant donné** que je suis authentifié avec le rôle `admin`, **quand** je crée la catégorie « Figurines Star Wars », **alors** la réponse est 201 avec l'identifiant et le slug `figurines-star-wars`, et la catégorie apparaît dans la liste publique des catégories, consultable sans authentification. |
 | 2 | **Étant donné** que la catégorie « Baskets » existe, **quand** je crée la catégorie « baskets », **alors** la réponse est 409 (nom déjà utilisé, sans tenir compte de la casse). |
 | 3 | **Étant donné** que je suis administrateur, **quand** je crée une catégorie dont le nom fait 1 caractère, **alors** la réponse est 422 et aucune catégorie n'est créée. |
-| 4 | **Étant donné** que je ne suis pas authentifié, **quand** je crée une catégorie, **alors** la réponse est 401. |
+| 4 | **Étant donné** que j'appelle l'API sans jeton, avec un jeton expiré ou avec un jeton dont la signature est falsifiée, **quand** je crée une catégorie, **alors** la réponse est 401. |
 | 5 | **Étant donné** que je suis authentifié avec le seul rôle `seller`, **quand** je crée une catégorie, **alors** la réponse est 403. |
 
 ## US-02 — Créer une boutique
@@ -83,7 +85,7 @@ Quatre exigences du périmètre POC ne correspondent pas à une fonctionnalité 
 | 2 | **Étant donné** que la boutique d'`alice` existe, **quand** un visiteur non authentifié consulte sa page publique, **alors** la réponse est 200 et la boutique est présentée comme tenue par un vendeur particulier. |
 | 3 | **Étant donné** qu'`alice` possède déjà une boutique, **quand** `alice` en crée une seconde, **alors** la réponse est 201 et la liste de ses boutiques en contient deux. |
 | 4 | **Étant donné** que la boutique « Jouets des années 80 » existe, **quand** `bob` crée la boutique « jouets des années 80 », **alors** la réponse est 409. |
-| 5 | **Étant donné** que je suis authentifié avec le rôle `seller`, **quand** je crée une boutique dont la description contient une adresse email ou un numéro de téléphone, **alors** la réponse est 422 avec le motif `CONTACT_INFO_FORBIDDEN` et aucune boutique n'est créée. |
+| 5 | **Étant donné** que je suis authentifié avec le rôle `seller`, **quand** je crée une boutique dont la description contient une adresse email ou un numéro de téléphone, **alors** la réponse est 422 avec le motif `CONTACT_EMAIL` ou `CONTACT_PHONE`, et aucune boutique n'est créée. |
 | 6 | **Étant donné** que je ne suis pas authentifié, ou que je n'ai que le rôle `buyer`, **quand** je crée une boutique, **alors** la réponse est respectivement 401 ou 403. |
 
 ## US-03 — Publier un article
@@ -91,14 +93,14 @@ Quatre exigences du périmètre POC ne correspondent pas à une fonctionnalité 
 **En tant que** vendeur, **je veux** publier un article dans l'une de mes boutiques et qu'il soit contrôlé automatiquement **afin qu'**il soit mis en vente sans attendre une validation humaine.
 
 - Priorité : Must · Estimation : 8 points
-- Exigences : EF-01, EF-03, EF-04, EF-05, EF-23, RM-01, RM-02, RM-03, ENF-18
+- Exigences : EF-01, EF-03, EF-04, EF-05, EF-23, RM-01, RM-02, RM-03
 - Gherkin : [`us03_publier_article.feature`](../../tests/acceptance/features/us03_publier_article.feature)
 
 | # | Critère d'acceptation |
 | --- | --- |
 | 1 | **Étant donné** qu'`alice` possède une boutique et que la catégorie « Figurines » existe, **quand** `alice` publie un article conforme (titre, description, photo, prix de 120 €, frais de port de 8 €), **alors** la réponse est 201 avec le statut `PUBLISHED`, un seul événement `article.published` est émis, et l'article apparaît dans le catalogue public filtré sur « Figurines », consultable sans authentification. |
 | 2 | **Étant donné** qu'`alice` possède une boutique, **quand** `alice` publie un article dont la description contient une adresse email, **alors** la réponse est 201 avec le statut `REJECTED` et le motif `CONTACT_EMAIL`, aucun événement n'est émis, et l'article n'apparaît pas dans le catalogue public. |
-| 3 | **Étant donné** qu'`alice` possède une boutique, **quand** `alice` publie un article dont la description contient un numéro de téléphone, quel que soit son format (`06 12 34 56 78`, `+33 6 12 34 56 78`, `06.12.34.56.78`), **alors** l'article est `REJECTED` avec le motif `CONTACT_PHONE`. |
+| 3 | **Étant donné** qu'`alice` possède une boutique, **quand** `alice` publie un article dont la description contient un numéro de téléphone, quel que soit son format (`06 12 34 56 78`, `+33 6 12 34 56 78`, `06.12.34.56.78`), **alors** la réponse est 201, l'article est `REJECTED` avec le motif `CONTACT_PHONE` et aucun événement n'est émis. |
 | 4 | **Étant donné** qu'`alice` possède une boutique, **quand** `alice` envoie un article invalide (prix nul ou négatif, aucune photo, titre trop court, catégorie inexistante), **alors** la réponse est 422 et aucun article n'est enregistré. |
 | 5 | **Étant donné** que `bob` possède une boutique, **quand** `alice` publie un article dans la boutique de `bob`, **alors** la réponse est 403. |
 | 6 | **Étant donné** que je ne suis pas authentifié, ou que je n'ai que le rôle `buyer`, **quand** je publie un article, **alors** la réponse est respectivement 401 ou 403. |
@@ -130,19 +132,19 @@ Quatre exigences du périmètre POC ne correspondent pas à une fonctionnalité 
 
 | # | Critère d'acceptation |
 | --- | --- |
-| 1 | **Étant donné** que le compte `chloe` (rôle `buyer`) est authentifié, **quand** `chloe` déclare « Baskets » et « Figurines » comme centres d'intérêt, **alors** la réponse est 200 et ses centres d'intérêt contiennent ces deux catégories. |
+| 1 | **Étant donné** que le compte `chloe` (rôle `buyer`) est authentifié, **quand** `chloe` déclare « Baskets » et « Figurines » comme centres d'intérêt, puis active l'envoi par email dans ses préférences, **alors** les deux réponses sont 200, et la relecture renvoie ces deux catégories et la préférence email activée. |
 | 2 | **Étant donné** que `chloe` s'intéresse à « Figurines » avec les notifications « nouvel article » activées, **quand** `alice` publie un article conforme dans « Figurines », **alors** en moins de 2 secondes une notification `NEW_ARTICLE` portant le titre et le prix de l'article apparaît dans les notifications de `chloe`, et `alice` ne reçoit aucune notification pour son propre article. |
-| 3 | **Étant donné** que `chloe` suit un article à 120 €, **quand** `alice` passe son prix à 95 €, **alors** une notification `PRICE_CHANGED` indiquant 120 € → 95 € apparaît dans les notifications de `chloe`. |
+| 3 | **Étant donné** qu'`alice` a publié un article à 120 €, **quand** `chloe` suit cet article (réponse 204) et qu'`alice` passe son prix à 95 €, **alors** une notification `PRICE_CHANGED` indiquant 120 € → 95 € apparaît dans les notifications de `chloe`. Suivre un article inconnu renvoie 404. |
 | 4 | **Étant donné** que `chloe` suit un article et a désactivé les notifications « changement de prix », **quand** le prix de l'article change, **alors** `chloe` ne reçoit aucune notification. |
 | 5 | **Étant donné** que `chloe` s'intéresse à « Figurines », **quand** le même événement `article.published` est livré deux fois, **alors** `chloe` ne reçoit qu'une seule notification. |
-| 6 | **Étant donné** que `chloe` a des notifications, **quand** un visiteur non authentifié ou `alice` consulte les notifications, **alors** le visiteur reçoit 401 et `alice` ne voit que les siennes, jamais celles de `chloe`. |
+| 6 | **Étant donné** que `chloe` a des notifications, **quand** d'autres utilisateurs appellent les routes `/me`, **alors** un visiteur non authentifié reçoit 401, `bob` (seul rôle `seller`) reçoit 403, `alice` ne voit que ses propres notifications et jamais celles de `chloe`, et une liste de plus de 20 centres d'intérêt est refusée (422). |
 
 ## US-06 — Consulter et traiter les alertes de fraude
 
 **En tant qu'** administrateur, **je veux** consulter les alertes produites par l'analyse anti-fraude et statuer sur chacune **afin de** repérer les prix anormaux et les vendeurs suspects avant qu'ils ne lèsent des acheteurs.
 
 - Priorité : Should · Estimation : 5 points
-- Exigences : EF-24, EF-25, EF-26, RM-07, RM-09
+- Exigences : EF-24, EF-26, RM-07, RM-09
 - Gherkin : [`us06_alertes_fraude.feature`](../../tests/acceptance/features/us06_alertes_fraude.feature)
 
 | # | Critère d'acceptation |
@@ -150,6 +152,6 @@ Quatre exigences du périmètre POC ne correspondent pas à une fonctionnalité 
 | 1 | **Étant donné** que le plafond de prix est de 10 000 €, **quand** `alice` publie un article à 15 000 €, **alors** une alerte `PRICE_ABOVE_CEILING` liée à cet article et à `alice` apparaît dans la liste des alertes consultée par l'admin. |
 | 2 | **Étant donné** qu'`alice` a publié un article à 100 €, **quand** `alice` passe son prix à 180 € (hausse de 80 %), **alors** une alerte `PRICE_SPIKE` est créée. Une hausse à 140 € (40 %) n'en crée aucune. |
 | 3 | **Étant donné** qu'`alice` a modifié 3 fois le prix d'un article dans les dernières 24 h, **quand** `alice` le modifie une quatrième fois, **alors** une alerte `FREQUENT_PRICE_CHANGES` est créée. |
-| 4 | **Étant donné** qu'une alerte est au statut `OPEN`, **quand** l'admin la marque `CONFIRMED` ou `DISMISSED`, **alors** la réponse est 200 et le nouveau statut est conservé. |
+| 4 | **Étant donné** qu'une alerte est au statut `OPEN`, **quand** l'admin la marque `CONFIRMED` ou `DISMISSED`, **alors** la réponse est 200 et le nouveau statut est conservé avec l'auteur et la date de la décision. Une alerte déjà traitée ne peut plus changer de statut (409), et un statut inconnu est refusé (422). |
 | 5 | **Étant donné** que le même événement déclencheur est livré deux fois, **quand** le service anti-fraude le traite, **alors** une seule alerte est créée. |
 | 6 | **Étant donné** que je ne suis pas authentifié, ou que je suis `alice` (rôles `seller` et `buyer`), **quand** je consulte les alertes, **alors** la réponse est respectivement 401 ou 403. |

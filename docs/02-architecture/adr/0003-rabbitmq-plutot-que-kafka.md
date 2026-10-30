@@ -10,7 +10,7 @@ décideurs: Lucas (Lead Developer)
 
 L'ADR [0001](0001-microservices-evenements.md) retient une communication par événements. Il faut un broker qui distribue chaque événement du catalogue à plusieurs consommateurs, garantisse qu'aucun événement n'est perdu (ENF-18), isole les messages en échec et tourne sur un cluster Kubernetes local aux ressources limitées.
 
-Le volume attendu en V1 est modeste. Une start-up issue de l'événementiel peut viser quelques milliers d'articles publiés et de changements de prix par jour, soit quelques événements par seconde au pic.
+Le volume attendu en V1 est modeste. **Hypothèse de dimensionnement**, à confirmer par la direction : quelques milliers d'articles publiés et de changements de prix par jour, soit quelques événements par seconde au pic. C'est un ordre de grandeur cohérent avec une start-up qui lance sa place de marché, pas une mesure.
 
 Quel broker retenir ?
 
@@ -31,7 +31,7 @@ Quel broker retenir ?
 
 ## Décision
 
-**Option 1 : RabbitMQ**, avec un exchange `topic` durable (`article.events`), une *quorum queue* par consommateur, des messages persistants, les *publisher confirms* côté producteur, un acquittement manuel côté consommateur et une *dead-letter queue* après 5 tentatives (`x-delivery-limit`). Le client Python est aio-pika.
+**Option 1 : RabbitMQ**, avec un exchange `topic` durable (`article.events`), une *quorum queue* par consommateur, des messages persistants, les *publisher confirms* côté producteur, un acquittement manuel côté consommateur et une *dead-letter queue* propre à chaque consommateur après 5 tentatives (`x-delivery-limit`, clé de routage de dead-letter par file, stratégie `at-least-once`). Le client Python est aio-pika.
 
 ### Conséquences
 
@@ -60,7 +60,7 @@ Un protocole d'expérimentation (`docs/04-experimentations`) déploie RabbitMQ d
 ### NATS JetStream
 
 - ✅ Très léger et performant, persistance et relecture disponibles.
-- ❌ Écosystème et bibliothèques Python moins éprouvés. Moins de retours d'expérience en France, donc un recrutement plus difficile.
+- ❌ Client Python asynchrone moins utilisé que aio-pika, et pas d'équivalent direct des exchanges `topic` et des *dead-letter queues* : la gestion des échecs se construit avec les limites de relivraison et des sujets dédiés.
 
 ### Redis Streams
 

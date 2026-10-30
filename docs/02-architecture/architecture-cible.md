@@ -58,7 +58,7 @@ flowchart TB
         end
     end
 
-    BUS{{"RabbitMQ : bus d'événements métier<br/>article.* · order.* · payment.* · chat.* · fraud.*"}}
+    BUS{{"RabbitMQ : bus d'événements métier<br/>article.* · moderation.* · seller.* · media.*<br/>order.* · payment.* · rating.* · chat.* · fraud.*"}}
 
     subgraph EXT["Systèmes externes"]
         direction LR
@@ -88,20 +88,39 @@ flowchart TB
 
 | Service | Responsabilité | Données | Publie | Consomme | Exigences | Version |
 | --- | --- | --- | --- | --- | --- | --- |
-| catalog | Catégories, boutiques, articles, prix et historique, contrôle automatique synchrone (règles RM-01 et RM-02) | PostgreSQL | `article.published`, `article.price_changed`, `article.removed` | `moderation.decided`, `seller.suspended` | EF-01 à EF-07, EF-27 | V1 (POC) |
-| moderation | Contrôles approfondis après publication (classification d'images), file de revue manuelle, application de la charte | PostgreSQL | `moderation.decided`, `seller.suspended` | `article.published`, `chat.message_flagged`, `fraud.alert_raised` | EF-04, EF-05, EF-28, EF-29 | V1 |
+| catalog | Catégories, boutiques, articles, prix et historique. Contrôle synchrone des règles (refus immédiat), puis article au statut `PENDING_REVIEW` jusqu'à la décision de moderation | PostgreSQL | `article.submitted`, `article.published`, `article.price_changed`, `article.removed`, `catalog.viewed` | `moderation.decided`, `seller.suspended` | EF-01 à EF-07, EF-27 | V1 (POC) |
+| moderation | Contrôle approfondi **avant** mise en vente (classification d'images, coordonnées obfusquées), file de revue manuelle en cas de doute, application de la charte | PostgreSQL | `moderation.decided`, `seller.suspended` | `article.submitted`, `media.uploaded`, `chat.message_flagged`, `fraud.alert_raised` | EF-04, EF-05, EF-28, EF-29 | V1 |
 | media | Téléversement, redimensionnement et analyse antivirus des photos | Stockage objet | `media.uploaded` | — | EF-03 | V1 |
 | search | Recherche plein texte et facettes | OpenSearch (projection) | — | `article.*` | EF-01 | V1 |
 | order | Commandes, suivi de livraison, confirmation de réception | PostgreSQL | `order.created`, `order.delivered` | `payment.captured` | EF-10 | V1 |
 | payment | Paiement par carte via le PSP, séquestre, commission de 5 %, reversement au vendeur | PostgreSQL (aucune donnée de carte) | `payment.captured`, `payment.released`, `payment.refunded` | `order.created`, `order.delivered` | EF-17 à EF-20, ENF-09 | V1 |
 | rating | Notation réciproque après transaction | PostgreSQL | `rating.submitted` | `order.delivered` | EF-11 | V1 |
 | chat | Messagerie acheteur-vendeur en temps réel, filtrage des coordonnées | PostgreSQL + Redis (présence) | `chat.message_flagged` | `order.created` | EF-21, EF-22 | V1 |
-| notification | Centres d'intérêt, préférences, notifications dans l'espace et par email | PostgreSQL | — | `article.*`, `order.*`, `payment.*` | EF-12 à EF-16 | V1 (POC) |
+| notification | Centres d'intérêt, recherches enregistrées, préférences, notifications dans l'espace et par email | PostgreSQL | — | `article.*`, `order.*`, `payment.*`, `seller.suspended`, `fraud.alert_raised` | EF-12 à EF-16, EF-36 | V1 (POC) |
 | fraud | Règles d'anomalie, alertes, relais vers un outil tiers | PostgreSQL | `fraud.alert_raised` | `article.*`, `payment.*`, `rating.submitted` | EF-23 à EF-26 | V1 (POC) |
 | recommendation | Recommandations par centres d'intérêt, puis par parcours de navigation | PostgreSQL + modèle | — | `article.*`, `catalog.viewed` (V2) | EF-30, EF-31 | V1, puis V2 |
 | advertising | Flux produits et audiences pour les régies partenaires, sous consentement | PostgreSQL | — | `article.published` | EF-32, ENF-10 | V2 |
 | analytics | Entrepôt de données des ventes, exposé à Power BI | Entrepôt analytique | — | tous les événements | EF-35 | V2 |
 | auction, live-events, presales-bot | Enchères, ventes en direct en streaming, assistant d'avant-vente | selon le service | `auction.*`, `live.*` | `article.*` | EF-35 | Évolutions |
+
+### Cycle de vie d'un article
+
+Le contexte impose qu'un article ne soit mis en vente « qu'après contrôle » (EF-04). Dans la cible, les contrôles rapides restent synchrones dans catalog, et les contrôles lents ou humains se font avant la mise en vente, pendant que l'article attend au statut `PENDING_REVIEW`, invisible dans le catalogue.
+
+```mermaid
+stateDiagram-v2
+    %% id: cycle-vie-article
+    [*] --> REJECTED : règles synchrones non respectées (POC et cible)
+    [*] --> PENDING_REVIEW : règles respectées (cible)
+    [*] --> PUBLISHED : règles respectées (POC)
+    PENDING_REVIEW --> PUBLISHED : moderation.decided = accepté
+    PENDING_REVIEW --> REJECTED : moderation.decided = refusé
+    PUBLISHED --> REMOVED : retrait par le vendeur ou la modération
+    REJECTED --> [*]
+    REMOVED --> [*]
+```
+
+Le POC n'applique que des règles déterministes (RM-01, RM-02) : il tranche toujours immédiatement et n'a donc pas besoin du statut `PENDING_REVIEW`.
 
 ## 3. Principes structurants
 
@@ -123,10 +142,13 @@ flowchart TB
 
 | Événement | Producteur | Consommateurs | Déclencheur |
 | --- | --- | --- | --- |
-| `article.published` | catalog | notification, fraud, search, recommendation, advertising, analytics | Article validé par le contrôle |
+| `article.submitted` | catalog | moderation | Article conforme aux règles synchrones, en attente du contrôle approfondi (`PENDING_REVIEW`) |
+| `article.published` | catalog | notification, fraud, search, recommendation, advertising, analytics | Article mis en vente après la décision de moderation (dans le POC : dès le contrôle synchrone) |
 | `article.price_changed` | catalog | notification, fraud, search, analytics | Modification effective du prix |
 | `article.removed` | catalog | search, notification, analytics | Retrait par le vendeur ou la modération |
-| `moderation.decided` | moderation | catalog | Retrait d'un article après contrôle approfondi ou revue manuelle |
+| `moderation.decided` | moderation | catalog | Décision sur un article (mise en vente, rejet ou retrait) après contrôle automatique approfondi ou revue manuelle |
+| `media.uploaded` | media | moderation | Photo téléversée et analysée par l'antivirus, prête pour la classification |
+| `catalog.viewed` | catalog | recommendation, analytics | Consultation d'un article par un acheteur authentifié (V2, sous consentement) |
 | `seller.suspended` | moderation | catalog, notification | Suspension d'un vendeur qui enfreint la charte |
 | `order.created` / `order.delivered` | order | payment, chat, notification, rating, analytics | Commande passée, réception confirmée |
 | `payment.captured` / `payment.released` / `payment.refunded` | payment | order, notification, fraud, analytics | Paiement accepté, fonds reversés, remboursement |
@@ -155,10 +177,10 @@ Les composants avec état passent sur des offres managées ou des opérateurs : 
 | Préoccupation de la cible | Démonstration dans le POC |
 | --- | --- |
 | Découpage par domaine, une base par service | 3 services FastAPI, 3 bases PostgreSQL |
-| Contrôle automatique avant publication | Règles synchrones dans catalog. Les contrôles lents (images) et la revue manuelle iront au service moderation, après publication |
+| Contrôle automatique avant publication | Règles synchrones dans catalog, décision immédiate. La cible ajoute le statut `PENDING_REVIEW` : l'article n'est mis en vente qu'après la décision de moderation (contrôle des images, revue manuelle en cas de doute), conformément à EF-04 |
 | Communication asynchrone fiable | Exchange `topic`, outbox, consommateurs idempotents, *dead-letter queues* |
 | Ajout d'un service sans modifier les autres | notification et fraud consomment les mêmes événements, indépendamment l'un de l'autre |
 | Sécurité | TLS, OIDC + PKCE, JWT vérifié par service, RBAC, NetworkPolicies, scans en CI |
-| Disponibilité et montée en charge | Réplicas répartis sur 3 nœuds, HPA, test de charge Locust, arrêt d'un nœud |
+| Disponibilité et montée en charge | Réplicas répartis sur les 2 agents, HPA, test de charge Locust, maintenance (drain) et panne d'un agent |
 | Déploiement reproductible | Helm et Argo CD (GitOps) |
 | Observabilité | Prometheus et Grafana, logs JSON corrélés |

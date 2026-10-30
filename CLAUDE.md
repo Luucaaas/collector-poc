@@ -36,7 +36,7 @@ User stories :
 3. Vendeur : publier un article (contrôle automatique)
 4. Vendeur : modifier le prix d'un article (historique conservé)
 5. Acheteur : définir ses centres d'intérêt et préférences, recevoir les notifications
-6. Admin : consulter les alertes de fraude
+6. Admin : consulter et traiter les alertes de fraude (CONFIRMED / DISMISSED)
 
 Hors périmètre (architecture cible seulement) : paiement, chat, notation, recommandations, publicité, enchères.
 
@@ -52,7 +52,7 @@ Hors périmètre (architecture cible seulement) : paiement, chat, notation, reco
 | Tests | pytest, pytest-cov, testcontainers-python, pytest-bdd (acceptation), Locust (charge), Vitest, Playwright |
 | Qualité / sécurité | Ruff, mypy, Bandit, Semgrep, pip-audit, Gitleaks, Trivy, OWASP ZAP, SonarCloud |
 | CI/CD | GitHub Actions, images sur GHCR (`ghcr.io/luucaaas/<service>`, multi-arch amd64 + arm64) |
-| Hébergement | **Tout en local sur le Mac** : Kubernetes **k3d** (1 server + 2 agents), Helm, ingress-nginx, cert-manager (CA locale via mkcert, domaines `*.127.0.0.1.sslip.io`), **Argo CD** en GitOps |
+| Hébergement | **Tout en local sur le Mac** : Kubernetes **k3d** (1 server + 2 agents), Helm, **Traefik** (contrôleur d'Ingress fourni par k3s ; ingress-nginx écarté car retiré par Kubernetes), cert-manager (CA locale via mkcert, domaines `*.127.0.0.1.sslip.io`), **Argo CD** en GitOps |
 | Observabilité | kube-prometheus-stack (Prometheus + Grafana) |
 
 Décisions de la phase 1 (détail dans `docs/02-architecture/contrats.md` et les ADR) :
@@ -62,8 +62,13 @@ Décisions de la phase 1 (détail dans `docs/02-architecture/contrats.md` et les
 - **Aucun appel HTTP entre services** : les événements transportent l'état utile, et `notification-service` tient une projection locale (`article_snapshots`).
 - Contrôle automatique synchrone : non conforme → `REJECTED` (201, motifs `CONTACT_EMAIL`, `CONTACT_PHONE`) ; requête mal formée → 422. Prix modifié par `PUT /articles/{id}/price` (idempotent).
 - Montants en chaîne décimale (`"120.00"`), erreurs au format RFC 9457, routes `/api/v1`, Ingress sur `app.`, `api.` (`/catalog`, `/notification`, `/fraud`) et `auth.127.0.0.1.sslip.io`.
-- Les services récupèrent les clés JWKS par l'URL interne de Keycloak, mais vérifient `iss` avec l'URL publique.
-- Composants avec état (PostgreSQL, RabbitMQ, Keycloak) placés sur le nœud server, car le stockage `local-path` est lié à un nœud. La démo d'arrêt porte sur un agent.
+- Les services récupèrent les clés JWKS par l'URL interne de Keycloak, mais vérifient `iss` avec l'URL publique. L'audience `collector-api` est ajoutée par un mapper « Audience » de Keycloak.
+- La sonde `/health/ready` ne teste que PostgreSQL, jamais RabbitMQ : la panne du broker ne doit pas bloquer les publications (outbox).
+- Boutique avec coordonnées → 422 (`CONTACT_EMAIL`, `CONTACT_PHONE`), car une boutique n'a pas de cycle de modération. Boutique ou catégorie inexistante dans le corps → 422 (`SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`).
+- Jetons OIDC en mémoire (`userStore` configuré, sessionStorage par défaut sinon). BFF prévu dans la cible.
+- Cible : statut `PENDING_REVIEW` et service moderation avant mise en vente (EF-04). Le POC tranche immédiatement.
+- Disponibilité : deux scénarios sur un agent, `kubectl drain` (zéro erreur, grâce au PDB) et `docker stop` (erreurs mesurées pendant environ 40 à 50 s, `tolerationSeconds` à 30 s).
+- Composants avec état (PostgreSQL, RabbitMQ, Keycloak) et outils d'exploitation (Prometheus, Grafana, Argo CD, cert-manager) sur le nœud server, car le stockage `local-path` est lié à un nœud. Traefik, le front et les services sur les 2 agents. La démo d'arrêt porte sur un agent.
 - Comptes de démo du realm : `admin`, `alice` (seller + buyer), `bob` (seller), `chloe` (buyer).
 - Gherkin en français (`# language: fr`, validé avec pytest-bdd 9).
 - Diagrammes : Mermaid dans les `.md`, export SVG par `docs/02-architecture/export-diagrams.sh` (mermaid-cli 11.17.0, car la 12 exige Node 22).
@@ -107,5 +112,5 @@ deploy/k8s               manifests (NetworkPolicies, ClusterIssuer, applications
 - Il est sur **macOS**. Les commandes qui demandent son mot de passe (Homebrew, `mkcert -install`) et les réglages de Docker Desktop sont à faire par lui.
 - Avancement :
   - **Phase 0** : repo, comptes SonarCloud et GHCR, script `deploy/local/check-tools.sh`, Python 3.12 (uv). Restent `mkcert -install`, Docker Desktop (8 Go, 4 CPU), Node 22 recommandé, `check-tools.sh --cluster`, et la question à l'intervenant sur le cluster local (critère 5).
-  - **Phase 1 terminée** (30/10/2026) : `docs/03-backlog` (35 EF, 31 ENF, 9 RM, 6 stories pour 31 points), 6 fichiers `.feature` (36 scénarios), `docs/02-architecture` (cible, POC, contrats, 8 SVG, ADR 0001 à 0006).
+  - **Phase 1 terminée** (30/10/2026) : `docs/03-backlog` (36 EF, 31 ENF, 9 RM, 6 stories pour 31 points), 6 fichiers `.feature` (40 scénarios), `docs/02-architecture` (cible, POC en vues logique et physique, contrats, 10 SVG, ADR 0001 à 0006). Audit indépendant fait, corrections appliquées.
   - Prochaine étape : phase 2 (processus qualité, compétences).

@@ -43,7 +43,7 @@ Le POC limite le découpage à trois services, `catalog`, `notification` et `fra
 - ✅ Ajouter un consommateur se réduit à créer une file et une liaison : le POC le montre avec deux consommateurs indépendants des mêmes événements.
 - ✅ Le catalogue reste disponible quand la notification, la fraude ou même le broker sont en panne : l'outbox conserve les événements en attente.
 - ✅ L'outil anti-fraude peut être remplacé : il ne dépend que du contrat d'événements.
-- ❌ **Cohérence à terme** (*eventual consistency*) : une notification arrive quelques centaines de millisecondes après la publication. C'est acceptable pour ce besoin, avec une cible de p95 inférieur à 2 s (ENF-14).
+- ❌ **Cohérence à terme** (*eventual consistency*) : une notification arrive en un peu plus d'une seconde au pire après la publication, car le relais interroge l'outbox toutes les secondes. C'est acceptable pour ce besoin, avec une cible de p95 inférieur à 2 s (ENF-14).
 - ❌ **Complexité opérationnelle** : broker à exploiter, plusieurs bases, traçage d'un parcours sur plusieurs services. Atténuation : identifiant de corrélation propagé dans les logs et les événements, métriques par service, déploiement automatisé par Helm et Argo CD.
 - ❌ Tests plus coûteux : il faut des tests d'intégration avec un vrai broker (testcontainers) et des tests de contrat sur les événements.
 

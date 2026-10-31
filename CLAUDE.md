@@ -49,9 +49,9 @@ Hors périmètre (architecture cible seulement) : détection de fraude (ancienne
 | Événements | RabbitMQ, exchange `topic` `article.events` (`article.published`, `article.price_changed`), une file durable `notification.article-events`. Publication juste après le commit, sans outbox |
 | Front | **React + TypeScript** (Vite), MUI, React Router, react-oidc-context (PKCE, jetons en mémoire). 4 pages : catalogue, mise en vente et prix, centres d'intérêt et notifications, catégories (admin). En français |
 | Auth | **Keycloak**, realm `collector` importé depuis un JSON, rôles `buyer`, `seller`, `admin`, comptes `admin`, `alice`, `bob`, `chloe`. Les rôles sont vérifiés côté API |
-| Tests | pytest, pytest-cov, testcontainers-python, tests d'acceptation pytest + httpx (environ 15, nommés d'après les critères), Locust (charge), Vitest, Playwright |
-| Qualité / sécurité | CI : Ruff, mypy, SonarCloud, Trivy. OWASP ZAP lancé ponctuellement pour l'audit de sécurité |
-| CI/CD | GitHub Actions : Ruff + mypy → pytest + couverture → SonarCloud → build Docker multi-arch → Trivy → push GHCR (`ghcr.io/luucaaas/<service>`, amd64 + arm64) |
+| Tests | pytest, pytest-cov, testcontainers-python, tests d'acceptation pytest + httpx (un par critère, 17, sur une pile `docker compose`), Locust (charge), Vitest, Playwright (ponctuel sur le cluster, hors CI) |
+| Qualité / sécurité | CI : Ruff, mypy, SonarCloud (un projet par service), Trivy (`--scanners vuln,secret`), ESLint pour le front. OWASP ZAP lancé ponctuellement pour l'audit de sécurité |
+| CI/CD | GitHub Actions, contrat dans `docs/01-qualite/cicd.md`. `backend.yml` en matrice : `lint` (Ruff, mypy) → `test` (pytest, couverture ≥ 80 %) → `sonar` → `build-scan` (image amd64, Trivy bloquant) → `acceptance` (`docker compose`) → `publish` sur `main` (Buildx + QEMU, amd64 + arm64, `ghcr.io/luucaaas/<service>:sha-<commit>`). `frontend.yml` (phase 7) : ESLint → Vitest → build → image nginx non-root → Trivy → GHCR. Déploiement manuel par `deploy.sh <tag>` |
 | Hébergement | **Tout en local sur le Mac** : Kubernetes **k3d** (1 server + 2 agents, aucune règle de placement), **Traefik** fourni par k3s (ingress-nginx écarté car retiré par Kubernetes), certificat `*.127.0.0.1.sslip.io` généré par **mkcert** et chargé comme Secret TLS. Un **chart Helm générique** pour les 2 services (2 réplicas, sondes, HPA, ressources, secrets), déployé par `deploy/local/deploy.sh` (`helm upgrade --install`) |
 | Observabilité | kube-prometheus-stack allégé (sans Alertmanager), un tableau de bord Grafana (débit, latence p95, taux d'erreur), logs JSON corrélés |
 
@@ -68,7 +68,7 @@ Décisions (détail dans `docs/02-architecture/contrats.md`, `architecture-poc.m
 - Démo de disponibilité : suppression d'un pod et scaling HPA (2 → 5 réplicas) pendant un test Locust. Pas de démo de panne de nœud.
 - Limites assumées L1 à L16 dans `architecture-poc.md` section 8 : elles alimentent le plan de remédiation (critère 8).
 - Cible (dans `architecture-cible.md`) : fraud-service, outbox, quorum queues et DLQ, NetworkPolicies, PostgreSQL par service et répliqué, Argo CD, cert-manager, PDB et répartition imposée, mTLS, BFF, statut `PENDING_REVIEW` et service moderation.
-- Diagrammes : Mermaid dans les `.md`, export SVG par `docs/02-architecture/export-diagrams.sh` (mermaid-cli 11.17.0, car la 12 exige Node 22).
+- Diagrammes : Mermaid dans les `.md` de `docs/02-architecture` et `docs/01-qualite`, export SVG par `docs/02-architecture/export-diagrams.sh` (mermaid-cli 11.17.0, car la 12 exige Node 22). Le rendu n'est pas déterministe : ne jamais commiter un SVG régénéré dont la source n'a pas changé (`git checkout --` après l'export). Vérifier la lisibilité d'un nouveau schéma en PNG (`qlmanage -t -s 1600`).
 
 Choix écartés (justifiés dans les ADR) : Kafka (surdimensionné pour la V1), Django (trop monolithique), front HTMX/Jinja et Streamlit (Lucas veut une techno classique), cloud avec crédits d'essai (l'infra doit être 100 % gratuite), Argo CD, cert-manager et Gherkin pour le POC (ADR 0006 et 0007).
 
@@ -129,6 +129,9 @@ Le chef :
 - Après chaque résultat, met à jour `ETAT.md` et le commite.
 - Ne sollicite Lucas que pour : un changement de périmètre, une action qui demande son mot de passe ou un compte externe, ou une décision irréversible.
 - À la fin de chaque phase : met à jour l'avancement dans ce fichier et fait un bilan court à Lucas.
+- Horodate `ETAT.md`, les fiches et le journal avec `date "+%d/%m/%Y %H:%M"`, jamais au jugé.
+
+Si les agents `developpeur` et `auditeur` ne sont pas chargés (session ouverte avant leur création), le chef utilise l'agent généraliste avec le modèle du fichier d'agent (Sonnet ou Haiku) et le texte de ce fichier comme consigne ; l'auditeur reçoit en plus l'interdiction d'écrire et de changer de branche (lecture par `git show` et `git diff`).
 
 ### Reprise après interruption
 
@@ -147,4 +150,6 @@ Après une coupure (limite d'usage, session fermée) :
 - Avancement :
   - **Phase 0** : repo, comptes SonarCloud et GHCR, script `deploy/local/check-tools.sh`, Python 3.12 (uv). Restent `mkcert -install`, Docker Desktop (8 Go, 4 CPU), Node 22 recommandé, `check-tools.sh --cluster`, et la question à l'intervenant sur le cluster local (critère 5).
   - **Phase 1 terminée** (30/10/2026), puis **refondue pour le POC simplifié** (31/10/2026) : `docs/03-backlog` (36 EF, 31 ENF, 9 RM, 5 stories pour 17 points et 17 critères), `docs/02-architecture` (cible complète, POC simplifié avec limites L1 à L16, contrats des 2 services, SVG, ADR 0001 à 0007). Plus de fichiers `.feature`.
-  - Prochaine étape : phase 2 (processus qualité, compétences).
+  - **Phase 2 terminée** (31/10/2026), réalisée par l'organisation multi-agents (7 tâches, suivi dans `docs/suivi`) : `docs/01-qualite` (5 indicateurs I1 à I5 reliés à l'ISO 25010 et aux ENF, cycle DevSecOps en 8 étapes, schéma CI/CD qui sert de contrat à la phase 5, processus de test avec RACI) et `docs/05-competences` (matrice de 26 compétences, 3 recrutements, plan de formation Kubernetes et Helm de 28 h). Rôle de Product Owner tenu par un·e dirigeant·e.
+  - Poste de Lucas : le cache `~/.npm` contient des fichiers appartenant à root. Correctif à lancer par lui : `sudo chown -R 501:20 ~/.npm`. En attendant, l'export des diagrammes passe par `npm_config_cache=<dossier temporaire>`.
+  - Prochaine étape : phase 3 (expérimentations en bac à sable, `docs/04-experimentations`, critère 1).

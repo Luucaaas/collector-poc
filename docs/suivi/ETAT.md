@@ -20,13 +20,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-04 | Processus de test | developpeur | `phase-2/processus-test` | fusionnée |
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | fusionnée |
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | fusionnée |
-| P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | en audit |
+| P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | en cours (aller-retour n° 1) |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Lancer l'auditeur sur `phase-2/coherence` (fiche `docs/suivi/taches/P2-07.md`), recopier son rapport, puis faire la contre-vérification de fin de phase.
+Renvoyer au développeur E1 et D2 de l'audit n° 1 de P2-07, relancer l'auditeur, puis faire la contre-vérification de fin de phase.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Lancer l'auditeur sur `phase-2/coherence` (fiche `docs/suivi/taches/P2-07.md`), 
 
 ## Dernière mise à jour
 
-31/10/2026 22:21 — P2-07 livrée, en audit.
+31/10/2026 22:25 — P2-07 : audit n° 1 en DOUTE, deux corrections renvoyées au développeur (aller-retour n° 1).

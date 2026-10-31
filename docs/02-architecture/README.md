@@ -16,4 +16,4 @@ Les diagrammes sont écrits en Mermaid, directement dans les fichiers Markdown, 
 docs/02-architecture/export-diagrams.sh
 ```
 
-Le script exporte chaque bloc Mermaid qui contient une ligne `%% id: <nom>` vers `img/<nom>.svg`. Il s'appuie sur mermaid-cli, avec une version épinglée, lancé via `npx`.
+Le script exporte aussi les diagrammes de `docs/01-qualite` (vers `docs/01-qualite/img/`). Il exporte chaque bloc Mermaid qui contient une ligne `%% id: <nom>` vers `img/<nom>.svg`. Il s'appuie sur mermaid-cli, avec une version épinglée, lancé via `npx`.

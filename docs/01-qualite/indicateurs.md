@@ -69,7 +69,7 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | --- | --- |
 | Caractéristique ISO 25010 | Sécurité, sous-caractéristique résistance |
 | Définition | Nombre de vulnérabilités connues de sévérité CRITICAL ou HIGH, avec correctif disponible, dans les dépendances et les images Docker, auquel s'ajoutent les problèmes de sécurité détectés par l'analyse statique SonarCloud |
-| Formule | Décompte brut : `nombre de vulnérabilités CRITICAL + HIGH avec correctif` (Trivy) ; nombre de problèmes de sécurité ouverts à la quality gate (SonarCloud) |
+| Formule | Décompte bloquant (Trivy) : `nombre de vulnérabilités CRITICAL + HIGH avec correctif + nombre de secrets CRITICAL + HIGH`. Les problèmes de sécurité ouverts à la quality gate SonarCloud sont suivis en complément, sans seuil propre |
 | Seuil | 0 vulnérabilité CRITICAL ou HIGH avec correctif disponible et 0 secret de sévérité CRITICAL ou HIGH, Trivy bloquant (ENF-04 et ENF-05) |
 | Justification du seuil | Une vulnérabilité sévère avec correctif disponible peut être supprimée sans coût fonctionnel : la tolérer est un choix, pas une contrainte. Celles sans correctif sont consignées dans le plan de remédiation, car aucune action immédiate n'est possible. |
 | Outils | Trivy (dépendances, image, secrets), SonarCloud (analyse statique du code) |

@@ -16,8 +16,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | --- | --- | --- | --- | --- |
 | P2-01 | Indicateurs qualité | developpeur | `phase-2/indicateurs` | fusionnée |
 | P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | fusionnée |
-| P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | en audit (audit n° 2) |
-| P2-04 | Processus de test | developpeur | `phase-2/processus-test` | à faire |
+| P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | fusionnée |
+| P2-04 | Processus de test | developpeur | `phase-2/processus-test` | en cours |
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | à faire |
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | à faire |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | à faire |
@@ -26,7 +26,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Lancer l'audit n° 2 de P2-03 sur `phase-2/schema-cicd`, puis recopier le rapport dans la fiche.
+Confier P2-04 au développeur (fiche `docs/suivi/taches/P2-04.md`, branche `phase-2/processus-test`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Lancer l'audit n° 2 de P2-03 sur `phase-2/schema-cicd`, puis recopier le rappor
 
 ## Dernière mise à jour
 
-31/10/2026 23:35 — P2-03 corrigée (deux schémas), audit n° 2 en cours.
+31/10/2026 23:45 — P2-03 fusionnée (audit n° 2 conforme), P2-04 lancée.

@@ -15,8 +15,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | Id | Titre | Agent | Branche | Statut |
 | --- | --- | --- | --- | --- |
 | P2-01 | Indicateurs qualité | developpeur | `phase-2/indicateurs` | fusionnée |
-| P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | en cours (aller-retour n° 1) |
-| P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | à faire |
+| P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | fusionnée |
+| P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | en cours |
 | P2-04 | Processus de test | developpeur | `phase-2/processus-test` | à faire |
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | à faire |
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | à faire |
@@ -26,7 +26,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Renvoyer au développeur les écarts de l'audit n° 1 de P2-02 (fiche, section « Suite donnée par le chef »), puis relancer l'auditeur.
+Confier P2-03 au développeur (fiche `docs/suivi/taches/P2-03.md`, branche `phase-2/schema-cicd`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Renvoyer au développeur les écarts de l'audit n° 1 de P2-02 (fiche, section �
 
 ## Dernière mise à jour
 
-31/10/2026 22:15 — P2-02 : audit n° 1 non conforme, renvoyée au développeur (aller-retour n° 1).
+31/10/2026 22:40 — P2-02 fusionnée (audit n° 3 conforme), P2-03 lancée.

@@ -37,4 +37,4 @@ Lancer l'auditeur sur `phase-2/matrice-competences` (fiche `docs/suivi/taches/P2
 
 ## Dernière mise à jour
 
-01/11/2026 00:55 — P2-05 livrée, en audit.
+31/10/2026 22:05 — P2-05 : audit n° 1 non conforme ; horodatages du suivi corrigés (heures réelles des fusions).

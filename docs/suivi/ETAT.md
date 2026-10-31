@@ -17,7 +17,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-01 | Indicateurs qualité | developpeur | `phase-2/indicateurs` | fusionnée |
 | P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | fusionnée |
 | P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | fusionnée |
-| P2-04 | Processus de test | developpeur | `phase-2/processus-test` | en cours (aller-retour n° 1) |
+| P2-04 | Processus de test | developpeur | `phase-2/processus-test` | en audit (audit n° 2) |
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | à faire |
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | à faire |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | à faire |
@@ -26,7 +26,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Renvoyer au développeur les écarts de l'audit n° 1 de P2-04 (fiche, section « Suite donnée par le chef »), puis relancer l'auditeur.
+Lancer l'audit n° 2 de P2-04 sur `phase-2/processus-test`, puis recopier le rapport dans la fiche.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Renvoyer au développeur les écarts de l'audit n° 1 de P2-04 (fiche, section �
 
 ## Dernière mise à jour
 
-01/11/2026 00:15 — P2-04 : audit n° 1 non conforme, renvoyée au développeur (aller-retour n° 1).
+01/11/2026 00:30 — P2-04 corrigée, audit n° 2 en cours.

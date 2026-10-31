@@ -4,7 +4,7 @@
 
 ## Phase en cours
 
-**Phase 2** : processus qualité et compétences (`docs/01-qualite`, `docs/05-competences`). Pas encore découpée en tâches.
+**Phase 2** : processus qualité et compétences (`docs/01-qualite`, `docs/05-competences`). Découpage validé par Lucas le 31/10/2026 : 7 tâches, réalisées une par une dans l'ordre du tableau.
 
 Phases précédentes : phase 0 (outillage, reste des actions de Lucas), phase 1 terminée et refondue pour le POC simplifié (ADR 0007).
 
@@ -14,13 +14,19 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 
 | Id | Titre | Agent | Branche | Statut |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | — |
+| P2-01 | Indicateurs qualité | developpeur | `phase-2/indicateurs` | en cours |
+| P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | à faire |
+| P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | à faire |
+| P2-04 | Processus de test | developpeur | `phase-2/processus-test` | à faire |
+| P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | à faire |
+| P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | à faire |
+| P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Découper la phase 2 du plan de réalisation en tâches courtes, créer la fiche `docs/suivi/taches/P2-01.md` avec son brief, l'inscrire dans ce tableau, commiter les deux sur main, puis la confier à l'agent `developpeur`.
+Confier P2-01 au développeur (fiche `docs/suivi/taches/P2-01.md`, branche `phase-2/indicateurs`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
 
 ## Décisions en attente
 
@@ -31,4 +37,4 @@ Découper la phase 2 du plan de réalisation en tâches courtes, créer la fiche
 
 ## Dernière mise à jour
 
-31/10/2026 21:00 — mise en place de l'organisation multi-agents.
+31/10/2026 21:20 — découpage de la phase 2 validé, P2-01 lancée.

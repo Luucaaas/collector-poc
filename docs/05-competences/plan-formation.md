@@ -25,8 +25,8 @@ Les exercices portent sur les livrables prévus du POC (cluster k3d, chart Helm 
 | Dev 1 | 1, puis 2 | 0, puis 1 |
 | Dev 2 | 0, puis 1 | 0, puis 1 |
 
-- Le **niveau 3 du Lead Dev** est celui de la section 6 de la matrice (« Formation du Lead Dev (3) »). Il s'atteint en **deux temps** : niveau 2 à la fin de la formation, niveau 3 après une **période de pratique encadrée de 3 mois** (section 9). Passer de 1 à 3 en quelques semaines n'est pas crédible (décision D6 de P2-05) : la définition du niveau 3 exige de diagnostiquer une panne, d'arbitrer et de former, ce qui demande des situations réelles.
-- Les niveaux de Dev 1 et de Dev 2 sont des objectifs propres à cette action. La matrice cible ne les compte pas : elle ne retient que le Lead Dev et le DevOps. Ils servent à réduire la dépendance à une seule personne.
+- Le **niveau 3 du Lead Dev** est celui de la section 6 de la matrice (« Formation du Lead Dev (3) »). Il s'atteint en **deux temps** : niveau 2 à la fin de la formation, niveau 3 après une **période de pratique encadrée de 3 mois** (section 9). Passer de 1 à 3 en quelques semaines n'est pas crédible (`matrice.md`, section 4, ligne « Durée d'acquisition » : quelques semaines pour passer de 1 à 2, plusieurs mois de pratique pour atteindre 3) : la définition du niveau 3 exige de diagnostiquer une panne, d'arbitrer et de former, ce qui demande des situations réelles.
+- Les niveaux de Dev 1 et de Dev 2 sont des objectifs propres à cette action. Le niveau 2 en Kubernetes de Dev 1 est atteignable, car il maîtrise déjà Docker (niveau 3 dans la matrice). La matrice cible ne les compte pas : elle ne retient que le Lead Dev et le DevOps. Ils servent à réduire la dépendance à une seule personne.
 
 ## 2. Public, prérequis, effectif
 
@@ -74,11 +74,11 @@ Le niveau 2 de la matrice décrit quelqu'un qui réalise seul une tâche courant
 - **Lieu** : présentiel chez Collector pour les modules animés (M1 à M4), distanciel possible pour M5 et M6, qui se font sur le Mac de chacun.
 - **Part de pratique** : au moins 70 % de la durée, sous forme d'exercices sur le cluster k3d et sur le chart.
 - **Animateur** : un formateur externe indépendant ou un organisme de formation, choisi sur devis. Aucun organisme n'est désigné dans ce document et aucun partenariat n'est supposé.
-- **Reproductibilité** : chaque exercice se lance par script (`deploy/local/check-tools.sh`, `deploy/local/deploy.sh` ou une commande documentée dans le module), conformément à la convention du projet.
+- **Reproductibilité** : chaque exercice se lance par script (`deploy/local/check-tools.sh`, existant ; `deploy/local/deploy.sh`, créé en phase 6 ; ou une commande documentée dans le module), conformément à la convention du projet.
 
 **Certification CKAD (option).** La CKAD (Certified Kubernetes Application Developer) est une certification de la CNCF centrée sur le travail d'un développeur d'applications sur Kubernetes. Elle est proposée comme **option pour le Lead Dev seul**, après la période de pratique encadrée.
 
-- Justification : elle valide de façon externe le niveau 3 et rassure un recruteur ou un client. Elle est plus proche du rôle du Lead Dev (déployer et configurer des applications) que la certification d'administrateur.
+- Justification : elle permettrait d'attester de façon externe le niveau 3 et de rassurer un recruteur ou un client. Elle est plus proche du rôle du Lead Dev (déployer et configurer des applications) que la certification d'administrateur.
 - Elle n'est pas nécessaire à l'objectif de la formation. La décision est reportée à la fin de la période de pratique, en fonction de la charge du projet.
 - Le format, la durée, le prix et le programme de l'examen évoluent : ils sont à vérifier sur le site de la CNCF avant toute inscription. Aucune de ces données n'est reprise ici ; le budget (section 8) ne contient que la préparation, en jours-homme.
 
@@ -88,11 +88,11 @@ Durée totale : **28 heures** (4 jours de 7 heures). Six modules.
 
 | Module | Durée | Contenu | Exercice sur le repo du POC | Livrable |
 | --- | --- | --- | --- | --- |
-| M1. Architecture Kubernetes et cluster k3d | 4 h | Pods, ReplicaSets, nœuds, API, planificateur, kubelet ; création d'un cluster k3d (1 server, 2 agents) ; lecture de `kubectl get`, `describe`, `logs` | Créer le cluster local avec le script de `deploy/local` et décrire le trajet d'une requête de l'ingress au pod du `catalog-service` | Schéma annoté du cluster et réponses à 5 questions de cours (O1) |
+| M1. Architecture Kubernetes et cluster k3d | 4 h | Pods, ReplicaSets, nœuds, API, planificateur, kubelet ; création d'un cluster k3d (1 server, 2 agents) ; lecture de `kubectl get`, `describe`, `logs` | Créer le cluster local avec la commande `k3d cluster create` (1 server, 2 agents ; le script de création du cluster est prévu dans `deploy/local` en phase 6) et décrire le trajet d'une requête de l'ingress au pod du `catalog-service` | Schéma annoté du cluster et réponses à 5 questions de cours (O1) |
 | M2. Déployer un service | 5 h | Deployment, Service, ConfigMap, Secret, sondes liveness et readiness, requêtes et limites de ressources, stratégie de mise à jour | Écrire à la main les manifestes du `catalog-service` : 2 réplicas, sondes `/health/live` et `/health/ready`, variables d'environnement, Secret pour les identifiants PostgreSQL | Manifestes du `catalog-service` appliqués avec `kubectl apply`, déploiement vérifié par `kubectl rollout status` (O2) |
-| M3. Ingress Traefik et TLS | 3 h | Ingress, IngressRoute de Traefik, Secret TLS, certificat mkcert, hôtes `*.127.0.0.1.sslip.io` | Exposer le `catalog-service` sur l'hôte `api.127.0.0.1.sslip.io` en HTTPS avec le certificat mkcert chargé comme Secret | Route HTTPS fonctionnelle, vérifiée par `curl` sur `/health/ready` (O3) |
-| M4. Helm : écrire et relire un chart | 6 h | Structure d'un chart, templates, `values.yaml`, helpers, `helm lint`, `helm template`, gestion des secrets, relecture d'un chart | Transformer les manifestes de M2 en chart générique pour les deux services (`catalog-service`, `notification-service`) ; relire un chart fourni contenant des défauts volontaires | Chart générique dans `deploy/helm`, deux fichiers de values, fiche de relecture avec les défauts repérés (O4, O5) |
-| M5. Montée en charge et disponibilité | 5 h | HPA, metrics-server, rolling update, suppression d'un pod, `helm history` et `helm rollback` | Ajouter le HPA (2 à 5 réplicas) au chart, lancer un scénario Locust minimal et observer la montée ; supprimer un pod pendant la charge ; faire un `helm rollback` après une mauvaise version | Rapport d'une page avec relevé du nombre de réplicas et du taux d'erreur, tel qu'on le montrera à la démo de disponibilité (O6, O7) |
+| M3. Ingress Traefik et TLS | 3 h | Ingress, IngressRoute de Traefik, Secret TLS, certificat mkcert, hôtes `*.127.0.0.1.sslip.io` | Exposer le `catalog-service` sur `https://api.127.0.0.1.sslip.io/catalog/` avec le certificat mkcert chargé comme Secret, le préfixe `/catalog` étant retiré par un middleware `StripPrefix` (les sondes `/health/*` et `/metrics` ne sont pas routées par Traefik ; on les vérifie par `kubectl port-forward` ou `kubectl describe pod`) | Route HTTPS fonctionnelle, vérifiée par `curl` sur une route publique de l'API (O3) |
+| M4. Helm : écrire et relire un chart | 6 h | Structure d'un chart, templates, `values.yaml`, helpers, `helm lint`, `helm template`, gestion des secrets (aucun secret dans les `values`), relecture d'un chart | Transformer les manifestes de M2 en chart générique pour les deux services (`catalog-service`, `notification-service`) ; relire un chart fourni contenant des défauts volontaires | Chart générique dans `deploy/helm`, deux fichiers de values, fiche de relecture avec les défauts repérés (O4, O5) |
+| M5. Montée en charge et disponibilité | 5 h | HPA, metrics-server (fourni par k3s, requis par l'HPA), rolling update, suppression d'un pod, `helm history` et `helm rollback` | Ajouter le HPA (2 à 5 réplicas) au chart, lancer un scénario Locust minimal et observer la montée ; supprimer un pod pendant la charge ; faire un `helm rollback` après une mauvaise version | Rapport d'une page avec relevé du nombre de réplicas et du taux d'erreur, tel qu'on le montrera à la démo de disponibilité (O6, O7) |
 | M6. Diagnostic et observabilité de base | 5 h | `kubectl describe`, `events`, `logs`, tableau de bord Grafana (débit, latence p95, taux d'erreur), lecture des logs JSON corrélés par `X-Request-ID`, trois pannes types | Diagnostiquer trois pannes préparées sur le chart (image introuvable, sonde de disponibilité en échec, redémarrages en boucle) et restaurer le service ; passage de l'évaluation finale | Fiche de diagnostic par panne (symptôme, commande, cause, correction) et résultat de l'évaluation finale (O7) |
 
 Vérification : 4 + 5 + 3 + 6 + 5 + 5 = **28 heures**.
@@ -131,12 +131,16 @@ Chaque objectif est évalué par une épreuve pratique ou un test, à un moment 
 | Objectif | Épreuve | Moment | Réussi si |
 | --- | --- | --- | --- |
 | O1 Expliquer l'architecture et le trajet d'une requête | 5 questions orales ou écrites sur un schéma vierge du cluster | Fin de M1 | 4 réponses justes sur 5 |
-| O2 Déployer un service avec sondes, Secret et limites | Déployer un service non vu en cours à partir d'une consigne | Fin de M2 | `kubectl rollout status` réussi, sondes et limites présentes |
-| O3 Configurer une route HTTPS | Exposer le second service sur un nouvel hôte en HTTPS | Fin de M3 | `curl` en HTTPS sans erreur de certificat |
-| O4 Écrire un chart et déployer deux services | Ajouter un troisième jeu de values au chart et déployer | Fin de M4 | `helm lint` sans erreur, déploiement réussi |
+| O2 Déployer un service avec sondes, Secret et limites | Niveau visé 2 ou plus : déployer un service non vu en cours à partir d'une consigne. Niveau visé 1 : refaire le déploiement en suivant l'exemple fourni | Fin de M2 | `kubectl rollout status` réussi, sondes et limites présentes |
+| O3 Configurer une route HTTPS | Exposer le second service sous le chemin `/notification` en HTTPS (niveau visé 1 : en suivant l'exemple fourni) | Fin de M3 | `curl` en HTTPS sans erreur de certificat sur `https://api.127.0.0.1.sslip.io/notification/api/v1/...`, préfixe retiré par `StripPrefix` |
+| O4 Écrire un chart et déployer deux services | Niveau visé 2 ou plus : ajouter un troisième jeu de values au chart et déployer. Niveau visé 1 : le faire en suivant l'exemple fourni | Fin de M4 | `helm lint` sans erreur, déploiement réussi, aucun secret dans les `values`, Secret Kubernetes créé par le script de déploiement |
 | O5 Relire un chart et repérer les défauts | Fiche de relecture d'un chart contenant 6 défauts volontaires | Fin de M4 | Au moins 5 défauts sur 6 repérés |
 | O6 Configurer un HPA et vérifier la montée | Rejouer la charge et relever le nombre de réplicas | Fin de M5 | Passage de 2 à 5 réplicas observé et relevé |
 | O7 Diagnostiquer trois pannes et restaurer | Évaluation finale : trois pannes préparées, une par type | Fin de M6 | 3 pannes sur 3 diagnostiquées avec la bonne commande, 2 sur 3 corrigées sans aide, service restauré par `helm rollback` pour au moins une |
+
+Pour tout participant visé au niveau 1, l'épreuve se fait en suivant l'exemple fourni ; l'autonomie n'est exigée que pour un niveau visé de 2 ou plus (définition des niveaux 1 et 2, `matrice.md`, section 1).
+
+**Indicateur agrégé du niveau 2** : nombre d'objectifs réussis sur 7, par participant, relevé à la fin de M6. Seuil de réussite : 7 sur 7 pour le Lead Dev (niveau 2 en Kubernetes et en Helm) ; 5 sur 7 pour Dev 1 (O1, O2, O3 et O6 pour Kubernetes niveau 2, O4 en suivant l'exemple pour Helm niveau 1) ; 3 sur 7 pour Dev 2 (O1, O2 et O4 en suivant l'exemple).
 
 **Seuil de passage au niveau 2** : tous les objectifs O1 à O7 réussis, ce qui est l'exigence pour le Lead Dev. Pour les deux autres participants, les niveaux visés sont plus bas (section 1) : Kubernetes niveau 1 (Dev 2) exige O1 et O2 ; Kubernetes niveau 2 (Dev 1) exige O1, O2, O3 et O6 ; Helm niveau 1 (Dev 1 et Dev 2) exige O4 réalisé en suivant l'exemple fourni. Un objectif non réussi donne lieu à un exercice de rattrapage dans le mois.
 
@@ -150,7 +154,7 @@ Chaque objectif est évalué par une épreuve pratique ou un test, à un moment 
 
 - **Indicateurs reliés au projet** :
   1. Durée d'un déploiement de bout en bout (du tag `sha-<7 caractères>` à `rollout status` réussi), mesurée sur un déploiement fait par un membre de l'équipe autre que le Lead Dev.
-  2. Taux de déploiements ayant exigé un `helm rollback`, calculé sur les déploiements de la phase.
+  2. Taux de déploiements ayant exigé un `helm rollback`, calculé sur les déploiements de la phase. Ces deux indicateurs reposent sur un petit nombre de déploiements : ils sont indicatifs et à consolider sur la durée.
   3. Niveau de Kubernetes et de Helm du Lead Dev dans la matrice : passage de 1 à 3.
 - **Moment** : mesures 1 et 2 à chaque déploiement, relevées dans le compte rendu de déploiement ; mesure 3 à la fin des 3 mois de pratique.
 - **Cible** : la valeur de départ est relevée au premier déploiement de la phase 6 ; l'objectif est de la diminuer à chaque déploiement suivant. Le niveau 3 est validé quand les 5 comportements du niveau 3 sont observés.

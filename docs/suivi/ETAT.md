@@ -19,14 +19,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | fusionnée |
 | P2-04 | Processus de test | developpeur | `phase-2/processus-test` | fusionnée |
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | fusionnée |
-| P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | en cours |
+| P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | en audit |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Confier P2-06 au développeur (fiche `docs/suivi/taches/P2-06.md`, branche `phase-2/plan-formation`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
+Lancer l'auditeur sur `phase-2/plan-formation` (fiche `docs/suivi/taches/P2-06.md`), puis recopier son rapport dans la fiche.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Confier P2-06 au développeur (fiche `docs/suivi/taches/P2-06.md`, branche `phas
 
 ## Dernière mise à jour
 
-31/10/2026 22:10 — P2-05 fusionnée (audit n° 3 conforme), P2-06 lancée.
+31/10/2026 22:12 — P2-06 livrée, en audit.

@@ -15,7 +15,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | Id | Titre | Agent | Branche | Statut |
 | --- | --- | --- | --- | --- |
 | P2-01 | Indicateurs qualité | developpeur | `phase-2/indicateurs` | fusionnée |
-| P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | en cours |
+| P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | en audit |
 | P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | à faire |
 | P2-04 | Processus de test | developpeur | `phase-2/processus-test` | à faire |
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | à faire |
@@ -26,7 +26,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Confier P2-02 au développeur (fiche `docs/suivi/taches/P2-02.md`, branche `phase-2/devsecops`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
+Lancer l'auditeur sur `phase-2/devsecops` (fiche `docs/suivi/taches/P2-02.md`), puis recopier son rapport dans la fiche.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Confier P2-02 au développeur (fiche `docs/suivi/taches/P2-02.md`, branche `phas
 
 ## Dernière mise à jour
 
-31/10/2026 21:52 — P2-01 fusionnée (audit n° 2 conforme), P2-02 lancée.
+31/10/2026 22:05 — P2-02 livrée, en audit.

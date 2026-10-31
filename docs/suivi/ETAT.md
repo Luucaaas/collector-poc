@@ -19,14 +19,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | fusionnée |
 | P2-04 | Processus de test | developpeur | `phase-2/processus-test` | fusionnée |
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | fusionnée |
-| P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | en cours (aller-retour n° 1) |
+| P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | en audit (audit n° 2) |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Renvoyer au développeur les écarts de l'audit n° 1 de P2-06 (fiche, section « Suite donnée par le chef »), puis relancer l'auditeur.
+Lancer l'audit n° 2 de P2-06 sur `phase-2/plan-formation`, puis recopier le rapport dans la fiche.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Renvoyer au développeur les écarts de l'audit n° 1 de P2-06 (fiche, section �
 
 ## Dernière mise à jour
 
-31/10/2026 22:16 — P2-06 : audit n° 1 non conforme, renvoyée au développeur (aller-retour n° 1).
+31/10/2026 22:17 — P2-06 corrigée par le développeur, audit n° 2 en cours.

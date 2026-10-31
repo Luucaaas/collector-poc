@@ -12,11 +12,11 @@ Les valeurs réelles sont relevées en phase 8 (section « Relevés »). Ce docu
 | --- | --- | --- | --- | --- | --- | --- |
 | I1 | Couverture de tests du code métier | Maintenabilité (testabilité) | ≥ 80 % | pytest-cov, SonarCloud | Chaque push et pull request (CI) | ENF-22 |
 | I2 | Dette technique | Maintenabilité (analysabilité, modifiabilité) | Note de maintenabilité A ; duplication < 3 % ; complexité cognitive ≤ 15 par fonction ; Ruff et mypy sans erreur | SonarCloud, Ruff, mypy (mode strict) | Chaque push et pull request (CI) | ENF-23 |
-| I3 | Latence p95 et taux d'erreur sous charge | Efficacité de performance (comportement temporel) ; Fiabilité (disponibilité) | Avec 50 utilisateurs Locust : p95 < 300 ms en lecture du catalogue, p95 < 500 ms en publication d'article, moins de 1 % de réponses 5xx | Locust, Prometheus, Grafana | Test de charge de la phase 8 et démo de disponibilité | ENF-12, ENF-13 |
-| I4 | Vulnérabilités CRITICAL et HIGH | Sécurité (résistance) | 0 vulnérabilité CRITICAL ou HIGH avec correctif disponible ; 0 problème de sécurité bloquant SonarCloud | Trivy, SonarCloud | Chaque push et pull request (CI) | ENF-05 |
+| I3 | Latence p95 et taux d'erreur sous charge | Efficacité de performance (comportement temporel, capacité) ; Fiabilité (disponibilité) | Avec 50 utilisateurs Locust : p95 < 300 ms en lecture du catalogue, p95 < 500 ms en publication d'article, moins de 1 % de réponses 5xx | Locust, Prometheus, Grafana | Test de charge de la phase 8 et démo de disponibilité | ENF-12, ENF-13 |
+| I4 | Vulnérabilités CRITICAL et HIGH | Sécurité (résistance) | 0 vulnérabilité CRITICAL ou HIGH avec correctif disponible (Trivy bloquant) | Trivy, SonarCloud | Chaque push et pull request (CI) | ENF-05 |
 | I5 | Taux de critères d'acceptation validés | Adéquation fonctionnelle (complétude fonctionnelle, exactitude fonctionnelle) | 17 critères sur 17 passent | Tests d'acceptation pytest + httpx | CI et avant chaque démonstration | [user-stories.md](../03-backlog/user-stories.md) |
 
-Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, SonarCloud, Ruff, mypy, Locust, Prometheus, Grafana, Trivy, pytest + httpx). Les versions exactes sont fixées dans les protocoles d'expérimentation (`docs/04-experimentations`).
+Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, SonarCloud, Ruff, mypy, Locust, Prometheus, Grafana, Trivy, pytest + httpx). Les versions seront figées par `uv.lock` (backend), `package.json` (front) et les workflows GitHub Actions (phases 3 à 5), puis consignées dans les protocoles de `docs/04-experimentations`.
 
 ## I1 — Couverture de tests du code métier
 
@@ -30,7 +30,7 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Outil | pytest-cov (mesure), SonarCloud (affichage et quality gate) |
 | Où et quand | Étape « pytest + couverture » de la CI GitHub Actions, à chaque push et pull request. Rapport XML transmis à SonarCloud à l'étape suivante. |
 | Qui suit | Lead Developer, à la revue de fin de sprint |
-| Action si le seuil n'est pas respecté | La quality gate SonarCloud échoue et bloque le pipeline : aucune image n'est publiée sur GHCR. Les tests manquants sont écrits avant la fusion. |
+| Action si le seuil n'est pas respecté | L'étape de tests échoue elle-même sous 80 % (`pytest --cov-fail-under=80`), et la quality gate SonarCloud bloque aussi le pipeline : aucune image n'est publiée sur GHCR. Les tests manquants sont écrits avant la fusion. |
 | Effet sur la dette technique | Une couverture qui baisse signale du code ajouté sans test. Le suivi par pull request (couverture du code nouveau) empêche de repousser les tests à plus tard : une régression sur un contrôle métier est détectée par la CI et non en production. Il permet aussi de refactorer les services sans crainte de casser un comportement non vérifié. |
 
 ## I2 — Dette technique SonarCloud
@@ -46,18 +46,18 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Où et quand | Ruff et mypy : première étape de la CI, bloquantes. SonarCloud : après les tests, quality gate bloquante. À chaque push et pull request. |
 | Qui suit | Lead Developer, à la revue de fin de sprint |
 | Action si le seuil n'est pas respecté | Ruff ou mypy en échec : le pipeline s'arrête avant les tests. Quality gate SonarCloud en échec : pas de publication d'image. Une dette acceptée volontairement est notée comme ticket de dette avec sa justification. |
-| Effet sur la dette technique | C'est l'indicateur direct de la dette. La quality gate s'applique au code nouveau : chaque pull request ne peut pas aggraver la note, donc la dette ne s'accumule pas par petites touches. Le ratio suivi dans le temps montre la tendance. mypy strict évite les erreurs de type qui se paieraient plus tard en corrections. |
+| Effet sur la dette technique | C'est l'indicateur direct de la dette. La quality gate s'applique au code nouveau : chaque pull request est contrôlée sur ses propres lignes, ce qui empêche la dette de s'accumuler par petites touches. Le ratio suivi dans le temps montre la tendance. mypy strict évite les erreurs de type qui se paieraient plus tard en corrections. |
 
 ## I3 — Latence p95 et taux d'erreur sous charge
 
 | Rubrique | Contenu |
 | --- | --- |
-| Caractéristique ISO 25010 | Efficacité de performance (comportement temporel) ; Fiabilité (disponibilité) |
+| Caractéristique ISO 25010 | Efficacité de performance (comportement temporel, capacité) ; Fiabilité (disponibilité) |
 | Définition | Latence au 95e percentile des requêtes de lecture du catalogue et de publication d'article, et part des réponses 5xx, sous charge nominale |
 | Formules | p95 : durée en dessous de laquelle se terminent 95 % des requêtes du scénario ; taux d'erreur = `réponses 5xx / requêtes totales × 100` |
 | Seuil | Avec 50 utilisateurs simultanés (Locust) : p95 < 300 ms en lecture du catalogue (ENF-12), p95 < 500 ms en publication d'article (ENF-12), moins de 1 % de réponses 5xx (ENF-13) |
-| Justification du seuil | Une lecture du catalogue est une requête simple sur PostgreSQL : 300 ms laisse une marge confortable. La publication inclut le contrôle automatique et l'écriture de l'événement : 500 ms. Le p95 reflète l'expérience de la quasi-totalité des utilisateurs, contrairement à la moyenne. |
-| Outils | Locust (génération de charge et statistiques), Prometheus (métriques `/metrics` des services), Grafana (tableau de bord : débit, latence p95, taux d'erreur) |
+| Justification du seuil | Une lecture du catalogue est une requête simple sur PostgreSQL : 300 ms laisse une marge confortable. La publication inclut le contrôle automatique, l'écriture en base et la publication de l'événement RabbitMQ juste après le commit : 500 ms. Le p95 reflète l'expérience de la quasi-totalité des utilisateurs, contrairement à la moyenne. |
+| Outils | Locust (génération de charge et statistiques), Prometheus, fourni par kube-prometheus-stack (métriques `/metrics` des services), Grafana (tableau de bord : débit, latence p95, taux d'erreur) |
 | Où et quand | Test de charge de la phase 8 sur le cluster k3d, rejoué lors de la démo de disponibilité (suppression d'un pod, montée de l'HPA). Résultats archivés dans `tests/load`. |
 | Qui suit | Lead Developer |
 | Action si le seuil n'est pas respecté | Ticket de dette ouvert avec la mesure, le scénario et l'hypothèse de cause (requête SQL, index, ressources du pod). Correction puis nouveau test avant la soutenance. |
@@ -88,7 +88,7 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Seuil | 17 critères sur 17 passent |
 | Justification du seuil | Chaque critère décrit un comportement attendu du métier Collector (par exemple le rejet d'un article avec coordonnées). Un critère non validé est une fonctionnalité soit absente, soit incorrecte : aucun écart n'est acceptable pour la démonstration. |
 | Outil | Tests d'acceptation pytest + httpx dans `tests/acceptance`, nommés d'après la story et le critère (`test_us03_ca2_article_avec_coordonnees_rejete`) |
-| Où et quand | Exécutés en CI contre l'environnement de test, et avant chaque démonstration contre le cluster local |
+| Où et quand | En CI : job `acceptance` qui démarre une pile `docker compose` (PostgreSQL, RabbitMQ, Keycloak, les 2 services), puis lance `tests/acceptance`. Avant chaque démonstration contre le cluster local |
 | Qui suit | Lead Developer |
 | Action si le seuil n'est pas respecté | Le test en échec bloque la fusion. Soit le code est corrigé, soit le critère est révisé dans le backlog avec une décision documentée. |
 | Effet sur la dette technique | Le nom des tests relie chaque critère à une preuve exécutable. Si un refactoring ou une montée de version casse un comportement métier, le critère correspondant échoue immédiatement. La dette fonctionnelle (écart entre backlog et code) ne peut donc pas s'installer en silence. |

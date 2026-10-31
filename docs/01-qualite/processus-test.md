@@ -13,17 +13,18 @@ Plus un test est bas dans la pyramide, plus il est rapide, nombreux et précis d
 ![Pyramide des tests de Collector](img/pyramide-tests.svg)
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 700}}}%%
 flowchart TB
     %% id: pyramide-tests
-    E2E["Bout en bout<br/>Playwright, parcours de démo<br/>ponctuel, sur le cluster<br/>peu de tests, lents"]
-    ACC["Acceptation<br/>17 critères, pytest + httpx<br/>job acceptance"]
-    INT["Intégration et API<br/>testcontainers, httpx<br/>job test"]
-    UNI["Unitaires<br/>pytest, Vitest<br/>jobs test et frontend<br/>nombreux, rapides"]
+    E2E["Bout en bout : Playwright"]
+    ACC["Acceptation : 17 critères, pytest + httpx, job acceptance"]
+    INT["Intégration et API : testcontainers, httpx, job test, couverture ≥ 80 %"]
+    UNI["Unitaires : pytest, Vitest, jobs test et frontend, nombreux, rapides, rejoués à chaque push"]
     E2E --- ACC --- INT --- UNI
     subgraph TRANS["Transverses, à tous les niveaux"]
         direction TB
         NR["Non-régression<br/>toute la suite rejouée à chaque push"]
-        SEC["Sécurité<br/>sonar, build-scan, ZAP"]
+        SEC["Sécurité<br/>sonar, build-scan, frontend, ZAP"]
         PERF["Charge et disponibilité<br/>Locust, hors CI"]
     end
     UNI ~~~ TRANS
@@ -54,7 +55,7 @@ Les jobs cités sont ceux de [cicd.md](cicd.md). « Poste » désigne le Mac du 
 | Non-régression | Garantir qu'une modification ne casse pas un comportement déjà validé. Définition : rejeu automatique de toute la suite à chaque push, plus un test ajouté pour chaque anomalie corrigée | Les outils ci-dessus (pas d'outil propre) | Là où se trouve le test d'origine ; un test de non-régression est nommé d'après l'anomalie (ticket) | À chaque push et pull request (jobs `test`, `acceptance`, `frontend`) ; à partir de la phase 4 | Identique à chaque type rejoué | Aucun test existant ne passe au rouge ; toute anomalie corrigée est accompagnée d'un test qui échoue sans le correctif | Développeur qui corrige ; revue par le Lead Developer | I1, I5 |
 | Performance et charge | Mesurer latence et taux d'erreur sous charge nominale, sur deux scénarios : lecture du catalogue et publication d'article | Locust, Prometheus, Grafana | `tests/load` (scénarios et résultats) | Phase 8, sur le cluster k3d, hors CI ; rejoué avec la démo de disponibilité | Cluster k3d déployé par `deploy/local/deploy.sh`, 50 utilisateurs simultanés, comptes de démo | Lecture du catalogue : p95 < 300 ms ; publication d'article : p95 < 500 ms (ENF-12) ; moins de 1 % de réponses 5xx (ENF-13) ; résultats archivés dans `tests/load`. Hors seuil : ticket de dette, sans blocage automatique | Lead Developer | I3 |
 | Disponibilité | Vérifier qu'un service survit à la perte d'une instance (ENF-16) et qu'il monte en charge par ajout d'instances (ENF-29) | Locust, `kubectl`, Grafana | `tests/load` (scénario) ; protocole détaillé dans `docs/04-experimentations` | Phase 8, sur le cluster k3d, hors CI | 2 réplicas par service ; pendant un test Locust, suppression d'un pod de `catalog-service` puis observation de l'HPA | Le Deployment recrée le pod supprimé, le taux d'erreur est mesuré et consigné ; l'HPA fait passer `catalog-service` de 2 à 5 réplicas au plus, à 70 % de CPU (ENF-29) ; pas de démo de panne de nœud (cible) | Lead Developer | I3 |
-| Sécurité | Détecter les failles du code (SAST), les dépendances vulnérables, les vulnérabilités de l'image et les secrets embarqués ; audit dynamique de l'application en fonctionnement | SonarCloud (SAST), Trivy (dépendances, image, secrets), OWASP ZAP (ponctuel) | Configuration dans `.github/workflows` (phase 5) ; rapport ZAP dans `docs/06-securite` | Jobs `sonar` et `build-scan` à chaque push et pull request ; ZAP lancé ponctuellement en phase 9, hors CI | CI GitHub Actions ; ZAP contre le cluster local | `sonar` : quality gate verte. `build-scan` : 0 vulnérabilité CRITICAL ou HIGH avec correctif, aucun secret CRITICAL ou HIGH. ZAP : constats vers le plan de remédiation, sans blocage | Lead Developer (analyse et priorisation) ; la CI exécute | I2, I4 |
+| Sécurité | Détecter les failles du code (SAST), les dépendances vulnérables, les vulnérabilités de l'image et les secrets embarqués ; audit dynamique de l'application en fonctionnement | SonarCloud (SAST), Trivy (dépendances, image, secrets), OWASP ZAP (ponctuel) | Configuration dans `.github/workflows` (phase 5) ; rapport ZAP dans `docs/06-securite` | Jobs `sonar`, `build-scan` et `frontend` (Trivy, phase 7) à chaque push et pull request ; ZAP lancé ponctuellement en phase 9, hors CI | CI GitHub Actions ; ZAP contre le cluster local | `sonar` : quality gate verte. `build-scan` et `frontend` : 0 vulnérabilité CRITICAL ou HIGH avec correctif, aucun secret CRITICAL ou HIGH (`build-scan`). ZAP : constats vers le plan de remédiation, sans blocage | Lead Developer (analyse et priorisation) ; la CI exécute | I2, I4 |
 
 Les contrôles de style et de typage du job `lint` (Ruff, mypy strict, voir [indicateurs.md](indicateurs.md), I2) ne sont pas des tests : ils s'exécutent avant les tests et alimentent la dette technique. Ils figurent dans le tableau de correspondance ci-dessous pour que celui-ci suive tous les jobs du pipeline.
 
@@ -102,13 +103,15 @@ Les mêmes critères sont aussi vérifiés plus bas dans la pyramide (par exempl
 
 L'équipe du contexte Collector compte un Lead Developer et deux développeurs confirmés. Il n'y a ni rôle de testeur (QA) ni rôle d'exploitation (DevOps) : les tâches correspondantes sont portées par le Lead Developer et les développeurs. Le recrutement d'un QA et d'un DevOps est envisagé (voir `docs/05-competences`) : un QA reprendrait la revue des tests et la validation de l'acceptation, un DevOps reprendrait l'exécution de la CI et du déploiement. Tant qu'ils ne sont pas recrutés, ils n'apparaissent pas dans le tableau ci-dessous.
 
+Le rôle de Product Owner est tenu par l'un·e des deux dirigeant·e·s de Collector, ancien·ne·s chefs de projet IT selon le contexte.
+
 La CI exécute les tests automatiquement (GitHub Actions) ; la ligne « Exécuter la CI » désigne la personne qui répond de son fonctionnement et agit sur un échec.
 
 ### RACI
 
 R = réalise, A = rend des comptes (un seul par ligne), C = consulté, I = informé.
 
-| Activité | Lead Developer | Développeurs (2) | Product Owner | Direction Collector |
+| Activité | Lead Developer | Développeurs (2) | Product Owner (un·e dirigeant·e) | Direction Collector |
 | --- | --- | --- | --- | --- |
 | Écrire les tests | A | R | I | |
 | Revoir les tests | A, R | C | | |

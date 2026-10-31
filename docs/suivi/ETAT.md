@@ -14,7 +14,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 
 | Id | Titre | Agent | Branche | Statut |
 | --- | --- | --- | --- | --- |
-| P2-01 | Indicateurs qualité | developpeur | `phase-2/indicateurs` | en cours (aller-retour n° 1) |
+| P2-01 | Indicateurs qualité | developpeur | `phase-2/indicateurs` | en audit (audit n° 2) |
 | P2-02 | Cycle DevSecOps | developpeur | `phase-2/devsecops` | à faire |
 | P2-03 | Schéma CI/CD détaillé | developpeur | `phase-2/schema-cicd` | à faire |
 | P2-04 | Processus de test | developpeur | `phase-2/processus-test` | à faire |
@@ -26,7 +26,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Renvoyer au développeur les écarts de l'audit n° 1 de P2-01 (fiche, section « Suite donnée par le chef »), puis relancer l'auditeur.
+Lancer l'audit n° 2 de P2-01 sur `phase-2/indicateurs`, puis recopier le rapport dans la fiche.
 
 ## Décisions en attente
 
@@ -37,4 +37,4 @@ Renvoyer au développeur les écarts de l'audit n° 1 de P2-01 (fiche, section �
 
 ## Dernière mise à jour
 
-31/10/2026 21:40 — P2-01 : audit n° 1 non conforme, renvoyée au développeur (aller-retour n° 1).
+31/10/2026 21:45 — P2-01 corrigée par le développeur, audit n° 2 en cours.

@@ -1,5 +1,5 @@
 ---
-statut: acceptée
+statut: acceptée (mise à jour le 2026-10-31, voir ADR 0007)
 date: 2026-10-30
 décideurs: Lucas (Lead Developer)
 ---
@@ -32,26 +32,35 @@ Comment structurer l'application pour ajouter des fonctionnalités sans modifier
 
 - une base de données par service, sans base partagée (ENF-21) ;
 - REST synchrone uniquement entre le client et un service ; un service ne dépend jamais d'un appel synchrone vers un autre service pour terminer une écriture ;
-- événements publiés via le patron **transactional outbox**, livrés « au moins une fois », traités par des **consommateurs idempotents** (ENF-18, ENF-19) ;
+- événements publiés sur un exchange `topic`, livrés « au moins une fois » ;
 - événements porteurs de l'état utile (*event-carried state transfer*), pour que les consommateurs n'aient pas à rappeler le producteur ;
-- contrats d'événements versionnés (`schema_version`).
+- contrats d'événements versionnés (`schema_version`), avec un `event_id` qui sert de clé d'idempotence.
 
-Le POC limite le découpage à trois services, `catalog`, `notification` et `fraud`, suffisants pour démontrer le principe sur la fonctionnalité métier retenue.
+**Mise en œuvre dans le POC** (ADR [0007](0007-simplification-perimetre-poc.md)) :
+
+- deux services : `catalog-service` produit les événements, `notification-service` les consomme ;
+- une instance PostgreSQL, avec une base logique et un utilisateur par service ;
+- publication de l'événement **juste après le commit** de la transaction, sans outbox ;
+- l'outil anti-fraude n'est pas implémenté. Il reste un **point d'extension** : il s'abonnera à l'exchange `article.events` avec sa propre file, sans modification de `catalog-service`.
+
+**Dans la cible** : une instance de base par service, publication par **transactional outbox**, **consommateurs idempotents** par une table `processed_events`, *dead-letter queues* (ENF-18, ENF-19).
 
 ### Conséquences
 
-- ✅ Ajouter un consommateur se réduit à créer une file et une liaison : le POC le montre avec deux consommateurs indépendants des mêmes événements.
-- ✅ Le catalogue reste disponible quand la notification, la fraude ou même le broker sont en panne : l'outbox conserve les événements en attente.
-- ✅ L'outil anti-fraude peut être remplacé : il ne dépend que du contrat d'événements.
-- ❌ **Cohérence à terme** (*eventual consistency*) : une notification arrive en un peu plus d'une seconde au pire après la publication, car le relais interroge l'outbox toutes les secondes. C'est acceptable pour ce besoin, avec une cible de p95 inférieur à 2 s (ENF-14).
-- ❌ **Complexité opérationnelle** : broker à exploiter, plusieurs bases, traçage d'un parcours sur plusieurs services. Atténuation : identifiant de corrélation propagé dans les logs et les événements, métriques par service, déploiement automatisé par Helm et Argo CD.
+- ✅ Ajouter un consommateur se réduit à créer une file et une liaison. Le POC le montre en liant une file supplémentaire à l'exchange pendant la démo : elle reçoit les événements sans que `catalog-service` soit modifié.
+- ✅ Le catalogue reste disponible quand `notification-service` est en panne : les messages s'accumulent dans la file durable et sont traités à son retour.
+- ✅ L'outil anti-fraude pourra être interne ou acheté : il ne dépendra que du contrat d'événements.
+- ❌ **Cohérence à terme** (*eventual consistency*) : une notification arrive quelques dizaines de millisecondes après la publication. C'est acceptable pour ce besoin, avec une cible de p95 inférieur à 2 s (ENF-14).
+- ❌ **Fenêtre de perte dans le POC** : sans outbox, un événement est perdu si le broker est indisponible entre le commit et la publication. La cible la ferme avec l'outbox.
+- ❌ **Complexité opérationnelle** : broker à exploiter, plusieurs bases, traçage d'un parcours sur plusieurs services. Atténuation : identifiant de corrélation propagé dans les logs et les événements, métriques par service, déploiement automatisé par Helm.
 - ❌ Tests plus coûteux : il faut des tests d'intégration avec un vrai broker (testcontainers) et des tests de contrat sur les événements.
 
 ### Confirmation
 
-- Le test d'intégration « broker arrêté pendant une publication » montre que l'événement est livré au redémarrage.
-- Le test d'idempotence montre qu'un événement livré deux fois ne produit qu'une notification.
-- La NetworkPolicy refuse la connexion de `fraud-service` à `catalog_db` : l'isolation des données est vérifiée.
+- Les tests d'acceptation de US-05 montrent qu'une publication déclenche la notification des acheteurs intéressés, en moins de 2 s.
+- La contrainte d'unicité `(user_id, source_event_id)` garantit qu'un message relivré ne produit pas de seconde notification.
+- L'utilisateur PostgreSQL de `notification-service` ne peut pas se connecter à `catalog_db` : l'isolation des données est vérifiée.
+- Pendant la démo, une file temporaire liée à `article.events` reçoit les événements sans redéploiement du catalogue.
 
 ## Avantages et inconvénients des options
 
@@ -78,9 +87,9 @@ Le POC limite le découpage à trois services, `catalog`, `notification` et `fra
 
 ## Plus d'informations
 
-- Une transaction distribuée (2PC) entre la base et le broker a été écartée : RabbitMQ ne la supporte pas, et elle bloquerait la base en cas d'indisponibilité du broker. L'outbox apporte la même garantie avec une transaction locale.
+- Une transaction distribuée (2PC) entre la base et le broker a été écartée : RabbitMQ ne la supporte pas, et elle bloquerait la base en cas d'indisponibilité du broker. L'outbox de la cible apporte la même garantie avec une transaction locale.
 - Le choix du broker fait l'objet de l'ADR [0003](0003-rabbitmq-plutot-que-kafka.md).
 - Contrats : [contrats.md](../contrats.md). Vues : [architecture-cible.md](../architecture-cible.md), [architecture-poc.md](../architecture-poc.md).
 
 > [!TIP]
-> **À défendre à l'oral.** On n'a pas découpé en microservices « par principe » : le besoin explicite d'ajouter des fonctionnalités qui réagissent aux mêmes faits métier, et de pouvoir acheter l'anti-fraude, justifie le découplage par événements. On assume le prix à payer (cohérence à terme, exploitation) et on le maîtrise par l'outbox, l'idempotence et l'observabilité.
+> **À défendre à l'oral.** On n'a pas découpé en microservices « par principe » : le besoin explicite d'ajouter des fonctionnalités qui réagissent aux mêmes faits métier, et de pouvoir acheter l'anti-fraude, justifie le découplage par événements. On assume le prix à payer (cohérence à terme, exploitation). Le POC le réduit au minimum, deux services et une publication directe, et la cible le maîtrise par l'outbox, l'idempotence et l'observabilité.

@@ -1,5 +1,5 @@
 ---
-statut: acceptée
+statut: acceptée (mise à jour le 2026-10-31, voir ADR 0007)
 date: 2026-10-30
 décideurs: Lucas (Lead Developer)
 ---
@@ -8,7 +8,7 @@ décideurs: Lucas (Lead Developer)
 
 ## Contexte et problème
 
-Le POC a besoin d'une interface pour dérouler la démonstration : publication d'un article, modification du prix, centres d'intérêt et notifications, alertes de fraude. L'application cible doit être internationalisée et accessible (EF-33, ENF-25), s'authentifier en OIDC et consommer les API de plusieurs services. Collector recrutera d'autres développeurs : la technologie doit être répandue sur le marché.
+Le POC a besoin d'une interface pour dérouler la démonstration, en quatre pages : catalogue, mise en vente et modification du prix, centres d'intérêt et notifications, catégories pour l'admin. L'application cible doit être internationalisée et accessible (EF-33, ENF-25), s'authentifier en OIDC et consommer les API de plusieurs services. Collector recrutera d'autres développeurs : la technologie doit être répandue sur le marché.
 
 Quelle technologie retenir pour le front ?
 
@@ -32,7 +32,7 @@ Pour la gestion des jetons, une variante a aussi été étudiée : un **BFF** (*
 
 ## Décision
 
-**Option 1 : React + TypeScript**, construit avec Vite et servi en fichiers statiques par nginx. Bibliothèques : MUI (composants accessibles), React Router, TanStack Query (cache et rafraîchissement des données serveur), React Hook Form + Zod (formulaires et validation), react-i18next (français et anglais), react-oidc-context (OIDC + PKCE). Par défaut, cette bibliothèque (via oidc-client-ts) conserve la session dans `sessionStorage` : on configure explicitement un `userStore` en mémoire (`InMemoryWebStorage`). Tests : Vitest pour les composants, Playwright pour les parcours de bout en bout.
+**Option 1 : React + TypeScript**, construit avec Vite et servi en fichiers statiques par nginx. Bibliothèques du POC, réduites au minimum (ADR 0007) : MUI (composants accessibles), React Router et react-oidc-context (OIDC + PKCE). L'internationalisation (react-i18next) et le contrôle d'accessibilité outillé relèvent de la cible. Par défaut, cette bibliothèque (via oidc-client-ts) conserve la session dans `sessionStorage` : on configure explicitement un `userStore` en mémoire (`InMemoryWebStorage`). Tests : Vitest pour les composants, Playwright pour les parcours de bout en bout.
 
 ### Conséquences
 
@@ -46,7 +46,7 @@ Pour la gestion des jetons, une variante a aussi été étudiée : un **BFF** (*
 
 ### Confirmation
 
-Les tests Playwright déroulent le parcours de démonstration (connexion, publication, notification). Un contrôle axe et le score Lighthouse vérifient ENF-25.
+Les tests Playwright déroulent le parcours de démonstration (connexion, publication, notification). Dans la cible, un contrôle axe et le score Lighthouse vérifieront ENF-25.
 
 ## Avantages et inconvénients des options
 

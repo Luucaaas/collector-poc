@@ -8,7 +8,7 @@ décideurs: Lucas (Lead Developer)
 
 ## Contexte et problème
 
-La plateforme distingue les acheteurs, les vendeurs et les administrateurs (EF-09). L'inscription est obligatoire pour acheter ou vendre (EF-08). Les transactions financières font de la sécurité une exigence de premier plan. Les salariés de Collector disposent déjà de comptes Microsoft 365. Les trois services doivent vérifier l'identité et les rôles de l'appelant, sans session partagée entre eux.
+La plateforme distingue les acheteurs, les vendeurs et les administrateurs (EF-09). L'inscription est obligatoire pour acheter ou vendre (EF-08). Les transactions financières font de la sécurité une exigence de premier plan. Les salariés de Collector disposent déjà de comptes Microsoft 365. Les services doivent vérifier l'identité et les rôles de l'appelant, sans session partagée entre eux.
 
 Comment gérer l'authentification et les rôles ?
 
@@ -31,7 +31,7 @@ Comment gérer l'authentification et les rôles ?
 
 ## Décision
 
-**Option 1 : Keycloak**, avec un realm `collector`, les rôles de realm `buyer`, `seller` et `admin`, un client public `collector-web` (*Authorization Code* + PKCE) pour le front et une audience `collector-api` pour les services. Keycloak n'émet pas cette audience par défaut : un *client scope* dédié, rattaché au client `collector-web`, porte un mapper « Audience » qui l'ajoute au claim `aud`. La configuration du realm est exportée en JSON et versionnée, sans secret, pour être reproductible.
+**Option 1 : Keycloak**, avec un realm `collector`, les rôles de realm `buyer`, `seller` et `admin`, un client public `collector-web` (*Authorization Code* + PKCE) pour le front et une audience `collector-api` pour les services. Keycloak n'émet pas cette audience par défaut : un *client scope* dédié, rattaché au client `collector-web`, porte un mapper « Audience » qui l'ajoute au claim `aud`. La configuration du realm, comptes de démonstration compris (`admin`, `alice`, `bob`, `chloe`), est exportée en JSON, versionnée sans secret réel, et importée au démarrage de Keycloak : l'environnement est reproductible.
 
 ### Conséquences
 
@@ -45,7 +45,7 @@ Comment gérer l'authentification et les rôles ?
 
 ### Confirmation
 
-Un protocole d'expérimentation déploie Keycloak dans le cluster derrière Traefik en TLS, importe le realm, puis vérifie le flux PKCE depuis le navigateur et la validation du jeton par un service. Les tests d'acceptation couvrent les cas 401 (jeton absent, expiré, falsifié) et 403 (rôle insuffisant).
+Un protocole d'expérimentation déploie Keycloak dans le cluster derrière Traefik en TLS, importe le realm, puis vérifie le flux PKCE depuis le navigateur et la validation du jeton par un service. Les tests d'acceptation couvrent les cas 401 (jeton absent) et 403 (rôle insuffisant). Les tests unitaires des services couvrent les jetons expirés ou falsifiés.
 
 ## Avantages et inconvénients des options
 
@@ -73,7 +73,7 @@ Un protocole d'expérimentation déploie Keycloak dans le cluster derrière Trae
 
 ## Plus d'informations
 
-- Les rôles sont des rôles de realm (`realm_access.roles`) plutôt que des rôles de client : un utilisateur a les mêmes rôles pour les trois services, ce qui simplifie le POC. La cible pourra introduire des rôles par client, par exemple un modérateur limité au back-office.
+- Les rôles sont des rôles de realm (`realm_access.roles`) plutôt que des rôles de client : un utilisateur a les mêmes rôles pour tous les services, ce qui simplifie le POC. La cible pourra introduire des rôles par client, par exemple un modérateur limité au back-office.
 - Le POC ne fait pas d'*introspection* de jeton (RFC 7662) : la vérification locale suffit avec des jetons à durée de vie courte. La révocation immédiate est un point du plan de remédiation.
 
 > [!TIP]

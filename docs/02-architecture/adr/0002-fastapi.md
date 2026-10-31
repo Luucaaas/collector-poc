@@ -8,7 +8,7 @@ décideurs: Lucas (Lead Developer)
 
 ## Contexte et problème
 
-Les trois services du POC exposent des API REST sécurisées par JWT, valident strictement leurs entrées, accèdent à PostgreSQL et publient ou consomment des messages RabbitMQ. L'équipe maîtrise surtout Python. Le POC doit être livré vite, avec une couverture de tests élevée (ENF-22) et un contrat d'API publié (ENF-27).
+Les deux services du POC exposent des API REST sécurisées par JWT, valident strictement leurs entrées, accèdent à PostgreSQL et publient ou consomment des messages RabbitMQ. L'équipe maîtrise surtout Python. Le POC doit être livré vite, avec une couverture de tests élevée (ENF-22) et un contrat d'API publié (ENF-27).
 
 Quel framework retenir pour les services backend ?
 
@@ -38,7 +38,7 @@ Quel framework retenir pour les services backend ?
 - ✅ L'asynchrone natif (ASGI, `async`/`await`) permet de consommer RabbitMQ dans le même processus que l'API, sans thread supplémentaire.
 - ✅ Le système de dépendances (`Depends`) rend l'authentification et l'accès à la base injectables, donc remplaçables dans les tests.
 - ✅ L'équipe est productive tout de suite : courbe d'apprentissage faible pour des développeurs Python.
-- ❌ FastAPI est un micro-framework : authentification, migrations, configuration et structure du projet sont à assembler soi-même. Atténuation : un gabarit de service commun aux trois services.
+- ❌ FastAPI est un micro-framework : authentification, migrations, configuration et structure du projet sont à assembler soi-même. Atténuation : un gabarit de service commun aux deux services.
 - ❌ L'asynchrone exige de la discipline : un appel bloquant dans une coroutine bloque toute la boucle d'événements. Atténuation : uniquement des pilotes asynchrones (asyncpg, aio-pika) et une revue de code dédiée.
 - ❌ Python est moins performant en calcul pur que Java ou Go. Cela reste sans effet ici, car les services sont limités par les entrées-sorties (base, broker) et non par le CPU.
 

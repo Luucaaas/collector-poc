@@ -15,7 +15,7 @@ Ce document reformule les exigences du contexte Collector.shop (V1 du 04/03/2025
 | Acheteur | Particulier inscrit qui achète des objets, suit des articles et reçoit des notifications. | `buyer` |
 | Vendeur | Particulier inscrit qui ouvre des boutiques et publie des articles. Un même compte peut cumuler `buyer` et `seller`. | `seller` |
 | Administrateur | Employé de Collector qui gère le back-office : catégories, modération, alertes de fraude. | `admin` |
-| Outil anti-fraude | Composant interne ou produit acheté, qui consomme les événements du catalogue. | compte de service |
+| Outil anti-fraude (cible) | Composant interne ou produit acheté, qui s'abonnera aux événements du catalogue. Absent du POC, qui prévoit son point d'extension. | compte de service |
 
 ## 2. Exigences fonctionnelles
 
@@ -46,9 +46,9 @@ Ce document reformule les exigences du contexte Collector.shop (V1 du 04/03/2025
 | --- | --- | --- | --- |
 | EF-12 | Un acheteur authentifié paramètre ses centres d'intérêt depuis son profil. | POC | Centres d'intérêt = catégories dans le POC. Mots-clés : cible |
 | EF-13 | Un acheteur est notifié de la mise en ligne d'un nouvel article correspondant à l'un de ses centres d'intérêt. | POC | L'alerte sur un article particulier relève d'EF-36 (cible) |
-| EF-14 | Un acheteur suit un article précis. Il est notifié quand le prix de cet article change. | POC | |
-| EF-15 | Un acheteur règle les types de notifications qu'il reçoit (nouvel article, changement de prix) et les canaux (espace personnel, email). | POC | |
-| EF-16 | Les notifications sont listées dans l'espace personnel et peuvent aussi être envoyées par email. | POC partiel | Liste dans l'espace : POC. Envoi d'email : cible (le POC enregistre le canal choisi) |
+| EF-14 | Un acheteur intéressé par un article est notifié quand son prix change. | POC partiel | Dans le POC, l'intérêt pour un article découle de sa catégorie (RM-08). Suivre un article précis : cible |
+| EF-15 | Un acheteur règle les types de notifications qu'il reçoit (nouvel article, changement de prix) et les canaux (espace personnel, email). | POC partiel | Types de notification : POC. Choix du canal email : cible |
+| EF-16 | Les notifications sont listées dans l'espace personnel et peuvent aussi être envoyées par email. | POC partiel | Liste dans l'espace : POC. Envoi d'email : cible |
 | EF-36 | Un acheteur enregistre une recherche précise (mots-clés, catégorie, prix maximal) et est notifié de la mise en ligne d'un article correspondant : c'est le « nouvel article particulier » du contexte. | Cible | Identifiant ajouté après la première version : les identifiants ne sont jamais renumérotés |
 
 ### 2.4 Paiement
@@ -71,10 +71,10 @@ Ce document reformule les exigences du contexte Collector.shop (V1 du 04/03/2025
 
 | ID | Exigence | Périmètre | Remarque |
 | --- | --- | --- | --- |
-| EF-23 | Le composant de détection de fraude reçoit les événements de publication d'article et de changement de prix. | POC | Événements `article.published` et `article.price_changed` |
-| EF-24 | Le composant détecte les anomalies : prix trop élevé, hausse de prix brutale, vendeur suspect. | POC partiel | Règles RM-07. Le POC repère un vendeur suspect par ses modifications de prix répétées sur un article. Les signaux à l'échelle du vendeur (ancienneté du compte, taux de rejet, litiges) : cible |
-| EF-25 | La V1 s'intègre à un outil de détection de fraude qui peut être développé en interne ou acheté. | POC partiel | Le POC fournit un service interne. Le contrat d'événements versionné permet de le remplacer par un produit du marché sans modifier le catalogue |
-| EF-26 | L'administrateur consulte les alertes de fraude, avec pour chacune la règle déclenchée, les valeurs en cause et l'événement source, et statue dessus. | POC | |
+| EF-23 | Le composant de détection de fraude reçoit les événements de publication d'article et de changement de prix. | Cible | Le POC émet déjà ces événements sur l'exchange `article.events` (EF-25) |
+| EF-24 | Le composant détecte les anomalies : prix trop élevé, hausse de prix brutale, vendeur suspect. | Cible | Règles RM-07 |
+| EF-25 | La V1 s'intègre à un outil de détection de fraude qui peut être développé en interne ou acheté. | POC partiel | **Point d'extension** : l'outil, interne ou acheté, s'abonnera à l'exchange `article.events` avec sa propre file, sans modification de `catalog-service`. Le POC le démontre en liant une file supplémentaire pendant la démo |
+| EF-26 | L'administrateur consulte les alertes de fraude, avec pour chacune la règle déclenchée, les valeurs en cause et l'événement source, et statue dessus. | Cible | |
 
 ### 2.7 Back-office
 
@@ -101,14 +101,14 @@ Ce document reformule les exigences du contexte Collector.shop (V1 du 04/03/2025
 
 | ID | Exigence | Périmètre | Remarque |
 | --- | --- | --- | --- |
-| EF-33 | L'interface est internationalisée : textes traduits (français et anglais au lancement), prix et dates formatés selon la langue de l'utilisateur. | POC | react-i18next, `Intl.NumberFormat` |
-| EF-34 | L'interface est accessible (voir ENF-25). | POC partiel | |
+| EF-33 | L'interface est internationalisée : textes traduits (français et anglais au lancement), prix et dates formatés selon la langue de l'utilisateur. | Cible | L'interface du POC est en français uniquement (ADR 0007) |
+| EF-34 | L'interface est accessible (voir ENF-25). | Cible | Les composants MUI du POC respectent les patrons ARIA, sans contrôle outillé (ADR 0007) |
 
 ### 2.11 Évolutivité fonctionnelle
 
 | ID | Exigence | Périmètre | Remarque |
 | --- | --- | --- | --- |
-| EF-35 | L'architecture permet d'ajouter rapidement de nouvelles fonctionnalités sans modifier l'existant : enchères, événements de vente en direct (streaming), bot d'avant-vente, analyse des ventes pour la direction. | POC partiel | Le POC le démontre : notification et fraude sont deux consommateurs indépendants des mêmes événements, ajoutés sans toucher au catalogue (voir ADR 0001) |
+| EF-35 | L'architecture permet d'ajouter rapidement de nouvelles fonctionnalités sans modifier l'existant : enchères, événements de vente en direct (streaming), bot d'avant-vente, analyse des ventes pour la direction. | POC partiel | Le POC le démontre : `notification-service` consomme les événements du catalogue sans que celui-ci le connaisse, et une file supplémentaire liée à l'exchange reçoit les mêmes événements sans aucune modification (ADR 0001) |
 
 ## 3. Règles métier du POC
 
@@ -122,9 +122,9 @@ Ces règles précisent les exigences implémentées. Les critères d'acceptation
 | RM-04 | **Modification de prix.** Seul le propriétaire de l'article modifie son prix. Seul un article `PUBLISHED` peut changer de prix (sinon 409). Le nouveau prix respecte RM-01. Chaque modification ajoute une ligne à l'historique et émet `article.price_changed`. Un prix identique à l'actuel ne crée ni ligne ni événement. |
 | RM-05 | **Boutique.** Nom de 3 à 60 caractères, unique sur la plateforme sans tenir compte de la casse. Chaque boutique porte le type de vendeur `INDIVIDUAL` (particulier), affiché sur la page publique. Une boutique qui enfreint RM-02 est **refusée** (422, motifs `CONTACT_EMAIL` ou `CONTACT_PHONE`) et non enregistrée. Contrairement à un article, une boutique n'a pas de cycle de modération : il n'y a ni statut à conserver ni revue à prévoir, donc rien à tracer. |
 | RM-06 | **Catégorie.** Nom de 2 à 60 caractères, unique sans tenir compte de la casse. Le slug (identifiant d'URL) est dérivé du nom. |
-| RM-07 | **Règles anti-fraude.** `PRICE_ABOVE_CEILING` : prix supérieur au plafond configuré (10 000 € par défaut, car le segment de Collector exclut le luxe). `PRICE_SPIKE` : hausse de plus de 50 % en une modification. `FREQUENT_PRICE_CHANGES` : plus de 3 modifications de prix du même article en 24 h. Chaque déclenchement crée une alerte avec sa règle, sa sévérité et l'événement source. |
-| RM-08 | **Destinataires des notifications.** `article.published` : les acheteurs qui ont la catégorie de l'article dans leurs centres d'intérêt et le type « nouvel article » activé. `article.price_changed` : les acheteurs qui suivent l'article et ont le type « changement de prix » activé. Le vendeur de l'article n'est jamais notifié de ses propres articles. |
-| RM-09 | **Idempotence.** Un consommateur qui reçoit deux fois le même événement (même `event_id`) ne le traite qu'une fois : pas de notification ni d'alerte en double. |
+| RM-07 | **Règles anti-fraude (cible).** `PRICE_ABOVE_CEILING` : prix supérieur au plafond configuré (10 000 € par défaut, car le segment de Collector exclut le luxe). `PRICE_SPIKE` : hausse de plus de 50 % en une modification. `FREQUENT_PRICE_CHANGES` : plus de 3 modifications de prix du même article en 24 h. Chaque déclenchement crée une alerte avec sa règle, sa sévérité et l'événement source. |
+| RM-08 | **Destinataires des notifications.** Un acheteur est intéressé par un article si la catégorie de l'article fait partie de ses centres d'intérêt. `article.published` : les acheteurs intéressés qui ont le type « nouvel article » activé. `article.price_changed` : les acheteurs intéressés qui ont le type « changement de prix » activé. Le vendeur de l'article n'est jamais notifié de ses propres articles. |
+| RM-09 | **Pas de notification en double.** Un même événement (même `event_id`) ne produit qu'une notification par acheteur, grâce à la contrainte d'unicité `(user_id, source_event_id)` de la table `notifications`. Cette contrainte ne coûte rien et suffit au POC. L'idempotence générale des consommateurs (table `processed_events`) relève de la cible. |
 
 ## 4. Exigences non fonctionnelles
 
@@ -136,12 +136,12 @@ Chaque exigence a une cible mesurable et un moyen de vérification. Les quatre i
 
 | ID | Exigence | Sous-caractéristique | Cible et vérification | Périmètre |
 | --- | --- | --- | --- | --- |
-| ENF-01 | Tout flux exposé à l'extérieur du cluster passe en HTTPS (TLS 1.2 minimum). HTTP est redirigé vers HTTPS. | Confidentialité, intégrité | Certificats émis par cert-manager. Vérification : `curl -I http://…` renvoie une redirection permanente vers HTTPS, scan ZAP | POC |
-| ENF-02 | L'authentification repose sur OpenID Connect (flux *Authorization Code* avec PKCE). Le jeton d'accès reste en mémoire dans le navigateur. Chaque API valide la signature RS256 du JWT, son émetteur (`iss`), son audience (`aud`) et son expiration (`exp`). | Authenticité | Durée de vie du jeton d'accès : 5 min. Tests : jeton absent, expiré ou falsifié → 401 | POC |
+| ENF-01 | Tout flux exposé à l'extérieur du cluster passe en HTTPS (TLS 1.2 minimum). HTTP est redirigé vers HTTPS. | Confidentialité, intégrité | Certificat générique `*.127.0.0.1.sslip.io` généré une fois par mkcert et chargé dans Traefik comme Secret TLS. Vérification : `curl -I http://…` renvoie une redirection permanente vers HTTPS, scan ZAP | POC |
+| ENF-02 | L'authentification repose sur OpenID Connect (flux *Authorization Code* avec PKCE). Le jeton d'accès reste en mémoire dans le navigateur. Chaque API valide la signature RS256 du JWT, son émetteur (`iss`), son audience (`aud`) et son expiration (`exp`). | Authenticité | Durée de vie du jeton d'accès : 5 min. Tests d'acceptation : jeton absent → 401. Tests unitaires : jeton expiré ou falsifié → 401 | POC |
 | ENF-03 | L'autorisation est vérifiée côté API : contrôle du rôle (RBAC) puis de la propriété de la ressource (un vendeur ne modifie que ses boutiques et ses articles). | Confidentialité, intégrité | Tests : mauvais rôle → 403, ressource d'un autre vendeur → 403 | POC |
-| ENF-04 | Aucun secret n'est versionné. Les secrets sont injectés par des Secrets Kubernetes. | Confidentialité | Gitleaks bloquant en CI | POC |
-| ENF-05 | Les vulnérabilités sont détectées automatiquement à chaque modification : analyse statique (Semgrep, Bandit), dépendances (pip-audit, npm audit), images (Trivy), application en fonctionnement (OWASP ZAP baseline). | Résistance | Pipeline bloqué sur toute vulnérabilité CRITICAL ou HIGH qui a un correctif disponible | POC |
-| ENF-06 | Les flux réseau internes sont restreints par des NetworkPolicies en refus par défaut. Chaque base de données n'est joignable que par son service. | Confidentialité, résistance | Test : connexion de `fraud-service` vers la base du catalogue refusée | POC |
+| ENF-04 | Aucun secret n'est versionné. Les secrets sont injectés par des Secrets Kubernetes. | Confidentialité | `.env` ignoré par Git, analyse des secrets de Trivy en CI. Gitleaks sur tout l'historique : cible | POC |
+| ENF-05 | Les vulnérabilités sont détectées automatiquement à chaque modification : analyse statique du code (SonarCloud), dépendances et images Docker (Trivy). L'application en fonctionnement est analysée par OWASP ZAP lors de l'audit de sécurité. | Résistance | Pipeline bloqué par Trivy sur toute vulnérabilité CRITICAL ou HIGH qui a un correctif disponible. Semgrep, Bandit, pip-audit et ZAP intégrés à la CI : cible | POC partiel |
+| ENF-06 | Les flux réseau internes sont restreints par des NetworkPolicies en refus par défaut. Chaque base de données n'est joignable que par son service. | Confidentialité, résistance | Dans le POC, l'isolation des données passe par les droits PostgreSQL (ENF-21), pas par le réseau. NetworkPolicies : cible | Cible |
 | ENF-07 | Les entrées sont validées strictement (schémas Pydantic, champs inconnus refusés). L'accès aux données passe par des requêtes paramétrées (ORM), ce qui protège des injections SQL. | Intégrité | Tests de données invalides → 422 | POC |
 | ENF-08 | Les actions sont traçables : logs JSON avec identifiant de corrélation et identifiant de l'utilisateur (`sub`), historique des prix horodaté avec son auteur. | Responsabilité, non-répudiation | Revue des logs lors de la démo | POC |
 | ENF-09 | Aucune donnée de carte bancaire n'est stockée ni ne transite par Collector : la saisie est déléguée au PSP, qui renvoie un jeton (conformité PCI DSS, niveau SAQ A). | Confidentialité | Audit d'architecture | Cible |
@@ -161,17 +161,17 @@ Chaque exigence a une cible mesurable et un moyen de vérification. Les quatre i
 
 | ID | Exigence | Sous-caractéristique | Cible et vérification | Périmètre |
 | --- | --- | --- | --- | --- |
-| ENF-16 | Les services restent disponibles lors de la perte d'une instance ou d'un nœud, avec une dégradation bornée et mesurée. | Disponibilité, tolérance aux pannes | 2 réplicas minimum répartis sur les 2 agents, sondes `liveness` et `readiness`. **Maintenance** (`kubectl drain` d'un agent, où le PodDisruptionBudget s'applique) : aucune erreur sous charge. **Panne brutale** (arrêt du conteneur d'un agent) : erreurs limitées à la fenêtre de détection du nœud (environ 40 à 50 s), taux d'erreur mesuré par Locust, pods replanifiés au bout de 30 s (`tolerationSeconds` réduit au lieu des 300 s par défaut) | POC |
+| ENF-16 | Les services restent disponibles lors de la perte d'une instance. | Disponibilité, tolérance aux pannes | 2 réplicas par service et sondes `liveness` et `readiness`. Démo : suppression d'un pod pendant un test Locust, recréé automatiquement par son Deployment, taux d'erreur mesuré. Perte d'un nœud entier (répartition imposée, PodDisruptionBudget) : cible | POC partiel |
 | ENF-17 | La plateforme vise une disponibilité mensuelle de 99,5 % en production. | Disponibilité | Supervision par sondes externes et budget d'erreur | Cible |
-| ENF-18 | Aucun événement métier n'est perdu. Un événement est émis si et seulement si la modification en base est validée (patron *transactional outbox*). Livraison « au moins une fois » : messages persistants, files durables, acquittement manuel après traitement, file des messages en échec (*dead-letter queue*). | Tolérance aux pannes, absence de défaut | Test d'intégration : broker arrêté pendant une publication, puis événement reçu après son redémarrage | POC |
-| ENF-19 | Les consommateurs sont idempotents (RM-09). | Absence de défaut | Test : même événement livré deux fois → une seule notification | POC |
+| ENF-18 | Aucun événement métier n'est perdu. Un événement est émis si et seulement si la modification en base est validée (patron *transactional outbox*). Livraison « au moins une fois », file des messages en échec (*dead-letter queue*). | Tolérance aux pannes, absence de défaut | **POC** : publication juste après le commit, message persistant, file durable, acquittement après traitement. Un événement peut être perdu si le broker est indisponible entre le commit et la publication (limite assumée, ADR 0007). Outbox et DLQ : cible | POC partiel |
+| ENF-19 | Les consommateurs sont idempotents (RM-09). | Absence de défaut | POC : contrainte d'unicité sur les notifications. Table `processed_events` générale : cible | POC partiel |
 | ENF-20 | Les données sont sauvegardées et restaurables. | Récupérabilité | Sauvegarde PostgreSQL quotidienne, RPO de 24 h, RTO de 4 h | Cible |
 
 ### 4.4 Maintenabilité
 
 | ID | Exigence | Sous-caractéristique | Cible et vérification | Périmètre |
 | --- | --- | --- | --- | --- |
-| ENF-21 | Chaque service possède ses données (une base par service) et ne communique avec les autres que par une API REST versionnée (`/api/v1`) ou par des événements. Aucune base n'est partagée. | Modularité, modifiabilité | Revue d'architecture, NetworkPolicies | POC |
+| ENF-21 | Chaque service possède ses données et ne communique avec les autres que par une API REST versionnée (`/api/v1`) ou par des événements. Aucune base n'est partagée. | Modularité, modifiabilité | POC : une instance PostgreSQL, une base logique par service (`catalog_db`, `notification_db`), un utilisateur PostgreSQL par service sans droit de connexion à la base de l'autre. Vérification : connexion refusée. Instance séparée et répliquée par service : cible | POC |
 | ENF-22 | Le code métier est couvert par des tests automatisés. | Testabilité | Couverture ≥ 80 % (pytest-cov), quality gate SonarCloud bloquante | POC |
 | ENF-23 | La dette technique est maîtrisée. | Analysabilité, modifiabilité | SonarCloud : note de maintenabilité A, duplication < 3 %, complexité cognitive ≤ 15 par fonction. Ruff et mypy (mode strict) bloquants en CI | POC |
 | ENF-24 | Le comportement des services est observable. | Analysabilité | Endpoints `/metrics` collectés par Prometheus, tableaux de bord Grafana, logs JSON corrélés, endpoints `/health/live` et `/health/ready` | POC |
@@ -180,8 +180,8 @@ Chaque exigence a une cible mesurable et un moyen de vérification. Les quatre i
 
 | ID | Exigence | Sous-caractéristique | Cible et vérification | Périmètre |
 | --- | --- | --- | --- | --- |
-| ENF-25 | L'interface respecte le niveau AA des WCAG 2.1, référentiel repris par le RGAA 4.1 en France. | Inclusivité | Score Lighthouse accessibilité ≥ 90 sur les pages du POC, contrôle axe dans les tests Playwright. Audit RGAA complet : cible | POC partiel |
-| ENF-26 | L'interface est utilisable sur mobile. | Opérabilité, inclusivité | Mise en page adaptative à partir de 360 px de large | POC |
+| ENF-25 | L'interface respecte le niveau AA des WCAG 2.1, référentiel repris par le RGAA 4.1 en France. | Inclusivité | Score Lighthouse accessibilité ≥ 90, contrôle axe dans les tests de bout en bout, audit RGAA | Cible |
+| ENF-26 | L'interface est utilisable sur mobile. | Opérabilité, inclusivité | Mise en page adaptative à partir de 360 px de large | Cible |
 
 ### 4.6 Compatibilité
 
@@ -193,16 +193,16 @@ Chaque exigence a une cible mesurable et un moyen de vérification. Les quatre i
 
 | ID | Exigence | Sous-caractéristique | Cible et vérification | Périmètre |
 | --- | --- | --- | --- | --- |
-| ENF-29 | La charge absorbée augmente par ajout d'instances (scalabilité horizontale). | Scalabilité | HorizontalPodAutoscaler sur `catalog-service` : de 2 à 5 réplicas à 70 % de CPU. Démontré par le test de charge | POC |
-| ENF-30 | La plateforme s'installe de façon reproductible. | Installabilité | Cluster, infrastructure et services déployés par script, Helm et Argo CD (GitOps) en moins de 15 min sur un poste vierge | POC |
+| ENF-29 | La charge absorbée augmente par ajout d'instances (scalabilité horizontale). | Scalabilité | HorizontalPodAutoscaler défini par le chart pour chaque service : de 2 à 5 réplicas à 70 % de CPU. Démontré sur `catalog-service` par le test de charge Locust | POC |
+| ENF-30 | La plateforme s'installe de façon reproductible. | Installabilité | Cluster, infrastructure et services déployés par script (`deploy/local/deploy.sh`, `helm upgrade --install`) en moins de 15 min sur un poste vierge. Déploiement GitOps (Argo CD) : cible | POC |
 | ENF-31 | Le déploiement ne dépend pas d'un fournisseur. | Adaptabilité | Charts Helm standards et images multi-architecture (amd64, arm64). La migration vers Oracle OKE ne nécessite aucune modification de code | POC partiel |
-| ENF-28 | L'outil anti-fraude est remplaçable par un produit tiers sans modifier les producteurs d'événements. | Remplaçabilité | Le contrat d'événements est la seule dépendance | POC |
+| ENF-28 | L'outil anti-fraude est remplaçable par un produit tiers sans modifier les producteurs d'événements. | Remplaçabilité | Le contrat d'événements et l'exchange `article.events` sont sa seule dépendance | POC partiel |
 
 ## 5. Synthèse
 
 | | POC | POC partiel | Cible | Total |
 | --- | --- | --- | --- | --- |
-| Exigences fonctionnelles | 13 | 9 | 14 | 36 |
-| Exigences non fonctionnelles | 24 | 2 | 5 | 31 |
+| Exigences fonctionnelles | 8 | 9 | 19 | 36 |
+| Exigences non fonctionnelles | 17 | 6 | 8 | 31 |
 
-Le POC concentre l'effort sur la chaîne **publication → contrôle → événements → notification et détection de fraude**, qui exerce à la fois le découpage en services, la communication asynchrone, la sécurité et l'orchestration. Paiement, chat, notation, recommandations, publicité et enchères restent dans l'architecture cible.
+Le POC concentre l'effort sur la chaîne **publication → contrôle → événement → notification**, qui exerce à la fois le découpage en services, la communication asynchrone, la sécurité et l'orchestration, avec le minimum de composants (ADR 0007). La détection de fraude, le paiement, le chat, la notation, les recommandations, la publicité et les enchères restent dans l'architecture cible.

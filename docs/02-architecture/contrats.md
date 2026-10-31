@@ -1,28 +1,28 @@
 # Contrats d'interface du POC
 
-Ce document fixe les contrats entre les composants du POC : API REST de chaque service, événements échangés via RabbitMQ et modèle de données. Il fait référence pour le développement (phase 4) et pour les tests de contrat. Les identifiants US, EF, ENF et RM renvoient au [backlog](../03-backlog/user-stories.md) et aux [exigences](../03-backlog/exigences.md).
+Ce document fixe les contrats entre les composants du POC : API REST des deux services, événements échangés via RabbitMQ et modèle de données. Il fait référence pour le développement (phase 4) et pour les tests. Les identifiants US, EF, ENF et RM renvoient au [backlog](../03-backlog/user-stories.md) et aux [exigences](../03-backlog/exigences.md).
 
 ## 1. Conventions communes
 
 ### 1.1 Exposition
 
-| Hôte (TLS, certificat cert-manager) | Cible |
+| Hôte (HTTPS) | Cible |
 | --- | --- |
 | `app.127.0.0.1.sslip.io` | Front React (fichiers statiques servis par nginx) |
 | `api.127.0.0.1.sslip.io/catalog/…` | `catalog-service` |
 | `api.127.0.0.1.sslip.io/notification/…` | `notification-service` |
-| `api.127.0.0.1.sslip.io/fraud/…` | `fraud-service` |
 | `auth.127.0.0.1.sslip.io` | Keycloak, realm `collector` |
-| `grafana.127.0.0.1.sslip.io`, `argocd.127.0.0.1.sslip.io` | Outils d'exploitation |
+| `grafana.127.0.0.1.sslip.io` | Tableaux de bord |
 
-Traefik, le contrôleur d'Ingress fourni par k3s, route par hôte et par chemin, puis retire le préfixe du service (`/catalog`, `/notification`, `/fraud`) grâce à un middleware `StripPrefix`. Chaque service expose donc ses routes sous `/api/v1`. Le domaine `sslip.io` résout `*.127.0.0.1.sslip.io` vers `127.0.0.1`, ce qui évite de modifier `/etc/hosts`.
-
-Les sondes `/health/live` et `/health/ready`, ainsi que `/metrics`, ne sont pas routées par Traefik. Elles sont réservées au kubelet et à Prometheus, à l'intérieur du cluster.
+- **Routage.** Traefik, le contrôleur d'Ingress fourni par k3s, route par hôte et par chemin, puis retire le préfixe du service (`/catalog`, `/notification`) grâce à un middleware `StripPrefix`. Chaque service expose donc ses routes sous `/api/v1`.
+- **TLS.** Un certificat générique `*.127.0.0.1.sslip.io`, généré une fois par mkcert, est chargé comme Secret TLS par défaut de Traefik.
+- **Noms de domaine.** `sslip.io` résout `*.127.0.0.1.sslip.io` vers `127.0.0.1`, ce qui évite de modifier `/etc/hosts`.
+- **Endpoints techniques.** Les sondes `/health/live` et `/health/ready`, ainsi que `/metrics`, ne sont pas routées par Traefik. Elles sont réservées au kubelet et à Prometheus, à l'intérieur du cluster.
 
 ### 1.2 Authentification et autorisation
 
 - Chaque requête protégée porte `Authorization: Bearer <jeton d'accès>`, un JWT émis par Keycloak.
-- Chaque service vérifie localement la signature RS256 avec les clés publiques du realm (endpoint JWKS, mises en cache), puis `iss`, `aud = collector-api` et `exp` (ENF-02). Keycloak n'ajoute pas cette audience par défaut : un *client scope* dédié porte un mapper « Audience » qui l'insère dans le jeton du client `collector-web`.
+- Chaque service vérifie localement la signature RS256 avec les clés publiques du realm (endpoint JWKS, mises en cache), puis `iss`, `aud = collector-api` et `exp` (ENF-02). Keycloak n'ajoute pas cette audience par défaut : un *client scope* importé avec le realm porte un mapper « Audience » qui l'insère dans le jeton du client `collector-web`.
 - Les rôles sont lus dans `realm_access.roles`. L'identifiant de l'utilisateur est le claim `sub`.
 - Jeton absent, invalide ou expiré → **401**. Rôle insuffisant ou ressource appartenant à un autre utilisateur → **403** (ENF-03).
 - Une ressource non publiée, consultée par un autre utilisateur que son propriétaire ou un admin, renvoie **404** et non 403. On ne révèle pas son existence.
@@ -47,7 +47,7 @@ Les sondes `/health/live` et `/health/ready`, ainsi que `/metrics`, ne sont pas 
 }
 ```
 
-- **Corrélation.** L'en-tête `X-Request-ID` est repris s'il est fourni par l'appelant, sinon généré par le service à l'entrée de la requête (middleware ASGI). Traefik ne génère pas cet identifiant nativement. Il est écrit dans chaque log JSON, renvoyé dans la réponse et recopié dans le champ `correlation_id` des événements émis (ENF-08).
+- **Corrélation.** L'en-tête `X-Request-ID` est repris s'il est fourni par l'appelant, sinon généré par le service à l'entrée de la requête (middleware ASGI). Il est écrit dans chaque log JSON, renvoyé dans la réponse et recopié dans le champ `correlation_id` des événements émis (ENF-08).
 - Le contrat OpenAPI 3.1 est généré par FastAPI à `/api/v1/openapi.json` (ENF-27).
 
 ## 2. Endpoints REST
@@ -61,7 +61,7 @@ Codes communs à tous les endpoints protégés, non répétés dans les tableaux
 | GET | `/api/v1/categories` | public | 200 | US-01, US-03, US-05 |
 | POST | `/api/v1/categories` | `admin` | 201, 403, 409 (nom déjà utilisé) | US-01 |
 | POST | `/api/v1/shops` | `seller` | 201, 403, 409 (nom déjà utilisé), 422 (dont `CONTACT_EMAIL`, `CONTACT_PHONE`) | US-02 |
-| GET | `/api/v1/shops/me` | `seller` | 200, 403 | US-02 |
+| GET | `/api/v1/shops/me` | `seller` | 200, 403 | US-02, US-03 |
 | GET | `/api/v1/shops/{shop_id}` | public | 200, 404 | US-02 |
 | POST | `/api/v1/articles` | `seller`, propriétaire de la boutique | 201 (`PUBLISHED` ou `REJECTED`), 403 (boutique d'un autre vendeur), 422 (dont `SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) | US-03 |
 | GET | `/api/v1/articles?category_id=&shop_id=&limit=&offset=` | public, articles `PUBLISHED` seulement | 200 | US-03 |
@@ -104,9 +104,11 @@ Réponse 201, article conforme :
 }
 ```
 
-Si le contrôle échoue (RM-02), la réponse est aussi un 201, avec `"status": "REJECTED"` et `"rejection_reasons": ["CONTACT_EMAIL"]`. Les motifs possibles sont `CONTACT_EMAIL` et `CONTACT_PHONE`.
+Si le contrôle échoue (RM-02), la réponse est aussi un 201, avec `"status": "REJECTED"` et `"rejection_reasons": ["CONTACT_EMAIL"]`.
 
-**Codes de motif.** Le même vocabulaire sert partout : `rejection_reasons` d'un article rejeté, et `errors[].code` d'un refus 422. Une boutique ou une catégorie inexistante, référencée dans le corps de la requête, donne un 422 (`SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) et non un 404 : c'est le contenu de la requête qui est invalide, pas l'URL. Une boutique qui contient des coordonnées est refusée en 422 (`CONTACT_EMAIL`, `CONTACT_PHONE`) au lieu d'être enregistrée : elle n'a pas de cycle de modération (RM-05).
+**Codes de motif.** Le même vocabulaire sert partout : `rejection_reasons` d'un article rejeté, et `errors[].code` d'un refus 422.
+- Une boutique ou une catégorie inexistante, référencée dans le corps de la requête, donne un 422 (`SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) et non un 404 : c'est le contenu de la requête qui est invalide, pas l'URL.
+- Une boutique qui contient des coordonnées est refusée en 422 (`CONTACT_EMAIL`, `CONTACT_PHONE`) au lieu d'être enregistrée : elle n'a pas de cycle de modération (RM-05).
 
 **Exemple : modification du prix** (`PUT /api/v1/articles/{article_id}/price`)
 
@@ -124,46 +126,28 @@ Réponse 200 : l'article mis à jour, au même format que ci-dessus.
 | PUT | `/api/v1/me/interests` | `buyer` | 200, 403, 422 (plus de 20 catégories) | US-05 |
 | GET | `/api/v1/me/preferences` | `buyer` | 200, 403 | US-05 |
 | PUT | `/api/v1/me/preferences` | `buyer` | 200, 403 | US-05 |
-| PUT | `/api/v1/me/follows/{article_id}` | `buyer` | 204, 403, 404 (article inconnu) | US-05 |
 | GET | `/api/v1/me/notifications?limit=&offset=` | `buyer` | 200, 403 | US-05 |
 
-Tous les chemins sont sous `/me` : l'utilisateur est toujours celui du jeton (`sub`). Aucun identifiant d'utilisateur n'apparaît dans l'URL, donc aucun accès aux données d'un autre acheteur n'est possible (critère 6 de US-05).
+Tous les chemins sont sous `/me` : l'utilisateur est toujours celui du jeton (`sub`). Aucun identifiant d'utilisateur n'apparaît dans l'URL, donc aucun accès aux données d'un autre acheteur n'est possible.
 
 ```jsonc
 // PUT /api/v1/me/interests
 { "category_ids": ["3f1e9a62-7c1d-4a8b-9f3e-2d5c6b7a8e90"] }
 
 // PUT /api/v1/me/preferences
-{ "new_article": true, "price_changed": true, "email": false }
+{ "new_article": true, "price_changed": false }
 ```
 
-Sans préférences enregistrées, les deux types de notification sont actifs et l'email est désactivé.
+- **Valeurs par défaut.** Sans préférences enregistrées, les deux types de notification sont actifs.
+- **Catégories non vérifiées.** `notification-service` ne connaît pas la liste des catégories, et n'appelle pas le catalogue de façon synchrone (ADR 0001). `PUT /me/interests` vérifie donc le format des identifiants, mais pas leur existence. Le front ne propose que des catégories existantes, lues sur `GET /categories`. Un identifiant inconnu ne déclenche simplement jamais de notification.
 
-`notification-service` ne connaît pas la liste des catégories, et n'appelle pas le catalogue de façon synchrone (ADR 0001). `PUT /me/interests` vérifie donc le format des identifiants, mais pas leur existence. Le front ne propose que des catégories existantes, lues sur `GET /categories`, et un identifiant inconnu n'a pas d'autre effet que de ne jamais déclencher de notification. La cible ajoutera un événement `category.created` pour tenir une projection locale des catégories.
-
-### 2.3 fraud-service
-
-| Méthode | Chemin | Rôle requis | Codes de retour | Story |
-| --- | --- | --- | --- | --- |
-| GET | `/api/v1/alerts?status=&rule=&limit=&offset=` | `admin` | 200, 403 | US-06 |
-| PATCH | `/api/v1/alerts/{alert_id}` | `admin` | 200, 403, 404, 409 (alerte déjà traitée), 422 (statut inconnu) | US-06 |
-
-```jsonc
-// PATCH /api/v1/alerts/{alert_id}
-{ "status": "CONFIRMED" }
-```
-
-Chaque alerte de la liste porte sa règle, sa sévérité, l'article et le vendeur concernés, les valeurs qui ont déclenché la règle (`details`) et l'identifiant de l'événement source : la liste suffit à l'admin, sans endpoint de détail.
-
-Transitions autorisées : `OPEN → CONFIRMED` et `OPEN → DISMISSED`. Toute autre transition renvoie 409. L'auteur et la date de la décision sont enregistrés.
-
-### 2.4 Endpoints techniques (tous les services)
+### 2.3 Endpoints techniques (les deux services)
 
 | Méthode | Chemin | Usage |
 | --- | --- | --- |
 | GET | `/health/live` | Sonde *liveness* : le processus répond. Ne teste aucune dépendance, pour éviter des redémarrages en cascade |
-| GET | `/health/ready` | Sonde *readiness* : la base de données du service est joignable. En cas d'échec, le pod est retiré du Service sans être redémarré. Le broker n'en fait **pas** partie : si RabbitMQ est arrêté, le catalogue continue d'accepter les publications (l'outbox conserve les événements), et notification et fraud continuent de servir leurs API. La connexion AMQP se rétablit automatiquement (connexion robuste d'aio-pika), et son état est exposé par une métrique et dans les logs |
-| GET | `/metrics` | Métriques Prometheus (latence, débit et erreurs HTTP, plus les compteurs métier : articles publiés et rejetés, notifications créées, alertes créées) |
+| GET | `/health/ready` | Sonde *readiness* : la base de données du service est joignable. En cas d'échec, le pod est retiré du Service sans être redémarré. RabbitMQ n'en fait pas partie : une panne du broker ne doit pas retirer les services du trafic. La connexion AMQP se rétablit automatiquement (connexion robuste d'aio-pika) |
+| GET | `/metrics` | Métriques Prometheus (débit, latence et erreurs HTTP, plus les compteurs métier : articles publiés et rejetés, notifications créées) |
 
 ## 3. Événements
 
@@ -172,30 +156,29 @@ Transitions autorisées : `OPEN → CONFIRMED` et `OPEN → DISMISSED`. Toute au
 ```mermaid
 flowchart LR
     %% id: topologie-rabbitmq
-    C[catalog-service<br/>relais outbox] -- "article.published<br/>article.price_changed" --> X{{"exchange article.events<br/>(topic, durable)"}}
-    X -- "article.*" --> QN[["file notification.article-events"]]
-    X -- "article.*" --> QF[["file fraud.article-events"]]
-    QN --> N[notification-service]
-    QF --> F[fraud-service]
-    QN -. "après 5 tentatives<br/>clé notification.article-events" .-> DLX{{"exchange article.events.dlx<br/>(direct)"}}
-    QF -. "après 5 tentatives<br/>clé fraud.article-events" .-> DLX
-    DLX -- "notification.article-events" --> DQN[["notification.article-events.dlq"]]
-    DLX -- "fraud.article-events" --> DQF[["fraud.article-events.dlq"]]
+    C["catalog-service<br/>publie après le commit"] -- "article.published<br/>article.price_changed" --> X{{"exchange article.events<br/>(topic, durable)"}}
+    X -- "liaison article.*" --> QN[["file notification.article-events<br/>(durable)"]]
+    QN --> N["notification-service"]
+    X -. "point d'extension (cible) :<br/>liaison article.*" .-> QF[["file fraud.article-events"]]
+    QF -.-> F["outil anti-fraude<br/>interne ou acheté"]
 ```
 
-- **Exchange `article.events` de type `topic`.** Chaque consommateur a sa propre file, liée par le motif `article.*`. Chaque file reçoit une copie de chaque événement (*publish/subscribe*). Ajouter un consommateur, par exemple un futur service de recommandations, revient à créer une file et une liaison, sans modifier le producteur (EF-35).
-- **Fiabilité (ENF-18).** Exchange et files durables, messages persistants (`delivery_mode = 2`), *publisher confirms* activés côté producteur. Côté consommateur : acquittement manuel après la validation de la transaction en base, et `prefetch = 10`.
-- **Échecs.** Les files sont des *quorum queues* avec `x-delivery-limit = 5`. Au-delà, le message part dans la *dead-letter queue* de **son** consommateur. Pour cela, chaque file déclare `x-dead-letter-exchange = article.events.dlx` (exchange `direct`) et une `x-dead-letter-routing-key` égale à son propre nom. Sans cette clé, le message garderait sa clé d'origine (`article.published`) et serait copié dans les deux DLQ. Les files déclarent aussi `x-dead-letter-strategy = at-least-once`, qui impose `x-overflow = reject-publish` : sans ces réglages, le transfert vers la DLQ d'une quorum queue est « au plus une fois » et un message pourrait être perdu en route.
+- **Exchange `article.events` de type `topic`.** Chaque consommateur déclare sa propre file et la lie avec le motif `article.*` : chaque file reçoit une copie de chaque événement (*publish/subscribe*).
+- **Point d'extension.** Pour brancher l'outil anti-fraude, interne ou acheté (EF-25), il suffit de lier une nouvelle file à l'exchange. `catalog-service` n'est pas modifié. On le démontre pendant la soutenance avec une file temporaire.
+- **Fiabilité dans le POC.** Exchange et file durables, messages persistants (`delivery_mode = 2`), confirmation de publication par le broker. Côté consommateur : acquittement après la validation de la transaction en base, `prefetch = 10`. Un message dont le traitement échoue est remis en file une fois, puis rejeté et journalisé.
 - **Propriétés AMQP.** `message_id = event_id`, `type = event_type`, `content_type = application/json` et l'en-tête `x-correlation-id`.
 
-### 3.2 Garanties de livraison
+### 3.2 Garanties et limites
 
-| Garantie | Mécanisme |
-| --- | --- |
-| Pas d'événement sans écriture en base, ni l'inverse | **Transactional outbox** : l'article et la ligne `outbox_events` sont écrits dans la même transaction PostgreSQL. Un relais lit les lignes non publiées, les publie avec confirmation du broker, puis les marque publiées |
-| Livraison au moins une fois | Le relais republie tant qu'il n'a pas reçu la confirmation du broker. Le consommateur n'acquitte qu'après traitement |
-| Pas de doublon fonctionnel (RM-09) | **Consommateur idempotent** : l'insertion dans `processed_events` (clé primaire `event_id`) se fait dans la même transaction que l'effet métier. Un doublon viole la contrainte d'unicité : il est acquitté et ignoré |
-| Ordre | Non garanti entre articles. Pour un même article, les événements portent `occurred_at`, et le consommateur ignore un `price_changed` plus ancien que le dernier qu'il a traité pour cet article |
+| Point | Comportement dans le POC | Cible |
+| --- | --- | --- |
+| Publication | `catalog-service` publie l'événement **juste après le commit** de la transaction. Si le broker est indisponible à cet instant, l'écriture est conservée, mais l'événement est perdu et l'erreur est journalisée | *Transactional outbox* : événement écrit dans la même transaction, puis publié par un relais |
+| Livraison | Au moins une fois entre le broker et le consommateur : acquittement après traitement | Inchangé |
+| Doublons | Une notification par acheteur et par événement, garantie par la contrainte `UNIQUE (user_id, source_event_id)` | Table `processed_events` pour tout consommateur |
+| Messages en échec | Rejetés après une nouvelle tentative et journalisés | *Dead-letter queue* par consommateur, avec rejeu |
+| Ordre | Non garanti entre articles. Pour un même article, les événements portent `occurred_at` | Inchangé |
+
+Ces limites sont reprises dans la section « Limites assumées du POC » de [architecture-poc.md](architecture-poc.md) et justifiées dans l'ADR [0007](adr/0007-simplification-perimetre-poc.md).
 
 ### 3.3 Enveloppe commune
 
@@ -203,10 +186,10 @@ Tous les événements partagent une enveloppe inspirée de CloudEvents 1.0. Seul
 
 | Champ | Type | Rôle |
 | --- | --- | --- |
-| `event_id` | UUID | Identifiant unique de l'événement : clé d'idempotence |
+| `event_id` | UUID | Identifiant unique de l'événement : clé d'idempotence pour les consommateurs |
 | `event_type` | chaîne | `article.published` ou `article.price_changed`. Identique à la clé de routage |
 | `schema_version` | entier | Version du schéma de `data`. Démarre à 1 |
-| `occurred_at` | date-heure UTC | Moment du fait métier, c'est-à-dire de la transaction, et non de la publication |
+| `occurred_at` | date-heure UTC | Moment du fait métier (la transaction), et non de la publication |
 | `producer` | chaîne | Service émetteur (`catalog-service`) |
 | `correlation_id` | chaîne | `X-Request-ID` de la requête HTTP d'origine, pour suivre un parcours de bout en bout dans les logs |
 | `data` | objet | Contenu métier |
@@ -217,7 +200,7 @@ Tous les événements partagent une enveloppe inspirée de CloudEvents 1.0. Seul
 
 ### 3.4 `article.published`
 
-Émis quand un article passe au statut `PUBLISHED` (US-03). Consommé par `notification-service` (RM-08) et `fraud-service` (RM-07).
+Émis quand un article passe au statut `PUBLISHED` (US-03). Consommé par `notification-service` (RM-08), et par l'outil anti-fraude dans la cible.
 
 ```json
 {
@@ -276,11 +259,11 @@ Exemple :
 }
 ```
 
-L'événement transporte tout ce dont les consommateurs ont besoin (*event-carried state transfer*). Les consommateurs n'appellent jamais `catalog-service` en retour : ils restent disponibles et testables même si le catalogue est arrêté.
+L'événement transporte tout ce dont le consommateur a besoin (*event-carried state transfer*) : catégorie, vendeur, titre, prix. `notification-service` n'appelle jamais `catalog-service` en retour, et reste disponible et testable même si le catalogue est arrêté.
 
 ### 3.5 `article.price_changed`
 
-Émis à chaque modification effective du prix d'un article publié (US-04, RM-04). Consommé par `notification-service` (RM-08) et `fraud-service` (RM-07).
+Émis à chaque modification effective du prix d'un article publié (US-04, RM-04). Consommé par `notification-service` (RM-08), et par l'outil anti-fraude dans la cible.
 
 ```json
 {
@@ -339,13 +322,14 @@ Exemple :
 }
 ```
 
-Les motifs des montants imposent deux décimales et excluent un prix nul (`(?!0+\.00$)`), conformément à RM-01. Les frais de port peuvent être nuls. Les mots-clés `format` (`uuid`, `date-time`) ne sont que des annotations en JSON Schema 2020-12 : les tests de contrat les vérifient en activant explicitement un *format checker*.
-
-`old_price` et `new_price` permettent à `fraud-service` de calculer la variation (règle `PRICE_SPIKE`) sans historique local.
+**Remarques sur les schémas.**
+- Les motifs des montants imposent deux décimales et excluent un prix nul (`(?!0+\.00$)`), conformément à RM-01. Les frais de port peuvent être nuls.
+- `old_price` et `new_price` permettront à l'outil anti-fraude de calculer la variation sans historique local.
+- Les mots-clés `format` (`uuid`, `date-time`) ne sont que des annotations en JSON Schema 2020-12 : les tests les vérifient en activant explicitement un *format checker*.
 
 ## 4. Modèle de données
 
-Chaque service possède sa propre base PostgreSQL (*database per service*, ENF-21). Aucune clé étrangère ne traverse deux bases : les références vers un autre service (`seller_id`, `category_id` dans `notification-service`…) sont des identifiants opaques. Les utilisateurs n'ont pas de table : l'identité appartient à Keycloak, et les services ne stockent que le `sub`. Le schéma est versionné avec Alembic.
+Une seule instance PostgreSQL héberge une **base logique par service**, plus la base de Keycloak. Chaque service se connecte avec son propre utilisateur PostgreSQL, qui n'a le droit de se connecter qu'à sa base (`REVOKE CONNECT … FROM PUBLIC`, puis `GRANT CONNECT` au seul propriétaire). Aucune clé étrangère ne relie les deux bases : `category_id` et `seller_id` sont des identifiants opaques dans `notification_db`. Les utilisateurs n'ont pas de table : l'identité appartient à Keycloak, et les services ne stockent que le `sub`. Le schéma est versionné avec Alembic.
 
 ### 4.1 catalog_db (catalog-service)
 
@@ -399,17 +383,8 @@ erDiagram
         varchar changed_by "sub Keycloak"
         timestamptz changed_at
     }
-    OUTBOX_EVENTS {
-        uuid event_id PK
-        varchar event_type
-        jsonb payload "enveloppe complète"
-        timestamptz occurred_at
-        timestamptz published_at "NULL tant que non publié"
-        int attempts
-    }
 ```
 
-- Un index partiel `WHERE published_at IS NULL` sur `outbox_events` garde la lecture du relais rapide, même avec beaucoup d'événements déjà publiés.
 - `GET /articles` s'appuie sur un index `(status, category_id, created_at DESC)`.
 - Le vendeur d'un article se déduit de `shops.owner_id`. Il n'est pas dupliqué dans `articles`.
 
@@ -418,9 +393,6 @@ erDiagram
 ```mermaid
 erDiagram
     %% id: donnees-notification
-    ARTICLE_SNAPSHOTS ||--o{ FOLLOWS : "est suivi"
-    ARTICLE_SNAPSHOTS ||--o{ NOTIFICATIONS : concerne
-
     INTERESTS {
         varchar user_id PK "sub Keycloak"
         uuid category_id PK
@@ -430,21 +402,7 @@ erDiagram
         varchar user_id PK
         boolean new_article "défaut true"
         boolean price_changed "défaut true"
-        boolean email "défaut false"
         timestamptz updated_at
-    }
-    FOLLOWS {
-        varchar user_id PK
-        uuid article_id PK
-        timestamptz created_at
-    }
-    ARTICLE_SNAPSHOTS {
-        uuid article_id PK
-        varchar seller_id
-        uuid category_id
-        varchar title
-        numeric price
-        timestamptz last_event_at
     }
     NOTIFICATIONS {
         uuid id PK
@@ -452,61 +410,17 @@ erDiagram
         varchar type "NEW_ARTICLE | PRICE_CHANGED"
         uuid article_id
         jsonb content "titre, prix, ancien et nouveau prix"
-        uuid source_event_id
+        uuid source_event_id "UNIQUE avec user_id"
         timestamptz created_at
-        timestamptz read_at
-    }
-    PROCESSED_EVENTS {
-        uuid event_id PK
-        timestamptz processed_at
     }
 ```
 
-- `article_snapshots` est une **projection locale** construite à partir des événements. Elle permet de vérifier qu'un article existe avant de le suivre (404 sinon) et de connaître son vendeur, pour ne pas le notifier de son propre article (RM-08), sans appeler le catalogue.
-- La contrainte `UNIQUE (user_id, source_event_id)` sur `notifications` double la protection de `processed_events` contre les doublons, y compris en cas de traitements concurrents.
-
-### 4.3 fraud_db (fraud-service)
-
-```mermaid
-erDiagram
-    %% id: donnees-fraud
-    PRICE_OBSERVATIONS {
-        uuid id PK
-        uuid article_id "index (article_id, observed_at)"
-        varchar seller_id
-        varchar event_type
-        numeric old_price "NULL pour une publication"
-        numeric price
-        timestamptz observed_at
-        uuid source_event_id UK
-    }
-    ALERTS {
-        uuid id PK
-        varchar rule "PRICE_ABOVE_CEILING | PRICE_SPIKE | FREQUENT_PRICE_CHANGES"
-        varchar severity "LOW | MEDIUM | HIGH"
-        uuid article_id
-        varchar seller_id
-        jsonb details "valeurs ayant déclenché la règle"
-        uuid source_event_id
-        varchar status "OPEN | CONFIRMED | DISMISSED"
-        varchar reviewed_by
-        timestamptz reviewed_at
-        timestamptz created_at
-    }
-    PROCESSED_EVENTS {
-        uuid event_id PK
-        timestamptz processed_at
-    }
-```
-
-- Sévérités : `PRICE_ABOVE_CEILING` → HIGH, `PRICE_SPIKE` → MEDIUM, `FREQUENT_PRICE_CHANGES` → MEDIUM.
-- La contrainte `UNIQUE (rule, source_event_id)` garantit une alerte au plus par règle et par événement (RM-09).
-- **Anti-bruit.** Tant qu'une alerte `FREQUENT_PRICE_CHANGES` est `OPEN` pour un article, les modifications suivantes n'en créent pas de nouvelle.
-- Le plafond de prix (10 000 € par défaut) et les seuils viennent de la configuration du service (ConfigMap Kubernetes). Ils ne sont pas codés en dur.
+- Les destinataires d'un événement sont calculés par une seule requête : les `user_id` de `interests` pour la `category_id` de l'événement, joints à `preferences` (valeur par défaut si absente), sauf le `seller_id` de l'événement (RM-08).
+- La contrainte `UNIQUE (user_id, source_event_id)` empêche une notification en double si un message est relivré (RM-09). L'insertion utilise `ON CONFLICT DO NOTHING`.
 
 ## 5. Traçabilité des endpoints
 
-| Endpoint | Story | Exigences |
+| Endpoint ou événement | Story | Exigences |
 | --- | --- | --- |
 | `GET /categories` | US-01, US-03, US-05 | EF-01, EF-27 |
 | `POST /categories` | US-01 | EF-27, RM-06 |
@@ -514,7 +428,6 @@ erDiagram
 | `POST /articles` | US-03 | EF-03, EF-04, EF-05, RM-01 à RM-03 |
 | `GET /articles`, `GET /articles/{id}` | US-03, US-04 | EF-01 |
 | `PUT /articles/{id}/price`, `GET /articles/{id}/price-history` | US-04 | EF-06, RM-04, ENF-08 |
-| `/me/interests`, `/me/preferences`, `/me/follows/{id}`, `/me/notifications` | US-05 | EF-10, EF-12 à EF-16, RM-08 |
-| `GET /alerts`, `PATCH /alerts/{id}` | US-06 | EF-26, RM-07 |
-| Événement `article.published` | US-03, US-05, US-06 | EF-13, EF-23, ENF-18 |
-| Événement `article.price_changed` | US-04, US-05, US-06 | EF-14, EF-23, EF-24, ENF-18 |
+| `/me/interests`, `/me/preferences`, `/me/notifications` | US-05 | EF-10, EF-12 à EF-16, RM-08 |
+| Événement `article.published` | US-03, US-05 | EF-13, EF-25 |
+| Événement `article.price_changed` | US-04, US-05 | EF-14, EF-25 |

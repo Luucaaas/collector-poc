@@ -97,7 +97,7 @@ flowchart TB
 | rating | Notation réciproque après transaction | PostgreSQL | `rating.submitted` | `order.delivered` | EF-11 | V1 |
 | chat | Messagerie acheteur-vendeur en temps réel, filtrage des coordonnées | PostgreSQL + Redis (présence) | `chat.message_flagged` | `order.created` | EF-21, EF-22 | V1 |
 | notification | Centres d'intérêt, recherches enregistrées, préférences, notifications dans l'espace et par email | PostgreSQL | — | `article.*`, `order.*`, `payment.*`, `seller.suspended`, `fraud.alert_raised` | EF-12 à EF-16, EF-36 | V1 (POC) |
-| fraud | Règles d'anomalie, alertes, relais vers un outil tiers | PostgreSQL | `fraud.alert_raised` | `article.*`, `payment.*`, `rating.submitted` | EF-23 à EF-26 | V1 (POC) |
+| fraud | Règles d'anomalie, alertes, relais vers un outil tiers | PostgreSQL | `fraud.alert_raised` | `article.*`, `payment.*`, `rating.submitted` | EF-23 à EF-26 | V1 (point d'extension prévu dans le POC) |
 | recommendation | Recommandations par centres d'intérêt, puis par parcours de navigation | PostgreSQL + modèle | — | `article.*`, `catalog.viewed` (V2) | EF-30, EF-31 | V1, puis V2 |
 | advertising | Flux produits et audiences pour les régies partenaires, sous consentement | PostgreSQL | — | `article.published` | EF-32, ENF-10 | V2 |
 | analytics | Entrepôt de données des ventes, exposé à Power BI | Entrepôt analytique | — | tous les événements | EF-35 | V2 |
@@ -156,7 +156,7 @@ Le POC n'applique que des règles déterministes (RM-01, RM-02) : il tranche tou
 | `fraud.alert_raised` | fraud | moderation, notification (admins) | Règle d'anomalie déclenchée |
 | `rating.submitted` | rating | fraud, analytics | Note déposée |
 
-Les deux premiers événements sont implémentés dans le POC, avec les schémas décrits dans [contrats.md](contrats.md).
+Les événements `article.published` et `article.price_changed` sont implémentés dans le POC, avec les schémas décrits dans [contrats.md](contrats.md). Dans le POC, seul `notification-service` les consomme.
 
 ## 5. Intégration au système d'information existant
 
@@ -168,19 +168,21 @@ Les deux premiers événements sont implémentés dans le POC, avec les schémas
 
 ## 6. Hébergement cible
 
-La production vise un **Kubernetes managé chez un hébergeur européen**, pour la conformité RGPD et dans la continuité de l'hébergeur français actuel du site vitrine. Le choix précis (OVHcloud Managed Kubernetes, Scaleway Kapsule…) sera fait après le POC. Les charts Helm et les images multi-architecture du POC sont réutilisés tels quels (ENF-31). Le POC tourne sur un cluster k3d local (ADR 0006).
+La production vise un **Kubernetes managé chez un hébergeur européen**, pour la conformité RGPD et dans la continuité de l'hébergeur français actuel du site vitrine. Le choix précis (OVHcloud Managed Kubernetes, Scaleway Kapsule…) sera fait après le POC. Les charts Helm et les images multi-architecture du POC sont réutilisés tels quels (ENF-31). Le POC tourne sur un cluster k3d local, déployé par script (ADR 0006).
 
 Les composants avec état passent sur des offres managées ou des opérateurs : PostgreSQL managé ou opérateur CloudNativePG avec réplicas, RabbitMQ en cluster de 3 nœuds avec *quorum queues*, sauvegardes automatiques (ENF-20).
 
 ## 7. Ce que le POC démontre de la cible
 
-| Préoccupation de la cible | Démonstration dans le POC |
-| --- | --- |
-| Découpage par domaine, une base par service | 3 services FastAPI, 3 bases PostgreSQL |
-| Contrôle automatique avant publication | Règles synchrones dans catalog, décision immédiate. La cible ajoute le statut `PENDING_REVIEW` : l'article n'est mis en vente qu'après la décision de moderation (contrôle des images, revue manuelle en cas de doute), conformément à EF-04 |
-| Communication asynchrone fiable | Exchange `topic`, outbox, consommateurs idempotents, *dead-letter queues* |
-| Ajout d'un service sans modifier les autres | notification et fraud consomment les mêmes événements, indépendamment l'un de l'autre |
-| Sécurité | TLS, OIDC + PKCE, JWT vérifié par service, RBAC, NetworkPolicies, scans en CI |
-| Disponibilité et montée en charge | Réplicas répartis sur les 2 agents, HPA, test de charge Locust, maintenance (drain) et panne d'un agent |
-| Déploiement reproductible | Helm et Argo CD (GitOps) |
-| Observabilité | Prometheus et Grafana, logs JSON corrélés |
+Le POC retient le minimum qui démontre chaque principe (ADR [0007](adr/0007-simplification-perimetre-poc.md)). L'écart entre les deux colonnes est détaillé, avec ses risques, dans les « Limites assumées » d'[architecture-poc.md](architecture-poc.md#8-limites-assumées-du-poc).
+
+| Préoccupation de la cible | Dans la cible | Dans le POC |
+| --- | --- | --- |
+| Découpage par domaine | Un service par domaine, une base (instance) par service | 2 services FastAPI, une base logique par service dans une instance PostgreSQL, un utilisateur PostgreSQL par service |
+| Contrôle avant mise en vente | Règles synchrones, puis statut `PENDING_REVIEW` et décision de moderation | Règles synchrones, décision immédiate |
+| Communication asynchrone fiable | Outbox, *quorum queues*, consommateurs idempotents, *dead-letter queues* | Exchange `topic`, file durable, messages persistants, acquittement après traitement, publication juste après le commit |
+| Ajout d'un consommateur sans modifier le producteur | fraud, search, recommendation… abonnés aux mêmes événements | notification abonné à `article.events`, et une file supplémentaire liée en démo pour montrer le point d'extension anti-fraude |
+| Sécurité | WAF, mTLS, NetworkPolicies, BFF, secrets dans un coffre, scans complets | TLS, OIDC + PKCE, JWT vérifié par service, RBAC et propriété, droits PostgreSQL par service, SonarCloud et Trivy en CI |
+| Disponibilité et montée en charge | Réplicas répartis de force, PodDisruptionBudget, stockage répliqué | 2 réplicas, sondes, HPA, démonstrations de perte d'un pod et de montée en charge |
+| Déploiement reproductible | GitOps avec Argo CD | Helm, déployé par le script `deploy.sh` |
+| Observabilité | OpenTelemetry, Prometheus, Loki, Grafana, alertes | Prometheus et Grafana (un tableau de bord), logs JSON corrélés |

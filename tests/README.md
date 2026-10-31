@@ -1,5 +1,4 @@
 # Tests transverses
 
-- `acceptance/` : tests d'acceptation pytest-bdd issus des critères d'acceptation du backlog
-  - `features/` : un fichier Gherkin par user story, en français (`# language: fr`), avec des tags de traçabilité (`@US-03`, `@RM-02`, `@ENF-03`…)
+- `acceptance/` : tests d'acceptation en pytest avec le client httpx, un test par critère d'acceptation du backlog, nommé d'après la story et le critère (`test_us03_ca2_article_avec_coordonnees_rejete`). Ils s'exécutent contre l'API déployée.
 - `load/` : scénarios de charge Locust et résultats

@@ -1,5 +1,5 @@
 ---
-statut: acceptée
+statut: acceptée (mise à jour le 2026-10-31, voir ADR 0007)
 date: 2026-10-30
 décideurs: Lucas (Lead Developer)
 ---
@@ -31,12 +31,15 @@ Quel broker retenir ?
 
 ## Décision
 
-**Option 1 : RabbitMQ**, avec un exchange `topic` durable (`article.events`), une *quorum queue* par consommateur, des messages persistants, les *publisher confirms* côté producteur, un acquittement manuel côté consommateur et une *dead-letter queue* propre à chaque consommateur après 5 tentatives (`x-delivery-limit`, clé de routage de dead-letter par file, stratégie `at-least-once`). Le client Python est aio-pika.
+**Option 1 : RabbitMQ**, avec un exchange `topic` durable (`article.events`), une file durable par consommateur, des messages persistants, les *publisher confirms* côté producteur et un acquittement manuel côté consommateur. Le client Python est aio-pika.
+
+- **Dans le POC** (ADR 0007) : un seul nœud RabbitMQ et une seule file classique, `notification.article-events`.
+- **Dans la cible** : cluster de 3 nœuds, *quorum queues*, et *dead-letter queue* propre à chaque consommateur après 5 tentatives (`x-delivery-limit`, clé de routage de dead-letter par file, stratégie `at-least-once`).
 
 ### Conséquences
 
 - ✅ Le modèle exchange → files correspond exactement au besoin : chaque service reçoit sa copie, et un nouveau consommateur se branche par une simple liaison.
-- ✅ Acquittement par message et *dead-letter queues* natives : un message qui échoue n'en bloque pas d'autres et reste analysable.
+- ✅ Acquittement par message, et *dead-letter queues* natives pour la cible : un message qui échoue n'en bloque pas d'autres et reste analysable.
 - ✅ Empreinte réduite : une instance tient dans quelques centaines de Mo de mémoire. L'interface de gestion et les métriques Prometheus sont intégrées.
 - ✅ Les *quorum queues* (réplication Raft) offrent la haute disponibilité de la cible avec un cluster de 3 nœuds, sans changer le code.
 - ❌ Pas de rétention longue ni de relecture de l'historique par défaut : un message acquitté disparaît. Un futur service, comme l'analyse des ventes, ne pourra pas relire les événements passés. Atténuation : les RabbitMQ Streams, ou l'ajout de Kafka pour la plateforme de données si le besoin se confirme.
@@ -45,7 +48,7 @@ Quel broker retenir ?
 
 ### Confirmation
 
-Un protocole d'expérimentation (`docs/04-experimentations`) déploie RabbitMQ dans le cluster k3d, mesure la publication et la consommation, puis vérifie trois comportements : la perte d'un consommateur (les messages s'accumulent puis sont consommés à son retour), le redémarrage du broker (aucun message persistant n'est perdu) et le routage vers la *dead-letter queue*.
+Un protocole d'expérimentation (`docs/04-experimentations`) déploie RabbitMQ dans le cluster k3d, mesure la publication et la consommation, puis vérifie trois comportements : la perte d'un consommateur (les messages s'accumulent puis sont consommés à son retour), le redémarrage du broker (aucun message persistant n'est perdu) et l'ajout d'une file liée à l'exchange, qui reçoit les événements sans modification du producteur.
 
 ## Avantages et inconvénients des options
 

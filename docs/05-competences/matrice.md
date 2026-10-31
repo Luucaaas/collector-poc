@@ -87,7 +87,7 @@ Les cinq écarts les plus critiques, par ordre de priorité.
 | 4 | Conformité et paiement : RGPD (requis 3, max 1), PCI DSS (requis 2, max 1), intégration du PSP (requis 2, max 1), tous de criticité moyenne | Traitement de données personnelles d'acheteurs et de vendeurs sans base légale établie, sanction de la CNIL, atteinte à la confiance. Une erreur de périmètre PCI DSS ou d'intégration du PSP engage la responsabilité de Collector | **Accompagnement externe ponctuel** : un·e DPO ou un cabinet de conformité pour le registre et l'analyse d'impact, un audit du périmètre PCI DSS avant l'ouverture, le support d'intégration du PSP |
 | 5 | Tests de charge et de bout en bout (Locust, Playwright ; requis 3, max 2, criticité moyenne) | Les tests de charge et les parcours front sont écrits par des développeurs qui ne sont pas spécialistes : couverture incomplète, tests fragiles, validation de l'acceptation faite par ceux qui codent | **Recrutement** d'un·e QA automaticien·ne, qui reprend la revue des tests et la validation de l'acceptation |
 
-**Écarts non retenus parmi les cinq.** Keycloak n'y figure pas : le realm est importé depuis un JSON versionné et le DevOps apporte le niveau 2, l'écart restant est moyen. Le chat en temps réel (WebSocket) et les parcours UX/UI sont des écarts moyens qui se traitent par la pratique en binôme et la revue de code, sans action dédiée. Les emails transactionnels passent par un fournisseur dédié (`architecture-cible.md`, section 5) : c'est une intégration d'API courante, sans ligne propre dans la matrice.
+**Écarts non retenus parmi les cinq.** Keycloak n'y figure pas : le realm est importé depuis un JSON versionné et le DevOps apporte le niveau 2, l'écart restant est moyen. Le chat en temps réel (WebSocket) et les parcours UX/UI sont des écarts moyens qui se traitent par la pratique en binôme et la revue de code, sans action dédiée. Les emails transactionnels passent par un fournisseur dédié (`architecture-cible.md`, section 5) : c'est une intégration d'API courante, sans ligne propre dans la matrice. L'outil anti-fraude, développé en interne ou acheté, s'abonne à l'exchange `article.events` : son intégration relève des compétences RabbitMQ et architecture événementielle déjà présentes dans la matrice, et ne crée pas d'écart nouveau.
 
 Choix entre formation, recrutement et accompagnement externe.
 
@@ -164,4 +164,4 @@ Situation après l'action de formation (Lead Dev à 3 en Kubernetes et en Helm) 
 
 ## 7. Suite : plan de formation
 
-L'action de formation détaillée sur Kubernetes et Helm (objectifs, durée, modalités, évaluation des acquis) est décrite dans le document `plan-formation.md` (à venir, tâche P2-06). Elle cible l'écart n° 1 de la section 4.
+L'action de formation détaillée sur Kubernetes et Helm (objectifs, durée, modalités, évaluation des acquis) est décrite dans le document `plan-formation.md` (à venir, tâche P2-06). Elle cible l'écart n° 2 de la section 4.

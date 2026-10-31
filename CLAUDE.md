@@ -83,6 +83,8 @@ docs/03-backlog          exigences, user stories, critères d'acceptation
 docs/04-experimentations un protocole par technologie testée
 docs/05-competences      matrice de compétences, plan de formation
 docs/06-securite         rapports de scans, STRIDE / OWASP, plan de remédiation
+docs/suivi               ETAT.md, fiches de tâche (taches/), journal des décisions
+.claude/agents           agents developpeur et auditeur
 services/<nom>-service   un service FastAPI par dossier (src/, tests/, Dockerfile, pyproject.toml)
 frontend/                application React
 tests/acceptance         tests d'acceptation pytest + httpx
@@ -102,6 +104,41 @@ deploy/k8s               manifests complémentaires (Secret TLS mkcert, Ingress)
 - Aucun secret dans le repo : `.env.example` versionné, `.env` ignoré. Secrets Kubernetes pour le cluster.
 - Images Docker multi-stage, utilisateur non-root, base `python:3.12-slim`.
 - Tout ce qui sert au jury doit être reproductible par script (cluster, expérimentations, tests de charge).
+
+## Organisation multi-agents
+
+Trois rôles :
+
+| Rôle | Qui | Modèle | Ce qu'il fait |
+| --- | --- | --- | --- |
+| Chef | La session principale | Opus | Découpe, délègue, arbitre, fusionne, tient le suivi |
+| Développeur | Agent `developpeur` (`.claude/agents/developpeur.md`) | Sonnet | Réalise une tâche sur sa branche, tient le journal de la fiche |
+| Auditeur | Agent `auditeur` (`.claude/agents/auditeur.md`) | Haiku | Vérifie une branche sans rien modifier, rend un verdict |
+
+Le suivi vit dans `docs/suivi/` : `ETAT.md` (tenu uniquement par le chef), une fiche par tâche dans `taches/<id>.md` (modèle dans `taches/README.md`) et `journal-decisions.md`.
+
+Le chef :
+
+- Découpe chaque phase du plan en tâches courtes, avec des critères de fin vérifiables.
+- Avant chaque délégation : crée la fiche de tâche avec le brief, met à jour `ETAT.md`, puis commite les deux sur main.
+- Confie chaque tâche au développeur, sur une branche `phase-N/nom-tache`.
+- Après chaque tâche, lance l'auditeur sur la branche et recopie son rapport dans la fiche.
+- Si le verdict est NON CONFORME : renvoie les écarts au développeur (2 allers-retours maximum, puis il tranche lui-même).
+- Si l'auditeur remonte un DOUTE, ou si le développeur pose une question : tranche et consigne la décision dans `docs/suivi/journal-decisions.md`.
+- Fusionne sur main et pousse uniquement quand l'audit est CONFORME. Pour les tâches critiques (sécurité, fin de phase), refait lui-même une contre-vérification finale.
+- Après chaque résultat, met à jour `ETAT.md` et le commite.
+- Ne sollicite Lucas que pour : un changement de périmètre, une action qui demande son mot de passe ou un compte externe, ou une décision irréversible.
+- À la fin de chaque phase : met à jour l'avancement dans ce fichier et fait un bilan court à Lucas.
+
+### Reprise après interruption
+
+Après une coupure (limite d'usage, session fermée) :
+
+1. Lire `docs/suivi/ETAT.md`.
+2. Lire la fiche de la tâche en cours (`docs/suivi/taches/<id>.md`), en particulier le journal et « Reste à faire ».
+3. Vérifier l'état réel avec git : branche de la tâche (`git branch -a`), derniers commits (`git log --oneline -5 <branche>`), modifications non commitées (`git status`), puis relancer les tests, `ruff check` et `mypy` si du code est concerné.
+4. Si l'état réel diffère de `ETAT.md`, corriger `ETAT.md` d'abord.
+5. Exécuter la « Prochaine action exacte » d'`ETAT.md`.
 
 ## Travailler avec Lucas
 

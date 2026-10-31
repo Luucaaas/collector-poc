@@ -13,7 +13,7 @@ Les valeurs réelles sont relevées en phase 8 (section « Relevés »). Ce docu
 | I1 | Couverture de tests du code métier | Maintenabilité (testabilité) | ≥ 80 % | pytest-cov, SonarCloud | Chaque push et pull request (CI) | ENF-22 |
 | I2 | Dette technique | Maintenabilité (analysabilité, modifiabilité) | Note de maintenabilité A ; duplication < 3 % ; complexité cognitive ≤ 15 par fonction ; Ruff et mypy sans erreur | SonarCloud, Ruff, mypy (mode strict) | Chaque push et pull request (CI) | ENF-23 |
 | I3 | Latence p95 et taux d'erreur sous charge | Efficacité de performance (comportement temporel, capacité) ; Fiabilité (disponibilité) | Avec 50 utilisateurs Locust : p95 < 300 ms en lecture du catalogue, p95 < 500 ms en publication d'article, moins de 1 % de réponses 5xx | Locust, Prometheus, Grafana | Test de charge de la phase 8 et démo de disponibilité | ENF-12, ENF-13 |
-| I4 | Vulnérabilités CRITICAL et HIGH | Sécurité (résistance) | 0 vulnérabilité CRITICAL ou HIGH avec correctif disponible (Trivy bloquant) | Trivy, SonarCloud | Chaque push et pull request (CI) | ENF-05 |
+| I4 | Vulnérabilités CRITICAL et HIGH | Sécurité (résistance) | 0 vulnérabilité CRITICAL ou HIGH avec correctif disponible et 0 secret de sévérité CRITICAL ou HIGH (Trivy bloquant, ENF-04 et ENF-05) | Trivy, SonarCloud | Chaque push et pull request (CI) | ENF-04, ENF-05 |
 | I5 | Taux de critères d'acceptation validés | Adéquation fonctionnelle (complétude fonctionnelle, exactitude fonctionnelle) | 17 critères sur 17 passent | Tests d'acceptation pytest + httpx | CI et avant chaque démonstration | [user-stories.md](../03-backlog/user-stories.md) |
 
 Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, SonarCloud, Ruff, mypy, Locust, Prometheus, Grafana, Trivy, pytest + httpx). Les versions seront figées par `uv.lock` (backend), `package.json` (front) et les workflows GitHub Actions (phases 3 à 5), puis consignées dans les protocoles de `docs/04-experimentations`.
@@ -28,9 +28,9 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Seuil | ≥ 80 % (ENF-22) |
 | Justification du seuil | Au-dessous, les règles de gestion (contrôle automatique, historique des prix, dédoublonnage des notifications) risquent de n'être vérifiées par aucun test. Au-dessus de 80 %, le gain marginal est faible pour un POC. |
 | Outil | pytest-cov (mesure), SonarCloud (affichage et quality gate) |
-| Où et quand | Étape « pytest + couverture » de la CI GitHub Actions, à chaque push et pull request. Rapport XML transmis à SonarCloud à l'étape suivante. |
+| Où et quand | Job `test` de la CI GitHub Actions, à chaque push et pull request. Rapport XML transmis à SonarCloud par le job `sonar`. |
 | Qui suit | Lead Developer, à la revue de fin de sprint |
-| Action si le seuil n'est pas respecté | L'étape de tests échoue elle-même sous 80 % (`pytest --cov-fail-under=80`), et la quality gate SonarCloud bloque aussi le pipeline : aucune image n'est publiée sur GHCR. Les tests manquants sont écrits avant la fusion. |
+| Action si le seuil n'est pas respecté | Le job `test` échoue lui-même sous 80 % (`pytest --cov-fail-under=80`), et la quality gate SonarCloud bloque aussi le pipeline : aucune image n'est publiée sur GHCR. Les tests manquants sont écrits avant la fusion. |
 | Effet sur la dette technique | Une couverture qui baisse signale du code ajouté sans test. Le suivi par pull request (couverture du code nouveau) empêche de repousser les tests à plus tard : une régression sur un contrôle métier est détectée par la CI et non en production. Il permet aussi de refactorer les services sans crainte de casser un comportement non vérifié. |
 
 ## I2 — Dette technique SonarCloud
@@ -43,7 +43,7 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Seuil | Note de maintenabilité A ; duplication < 3 % ; complexité cognitive ≤ 15 par fonction ; Ruff et mypy (mode strict) sans erreur (ENF-23) |
 | Justification du seuil | La note A signifie un ratio de dette faible. Une complexité cognitive de 15 est le seuil par défaut de SonarCloud : au-delà, une fonction devient difficile à relire et à tester. La duplication sous 3 % évite de corriger le même défaut à plusieurs endroits. |
 | Outils | SonarCloud (note, ratio, duplication, complexité), Ruff (style et erreurs courantes), mypy en mode strict (typage) |
-| Où et quand | Ruff et mypy : première étape de la CI, bloquantes. SonarCloud : après les tests, quality gate bloquante. À chaque push et pull request. |
+| Où et quand | Ruff et mypy : job `lint`, première étape de la CI, bloquant. SonarCloud : job `sonar`, après les tests, quality gate bloquante. À chaque push et pull request. |
 | Qui suit | Lead Developer, à la revue de fin de sprint |
 | Action si le seuil n'est pas respecté | Ruff ou mypy en échec : le pipeline s'arrête avant les tests. Quality gate SonarCloud en échec : pas de publication d'image. Une dette acceptée volontairement est notée comme ticket de dette avec sa justification. |
 | Effet sur la dette technique | C'est l'indicateur direct de la dette. La quality gate s'applique au code nouveau : chaque pull request est contrôlée sur ses propres lignes, ce qui empêche la dette de s'accumuler par petites touches. Le ratio suivi dans le temps montre la tendance. mypy strict évite les erreurs de type qui se paieraient plus tard en corrections. |
@@ -70,10 +70,10 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Caractéristique ISO 25010 | Sécurité, sous-caractéristique résistance |
 | Définition | Nombre de vulnérabilités connues de sévérité CRITICAL ou HIGH, avec correctif disponible, dans les dépendances et les images Docker, auquel s'ajoutent les problèmes de sécurité détectés par l'analyse statique SonarCloud |
 | Formule | Décompte brut : `nombre de vulnérabilités CRITICAL + HIGH avec correctif` (Trivy) ; nombre de problèmes de sécurité ouverts à la quality gate (SonarCloud) |
-| Seuil | 0 vulnérabilité CRITICAL ou HIGH avec correctif disponible, Trivy bloquant (ENF-05) |
+| Seuil | 0 vulnérabilité CRITICAL ou HIGH avec correctif disponible et 0 secret de sévérité CRITICAL ou HIGH, Trivy bloquant (ENF-04 et ENF-05) |
 | Justification du seuil | Une vulnérabilité sévère avec correctif disponible peut être supprimée sans coût fonctionnel : la tolérer est un choix, pas une contrainte. Celles sans correctif sont consignées dans le plan de remédiation, car aucune action immédiate n'est possible. |
 | Outils | Trivy (dépendances, image, secrets), SonarCloud (analyse statique du code) |
-| Où et quand | Étape Trivy de la CI, après le build Docker et avant le push sur GHCR, à chaque push et pull request |
+| Où et quand | Job `build-scan` de la CI (Trivy), après le build Docker et avant le push sur GHCR (job `publish`), à chaque push et pull request |
 | Qui suit | Lead Developer, à la revue de fin de sprint |
 | Action si le seuil n'est pas respecté | Le pipeline est bloqué : aucune image n'est publiée. Mise à jour de la dépendance ou de l'image de base. Si aucun correctif n'existe, la vulnérabilité est inscrite au plan de remédiation (`docs/06-securite`) avec sa priorité. |
 | Effet sur la dette technique | Une dépendance obsolète est une dette qui s'aggrave avec le temps : des vulnérabilités s'y ajoutent et la mise à jour devient plus risquée. L'analyse à chaque modification, y compris sans changement de code, oblige à des montées de version petites et fréquentes plutôt qu'à une migration lourde. |
@@ -98,7 +98,7 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Indicateur | Où voir la valeur | Fréquence |
 | --- | --- | --- |
 | I1, I2 | Tableau de bord du projet SonarCloud (historique, tendance du ratio de dette) | À chaque analyse CI |
-| I4 | Journal de l'étape Trivy dans les artefacts de la CI ; SonarCloud pour l'analyse statique | À chaque exécution du pipeline |
+| I4 | Journal du job `build-scan` (Trivy) dans la CI ; SonarCloud pour l'analyse statique | À chaque exécution du pipeline |
 | I5 | Rapport pytest dans les artefacts de la CI | À chaque exécution du pipeline |
 | I3 | Grafana pendant le test de charge ; résultats Locust archivés dans `tests/load` | À chaque campagne de charge (phase 8) |
 

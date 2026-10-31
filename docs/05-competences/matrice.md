@@ -97,7 +97,7 @@ Choix entre formation, recrutement et accompagnement externe.
 | Besoin | Permanent et au cœur du métier de l'équipe | Permanent, mais demandant un métier à plein temps | Ponctuel (audit, analyse d'impact) |
 | Retenu pour | Kubernetes et Helm, au niveau 3 : le Lead Dev doit pouvoir superviser, relire un chart et diagnostiquer, sans dépendre d'une seule personne | DevOps, QA, UX/UI : des métiers distincts, à temps plein | Test d'intrusion, RGPD, PCI DSS, support du PSP : peu de jours par an |
 
-**Écart ciblé par l'action de formation.** L'action de formation détaillée (à venir, `plan-formation.md`) vise **Kubernetes et Helm**. C'est l'écart de criticité haute que l'équipe doit maîtriser en interne en permanence : le Lead Dev supervise le déploiement et doit défendre le cluster, même une fois le DevOps arrivé. La sécurité applicative, écart n° 1, est aussi de criticité haute, mais sa réponse est un recrutement et un test d'intrusion externe : on achète ce niveau d'expertise, on ne le forme pas en interne. L'accessibilité, également haute, demande un métier de conception et non une formation de quelques semaines. Kubernetes et Helm restent donc l'écart de criticité haute dont la compétence doit rester dans l'équipe.
+**Écart ciblé par l'action de formation.** L'action de formation détaillée ([plan-formation.md](plan-formation.md)) vise **Kubernetes et Helm**. C'est l'écart de criticité haute que l'équipe doit maîtriser en interne en permanence : le Lead Dev supervise le déploiement et doit défendre le cluster, même une fois le DevOps arrivé. La sécurité applicative, écart n° 1, est aussi de criticité haute, mais sa réponse est un recrutement et un test d'intrusion externe : on achète ce niveau d'expertise, on ne le forme pas en interne. L'accessibilité, également haute, demande un métier de conception et non une formation de quelques semaines. Kubernetes et Helm restent donc l'écart de criticité haute dont la compétence doit rester dans l'équipe.
 
 ## 5. Recrutements envisagés
 
@@ -164,4 +164,4 @@ Situation après l'action de formation (Lead Dev à 3 en Kubernetes et en Helm) 
 
 ## 7. Suite : plan de formation
 
-L'action de formation détaillée sur Kubernetes et Helm (objectifs, durée, modalités, évaluation des acquis) est décrite dans le document `plan-formation.md` (à venir, tâche P2-06). Elle cible l'écart n° 2 de la section 4.
+L'action de formation détaillée sur Kubernetes et Helm (objectifs, durée, modalités, évaluation des acquis) est décrite dans le document [plan-formation.md](plan-formation.md). Elle cible l'écart n° 2 de la section 4.

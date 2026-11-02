@@ -21,7 +21,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | fusionnée |
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | fusionnée |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
-| P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | en audit (audit n° 2) |
+| P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | en cours (aller-retour n° 2) |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | à faire |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | à faire |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
@@ -30,7 +30,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Lancer l'audit n° 2 de P3-01 sur `phase-3/exp-rabbitmq`, puis recopier le rapport dans la fiche.
+Renvoyer au développeur les retouches de rédaction de l'audit n° 2 de P3-01 (dernier aller-retour), puis lancer l'audit n° 3.
 
 ## Décisions en attente
 
@@ -42,4 +42,4 @@ Lancer l'audit n° 2 de P3-01 sur `phase-3/exp-rabbitmq`, puis recopier le rappo
 
 ## Dernière mise à jour
 
-02/11/2026 21:55 — P3-01 corrigée (exécution de référence du 02/11/2026 21:49, scénarios A, B et C), audit n° 2 en cours.
+02/11/2026 21:58 — P3-01 : audit n° 2 non conforme (rédaction), aller-retour n° 2.

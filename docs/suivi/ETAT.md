@@ -22,15 +22,15 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | fusionnée |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
-| P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | en audit (audit n° 2) |
-| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | à faire |
+| P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
+| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en cours |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Lancer l'audit n° 2 de P3-02 sur `phase-3/exp-observabilite`, puis recopier le rapport dans la fiche.
+Confier P3-03 au développeur (fiche `docs/suivi/taches/P3-03.md`, branche `phase-3/exp-keycloak-tls`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
 
 ## Décisions en attente
 
@@ -42,4 +42,4 @@ Lancer l'audit n° 2 de P3-02 sur `phase-3/exp-observabilite`, puis recopier le 
 
 ## Dernière mise à jour
 
-02/11/2026 22:52 — P3-02 corrigée (exécution de référence du 02/11/2026 22:43, pile avec kube-state-metrics et kubelet), audit n° 2 en cours.
+02/11/2026 22:57 — P3-02 fusionnée (audit n° 2 conforme), P3-03 lancée (PostgreSQL par CloudNativePG).

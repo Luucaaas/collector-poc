@@ -17,6 +17,7 @@ async def main() -> None:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--count", type=int, default=1000)
     parser.add_argument("--rate", type=float, default=50.0)
+    parser.add_argument("--poison-at", type=int, default=0)
     args = parser.parse_args()
 
     connection = await connect()
@@ -31,8 +32,10 @@ async def main() -> None:
     for i in range(1, args.count + 1):
         message_id = f"{args.run_id}-{i:05d}"
         message = aio_pika.Message(
-            body=json.dumps({"n": i}).encode(),
+            body=json.dumps({"n": i, "poison": i == args.poison_at}).encode(),
             message_id=message_id,
+            type=ROUTING_KEY,
+            headers={"x-correlation-id": f"exp-{message_id}"},
             content_type="application/json",
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )

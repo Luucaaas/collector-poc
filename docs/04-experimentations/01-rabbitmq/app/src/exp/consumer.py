@@ -1,4 +1,8 @@
-"""Consommateur : traite 20 ms, publie un accusé dans exp.receipts, puis acquitte le message."""
+"""Consommateur : traite 20 ms, publie un accusé dans exp.receipts, puis acquitte le message.
+
+Règle d'échec de contrats.md §3.1 : au premier échec, `nack(requeue=True)` ; si le message
+est déjà relivré, `reject(requeue=False)` et une ligne de journal.
+"""
 
 import asyncio
 import json
@@ -13,6 +17,10 @@ from exp.common import PREFETCH, QUEUE, RECEIPTS_QUEUE, connect, declare_topolog
 PROCESSING_SECONDS = 0.02
 
 
+class ProcessingError(Exception):
+    """Échec volontaire du traitement (message « empoisonné »)."""
+
+
 async def main() -> None:
     pod = os.environ.get("POD_NAME", "local")
     connection = await connect()
@@ -21,21 +29,41 @@ async def main() -> None:
     receipts = await connection.channel(publisher_confirms=True)
     queue = await declare_topology(channel)
 
+    async def send_receipt(message: AbstractIncomingMessage, outcome: str) -> None:
+        receipt = aio_pika.Message(
+            body=json.dumps(
+                {
+                    "id": message.message_id,
+                    "ts": time.time(),
+                    "pod": pod,
+                    "redelivered": message.redelivered,
+                    "outcome": outcome,
+                }
+            ).encode(),
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+        )
+        await receipts.default_exchange.publish(receipt, routing_key=RECEIPTS_QUEUE)
+
+    async def process(message: AbstractIncomingMessage) -> None:
+        await asyncio.sleep(PROCESSING_SECONDS)  # traitement simulé
+        if json.loads(message.body).get("poison"):
+            raise ProcessingError(message.message_id)
+
     async def handle(message: AbstractIncomingMessage) -> None:
         try:
-            await asyncio.sleep(PROCESSING_SECONDS)  # traitement simulé
-            receipt = aio_pika.Message(
-                body=json.dumps(
-                    {
-                        "id": message.message_id,
-                        "ts": time.time(),
-                        "pod": pod,
-                        "redelivered": message.redelivered,
-                    }
-                ).encode(),
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-            )
-            await receipts.default_exchange.publish(receipt, routing_key=RECEIPTS_QUEUE)
+            try:
+                await process(message)
+            except ProcessingError:
+                if message.redelivered:
+                    log("message_rejected", message_id=message.message_id, pod=pod)
+                    await send_receipt(message, "rejected")
+                    await message.reject(requeue=False)
+                else:
+                    log("message_requeued", message_id=message.message_id, pod=pod)
+                    await send_receipt(message, "failed_requeued")
+                    await message.nack(requeue=True)
+                return
+            await send_receipt(message, "ok")
             await message.ack()  # acquittement après traitement
         except Exception as exc:  # noqa: BLE001 - sans ack, le broker relivrera le message
             log("handle_failed", message_id=message.message_id, error=type(exc).__name__)

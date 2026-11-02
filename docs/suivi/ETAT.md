@@ -23,23 +23,24 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
-| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en cours |
+| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en cours (bloquée : disque Docker) |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Confier P3-03 au développeur (fiche `docs/suivi/taches/P3-03.md`, branche `phase-3/exp-keycloak-tls`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
+Attendre que Lucas agrandisse le disque de Docker Desktop, puis demander au développeur de reprendre P3-03 à partir du « Reste à faire » de son journal (branche `phase-3/exp-keycloak-tls`).
 
 ## Décisions en attente
 
 | Sujet | Qui décide | Remarque |
 | --- | --- | --- |
 | Acceptation du cluster local k3d pour le critère 5 | Lucas (question à l'intervenant) | Sinon migration vers Oracle OKE Always Free |
+| Disque virtuel de Docker Desktop trop petit (58,4 Go) : P3-03 consomme plus de 4,5 Go et la phase 6 déploiera toute la pile. Recommandation : l'agrandir à 100 Go (Settings > Resources > Advanced > Disk image size) | Lucas (réglage de Docker Desktop) | **Bloquant pour P3-03** |
 | **À relancer à la fin de P3-03** : 7 conteneurs kind d'autres projets de Lucas, arrêtés par le chef avec son accord le 02/11/2026 13:49 : `docker start projet-control-plane projet-worker projet-worker2 tp-affinity-control-plane tp-affinity-worker tp-affinity-worker2 tp-k8s-control-plane` | Chef (accord de Lucas) | Ne pas les supprimer. `mkcert -install` fait le 02/11/2026. Restent Node 22 (recommandé) et `check-tools.sh --cluster` |
 | Cache npm : `sudo chown -R 501:20 ~/.npm` | Lucas (mot de passe) | Non bloquant : contourné par `npm_config_cache` pour l'export des diagrammes |
 
 ## Dernière mise à jour
 
-02/11/2026 22:57 — P3-02 fusionnée (audit n° 2 conforme), P3-03 lancée (PostgreSQL par CloudNativePG).
+02/11/2026 23:16 — P3-03 bloquée par le disque de la VM Docker (3,4 Go libres à mi-parcours) ; Traefik, TLS, CloudNativePG et Keycloak démarrent.

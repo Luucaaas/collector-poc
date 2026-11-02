@@ -160,7 +160,8 @@ SKEW=$(python3 -c "print(f'{float(\"$vm\") - (float(\"$before\") + float(\"$afte
 echo "Décalage horloge cluster - Mac : ${SKEW} s"
 
 # --- Scénario A : perte du consommateur ----------------------------------------------------
-# Suppression normale (SIGTERM, délai de grâce par défaut de 30 s), sans --force.
+# Suppression par kubectl delete pod (sans --force) ; le manifeste du consommateur fixe
+# terminationGracePeriodSeconds: 0, donc un délai de grâce de 0 s (arrêt immédiat demandé).
 step "Scénario A : suppression du pod consommateur en plein flux"
 run_job producer-a "$(producer_cmd A "$COUNT")"
 wait_confirmed producer-a $((COUNT / 2))

@@ -6,7 +6,7 @@ Un protocole par technologie testée. Chaque dossier contient le protocole (`pro
 
 | N° | Expérimentation | Dossier | Décision |
 | --- | --- | --- | --- |
-| 1 | RabbitMQ sur Kubernetes (k3d, opérateur officiel) | [01-rabbitmq](01-rabbitmq/protocole.md) Adoptée (opérateur officiel, cert-manager pour les webhooks) |
+| 1 | RabbitMQ sur Kubernetes (k3d, opérateur officiel) | [01-rabbitmq](01-rabbitmq/protocole.md) | Adoptée (opérateur officiel, cert-manager pour les webhooks) |
 | 2 | Keycloak + Traefik + certificat mkcert | à venir | |
 | 3 | kube-prometheus-stack | à venir | |
 | 4 | (option) Kafka | écartée (journal des décisions du 02/11/2026) | Rejeté par l'ADR 0003 |

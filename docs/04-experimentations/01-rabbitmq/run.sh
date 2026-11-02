@@ -24,6 +24,7 @@ cd "$(dirname "$0")"
 K="kubectl --context k3d-${CLUSTER}"
 
 step() { printf '\n=== %s ===\n' "$*"; }
+disk() { echo "Espace disque libre de la VM Docker ($1) : $(docker run --rm alpine df -h / | awk 'NR==2 {print $4 " sur " $2 " (" $5 " utilisé)"}')"; }
 now() { python3 -c 'import time; print(f"{time.time():.3f}")'; }
 
 cleanup() {
@@ -91,6 +92,7 @@ docker info >/dev/null
 k3d version | head -1
 kubectl version --client | head -1
 
+disk "avant"
 step "1. Cluster k3d (1 server, 2 agents)"
 k3d cluster delete "$CLUSTER" >/dev/null 2>&1 || true
 k3d cluster create "$CLUSTER" --servers 1 --agents 2 --image "$K3S_IMAGE" \
@@ -123,6 +125,7 @@ docker build -q -t "$APP_IMAGE" app
 k3d image import "$APP_IMAGE" -c "$CLUSTER"
 $K apply -f manifests/consumer.yaml
 $K -n "$NS" rollout status deployment/consumer --timeout=120s
+disk "après téléchargement de toutes les images"
 
 # Décalage entre l'horloge du Mac et celle du cluster (VM Docker), pour dater les suppressions.
 before=$(now)
@@ -170,6 +173,7 @@ echo "$RESULT_B"
 
 # --- Synthèse -------------------------------------------------------------------------------
 step "Synthèse"
+disk "fin des scénarios"
 echo "--- Mémoire consommée (kubectl top) ---"
 $K top pods -n cert-manager || true
 $K top pods -n rabbitmq-system || true

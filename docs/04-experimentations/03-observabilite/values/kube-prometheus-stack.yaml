@@ -1,0 +1,68 @@
+# Valeurs de kube-prometheus-stack 91.9.0, allégées pour un poste de 8 Go.
+# Seules les clés qui diffèrent des valeurs par défaut du chart sont listées.
+
+# Noms courts et prévisibles : services kps-prometheus et kps-grafana, Secret kps-grafana.
+fullnameOverride: kps
+
+# --- Composants retirés (hors périmètre : on ne supervise que l'application de test) ---------
+alertmanager:
+  enabled: false            # pas d'alertes dans le POC (CLAUDE.md : « sans Alertmanager »)
+defaultRules:
+  create: false             # règles d'alerte et d'enregistrement du chart : inutiles sans Alertmanager
+nodeExporter:
+  enabled: false            # métriques de la machine : non demandées
+kubeStateMetrics:
+  enabled: false            # métriques des objets Kubernetes : non demandées
+kubelet:
+  enabled: false
+kubeApiServer:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+coreDns:
+  enabled: false
+
+# --- Opérateur Prometheus ---------------------------------------------------------------
+prometheusOperator:
+  tls:
+    enabled: false          # le Secret du certificat est créé par le Job « certgen » des webhooks : sans lui, le pod reste en ContainerCreating
+  admissionWebhooks:
+    enabled: false          # évite le Job « certgen » et une image de plus ; sans validation des règles
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+
+# --- Prometheus -------------------------------------------------------------------------
+prometheus:
+  prometheusSpec:
+    retention: 2h           # rétention courte : l'expérience dure moins de 30 minutes
+    # Sélectionne les ServiceMonitor de tous les espaces de noms, sans exiger le label
+    # « release: kps » (par défaut le chart ne sélectionne que ceux qui le portent).
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {memory: 768Mi}
+
+# --- Grafana ----------------------------------------------------------------------------
+# Le mot de passe administrateur est généré par le chart (Secret kps-grafana), pas écrit ici.
+grafana:
+  defaultDashboardsEnabled: false   # seuls les tableaux de bord versionnés dans le dépôt
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard      # le sidecar charge toute ConfigMap portant ce label
+      labelValue: "1"
+      searchNamespace: ALL          # dans tous les espaces de noms
+    resources:                      # ressources des conteneurs sidecar de Grafana
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {memory: 128Mi}
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 384Mi}

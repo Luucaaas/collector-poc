@@ -6,7 +6,7 @@ Exécution de référence : **02/11/2026 21:49** (`./run.sh`, code de sortie 0).
 
 **Question** : RabbitMQ, installé sur un cluster k3d par son opérateur officiel, transporte-t-il les événements du POC (`article.events`) sans perte quand le consommateur ou le broker est supprimé en plein flux, et applique-t-il la règle d'échec du contrat (remise en file une fois, puis rejet) ?
 
-- Scénario A : le consommateur est supprimé pendant que 1 000 messages sont publiés (arrêt immédiat, qui simule un crash).
+- Scénario A : le consommateur est supprimé pendant que 1 000 messages sont publiés (délai de grâce de 0 s, pour simuler un crash ; le conteneur reste en fait actif environ 2 s, voir la section 5).
 - Scénario B : le pod RabbitMQ est supprimé pendant que 1 000 messages sont publiés (volume persistant conservé).
 - Scénario C : un message dont le traitement échoue volontairement est publié parmi 100 messages.
 - Critères de réussite : 1 000 messages distincts traités en A et en B ; 99 messages sains traités en C, le message empoisonné étant traité 2 fois au total (une remise en file) puis rejeté et journalisé. Les doublons sont mesurés, pas interdits : la livraison est « au moins une fois » (`contrats.md` §3.2).
@@ -76,7 +76,7 @@ Le décalage entre l'horloge du Mac et celle du cluster (−0,021 s à cette ex�
 
 Exécution du 02/11/2026 21:49 (sortie : `resultats/run-20261102-2149.log`).
 
-| Mesure | A : perte du consommateur | B : perte du broker |
+| Mesure | A : perte du consommateur | B : arrêt propre du broker |
 | --- | --- | --- |
 | Messages à traiter | 1 000 | 1 000 |
 | Messages distincts traités | 1 000 | 1 000 |
@@ -142,7 +142,7 @@ Lecture des résultats :
 
 - **Un seul nœud RabbitMQ, file classique.** Un nœud et un volume persistant ne protègent pas d'une perte du volume ou du nœud : c'est la limite **L7** (*quorum queues*, cluster de 3 nœuds, *dead-letter queue*) de `architecture-poc.md`. Le message rejeté du scénario C est simplement supprimé de la file : sans DLQ, il n'est ni conservé ni rejouable (L7).
 - **Pas d'*outbox*.** Le producteur de l'expérience republie tant que le broker n'a pas confirmé. Le vrai `catalog-service` publie après le commit sans réessai : un événement est perdu si le broker est indisponible à cet instant (limite **L2**). Les résultats prouvent le transport, pas la cohérence base de données et événement.
-- **A simule un crash, pas un arrêt propre.** `terminationGracePeriodSeconds: 0` tue le conteneur sans lui laisser terminer son traitement. Les services du POC (uvicorn) traiteront SIGTERM proprement (fin des requêtes et des messages en cours, puis arrêt) : c'est un autre cas, non testé ici.
+- **A simule un crash, pas un arrêt propre.** `terminationGracePeriodSeconds: 0` demande l'arrêt du conteneur sans délai de grâce, donc sans lui laisser terminer son traitement ; il a pourtant traité des messages pendant 2,063 s après la suppression (hypothèse non vérifiée : délai entre l'API et le kubelet). Les services du POC (uvicorn) traiteront SIGTERM proprement (fin des requêtes et des messages en cours, puis arrêt) : c'est un autre cas, non testé ici.
 - **B est un arrêt propre du broker** (SIGTERM, volume conservé). Le crash brutal du broker (arrêt sans vidage de ses données) n'est pas testé : la durabilité des messages confirmés dans ce cas reste à vérifier.
 - **Le drapeau `redelivered` ne distingue pas un crash d'un échec** : un message relivré après un crash du consommateur n'a plus qu'une tentative avant le rejet, puisque la règle d'échec s'appuie sur ce drapeau (`contrats.md` §3.1). Cible : le compteur de livraisons des *quorum queues* (`x-delivery-count`, limite L7).
 - **Règle de mesure « pod Ready → premier message traité » (B).** Elle prend la fin du plus long silence de traitement comme premier message traité après la coupure. Elle n'est valable que si l'indisponibilité est ce plus long silence, ce qui est le cas ici (53,573 s contre 0,036 s en A et 0,042 s en C).

@@ -22,7 +22,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | fusionnée |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
-| P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | en cours |
+| P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | en audit |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | à faire |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
@@ -30,7 +30,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Confier P3-02 au développeur (fiche `docs/suivi/taches/P3-02.md`, branche `phase-3/exp-observabilite`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
+Lancer l'auditeur sur `phase-3/exp-observabilite` (fiche `docs/suivi/taches/P3-02.md`), puis recopier son rapport dans la fiche.
 
 ## Décisions en attente
 
@@ -42,4 +42,4 @@ Confier P3-02 au développeur (fiche `docs/suivi/taches/P3-02.md`, branche `phas
 
 ## Dernière mise à jour
 
-02/11/2026 22:00 — P3-01 fusionnée (audit n° 3, corrections finales du chef), P3-02 lancée.
+02/11/2026 22:38 — P3-02 livrée (exécution de référence du 02/11/2026 22:27), en audit.

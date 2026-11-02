@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  namespace: exp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      # Arrêt immédiat à la suppression du pod : on simule un crash. Python étant le PID 1 du
+      # conteneur et n'interceptant pas SIGTERM, le signal serait ignoré jusqu'au délai de grâce.
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: consumer
+          image: exp-rabbitmq-app:local
+          imagePullPolicy: Never
+          command: ["python", "-m", "exp.consumer"]
+          env:
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-default-user
+                  key: username
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-default-user
+                  key: password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi

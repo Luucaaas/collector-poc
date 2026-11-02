@@ -1,0 +1,148 @@
+
+=== 0. Pré-requis et environnement ===
+Date de l'exécution : 02/11/2026 21:49
+macOS 26.6.2 arm64 ; Python hôte 3.15.2 ; uv 0.13.6
+Docker moteur 28.5.1 ; 10 CPU, 8322555904 octets de mémoire
+k3d version v5.9.0
+Client Version: v1.34.1
+Espace disque libre de la VM Docker (avant) : 7.9G sur 58.4G (86% utilisé)
+
+=== 1. Cluster k3d (1 server, 2 agents) ===
+INFO[0000] Prep: Network                                
+INFO[0000] Created network 'k3d-collector-exp1'         
+INFO[0000] Created image volume k3d-collector-exp1-images 
+INFO[0000] Starting new tools node...                   
+INFO[0000] Starting node 'k3d-collector-exp1-tools'     
+INFO[0001] Creating node 'k3d-collector-exp1-server-0'  
+INFO[0001] Creating node 'k3d-collector-exp1-agent-0'   
+INFO[0001] Creating node 'k3d-collector-exp1-agent-1'   
+INFO[0001] Creating LoadBalancer 'k3d-collector-exp1-serverlb' 
+INFO[0001] Using the k3d-tools node to gather environment information 
+INFO[0002] Starting new tools node...                   
+INFO[0002] Starting node 'k3d-collector-exp1-tools'     
+INFO[0003] Starting cluster 'collector-exp1'            
+INFO[0003] Starting servers...                          
+INFO[0003] Starting node 'k3d-collector-exp1-server-0'  
+INFO[0009] Starting agents...                           
+INFO[0009] Starting node 'k3d-collector-exp1-agent-1'   
+INFO[0009] Starting node 'k3d-collector-exp1-agent-0'   
+INFO[0012] Starting helpers...                          
+INFO[0012] Starting node 'k3d-collector-exp1-serverlb'  
+INFO[0018] Injecting records for hostAliases (incl. host.k3d.internal) and for 5 network members into CoreDNS configmap... 
+INFO[0021] Cluster 'collector-exp1' created successfully! 
+INFO[0021] You can now use it like this:                
+kubectl cluster-info
+NAME                          STATUS   ROLES           AGE   VERSION        INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION     CONTAINER-RUNTIME
+k3d-collector-exp1-agent-0    Ready    <none>          8s    v1.35.8+k3s1   172.20.0.4    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+k3d-collector-exp1-agent-1    Ready    <none>          8s    v1.35.8+k3s1   172.20.0.5    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+k3d-collector-exp1-server-0   Ready    control-plane   11s   v1.35.8+k3s1   172.20.0.3    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+
+=== 2a. cert-manager (certificats internes des webhooks de l'opérateur) ===
+deployment.apps/cert-manager condition met
+deployment.apps/cert-manager-cainjector condition met
+deployment.apps/cert-manager-webhook condition met
+
+=== 2b. RabbitMQ Cluster Operator ===
+Waiting for deployment "rabbitmq-cluster-operator" rollout to finish: 0 of 1 updated replicas are available...
+deployment "rabbitmq-cluster-operator" successfully rolled out
+
+=== 3. RabbitmqCluster (1 nœud, image rabbitmq:4.3.5-management) ===
+namespace/exp created
+rabbitmqcluster.rabbitmq.com/rabbitmq created
+pod/rabbitmq-server-0 condition met
+rabbitmqcluster.rabbitmq.com/rabbitmq condition met
+
+=== 4. Image de l'application ===
+sha256:31f5c5c14c37c92203ceb20c2ece42f52964be4c4ff611082a2d6015ebf059cf
+INFO[0000] Importing image(s) into cluster 'collector-exp1' 
+INFO[0000] Saving 1 image(s) from runtime...            
+INFO[0002] Importing images into nodes...               
+INFO[0002] Importing images from tarball '/k3d/images/k3d-collector-exp1-images-20261102215111.tar' into node 'k3d-collector-exp1-agent-0'... 
+INFO[0002] Importing images from tarball '/k3d/images/k3d-collector-exp1-images-20261102215111.tar' into node 'k3d-collector-exp1-server-0'... 
+INFO[0002] Importing images from tarball '/k3d/images/k3d-collector-exp1-images-20261102215111.tar' into node 'k3d-collector-exp1-agent-1'... 
+INFO[0005] Removing the tarball(s) from image volume... 
+INFO[0006] Removing k3d-tools node...                   
+INFO[0006] Successfully imported image(s)               
+INFO[0006] Successfully imported 1 image(s) into 1 cluster(s) 
+deployment.apps/consumer created
+Waiting for deployment "consumer" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "consumer" rollout to finish: 0 of 1 updated replicas are available...
+deployment "consumer" successfully rolled out
+Espace disque libre de la VM Docker (après téléchargement de toutes les images) : 6.1G sur 58.4G (89% utilisé)
+Décalage horloge cluster - Mac : -0.021 s
+
+=== Scénario A : suppression du pod consommateur en plein flux ===
+pod "consumer-85d5dbcc87-fgmpx" deleted from exp namespace
+Pod supprimé : consumer-85d5dbcc87-fgmpx
+{"ts": 1793652702.6590972, "event": "progress", "confirmed": 1000}
+{"ts": 1793652702.6736162, "event": "producer_done", "run_id": "A", "confirmed": 1000, "retries": 0, "max_outage_s": 0.0}
+{"ts": 1793652702.678874, "event": "amqp_connection_lost"}
+{"run_id": "A", "expected": 1000, "receipts_ok": 1000, "distinct": 1000, "missing": 0, "duplicates": 0, "redelivered_ok": 1, "pods": ["consumer-85d5dbcc87-fgmpx", "consumer-85d5dbcc87-ngnl9"], "max_gap_s": 0.036, "max_gap_start_ts": 1793652695.137, "max_gap_end_ts": 1793652695.173, "old_pod_last_after_delete_s": 2.063, "new_pod_first_after_delete_s": 0.966, "handover_gap_s": -1.097}
+
+=== Scénario B : suppression du pod RabbitMQ en plein flux (volume conservé) ===
+deployment "consumer" successfully rolled out
+pod "rabbitmq-server-0" deleted from exp namespace
+pod/rabbitmq-server-0 condition met
+--- Journal du producteur (événements notables) ---
+{"ts": 1793652731.7648351, "event": "amqp_connection_lost"}
+{"ts": 1793652731.7752173, "event": "publish_failed", "message_id": "B-00592", "error": "ChannelInvalidStateError"}
+{"ts": 1793652785.1043997, "event": "amqp_reconnected"}
+{"ts": 1793652785.5694628, "event": "publish_recovered", "message_id": "B-00592", "outage_s": 53.793}
+{"ts": 1793652785.7835443, "event": "producer_done", "run_id": "B", "confirmed": 1000, "retries": 107, "max_outage_s": 53.793}
+{"ts": 1793652785.7844138, "event": "amqp_connection_lost"}
+--- Journal du consommateur (événements notables) ---
+{"ts": 1793652693.959612, "event": "consumer_start", "pod": "consumer-85d5dbcc87-ngnl9", "queue": "notification.article-events", "prefetch": 10}
+{"ts": 1793652731.7650778, "event": "amqp_connection_lost"}
+{"ts": 1793652785.3044384, "event": "amqp_reconnected"}
+{"run_id": "B", "expected": 1000, "receipts_ok": 1000, "distinct": 1000, "missing": 0, "duplicates": 0, "redelivered_ok": 1, "pods": ["consumer-85d5dbcc87-ngnl9"], "max_gap_s": 53.573, "max_gap_start_ts": 1793652731.757, "max_gap_end_ts": 1793652785.33, "old_pod_last_after_delete_s": 56.233}
+
+=== Scénario C : un message dont le traitement échoue volontairement (rang 50 sur 100) ===
+{"ts": 1793652804.0607054, "event": "amqp_connection_lost"}
+{"run_id": "C", "expected": 99, "receipts_ok": 99, "distinct": 99, "missing": 0, "duplicates": 0, "redelivered_ok": 0, "pods": ["consumer-85d5dbcc87-ngnl9"], "max_gap_s": 0.042, "max_gap_start_ts": 1793652803.041, "max_gap_end_ts": 1793652803.083, "poison_attempts": 2, "poison_outcomes": ["failed_requeued", "rejected"]}
+--- Journal du consommateur (remise en file et rejet) ---
+{"ts": 1793652803.0599055, "event": "message_requeued", "message_id": "C-00050", "pod": "consumer-85d5dbcc87-ngnl9"}
+{"ts": 1793652803.0833533, "event": "message_rejected", "message_id": "C-00050", "pod": "consumer-85d5dbcc87-ngnl9"}
+
+=== Synthèse ===
+Espace disque libre de la VM Docker (fin des scénarios) : 6.1G sur 58.4G (89% utilisé)
+--- Mémoire consommée (kubectl top) ---
+NAME                                     CPU(cores)   MEMORY(bytes)   
+cert-manager-7dd5fd898d-wwfrw            1m           27Mi            
+cert-manager-cainjector-f555478d-ghmpk   2m           16Mi            
+cert-manager-webhook-69d4696bcf-xxmsq    1m           11Mi            
+NAME                                        CPU(cores)   MEMORY(bytes)   
+rabbitmq-cluster-operator-ddc87f675-z29db   2m           19Mi            
+NAME                        CPU(cores)   MEMORY(bytes)   
+consumer-85d5dbcc87-ngnl9   6m           23Mi            
+rabbitmq-server-0           21m          126Mi           
+Mesure                                                              A (consommateur)      B (broker)
+Messages à traiter                                                              1000            1000
+Messages distincts traités                                                      1000            1000
+Messages manquants                                                                 0               0
+Doublons (traitements en trop)                                                     0               0
+Messages relivrés (drapeau redelivered)                                            1               1
+Suppression -> dernier message de l'ancien pod (s)                             2.063               -
+Suppression -> 1er message du nouveau pod (s)                                  0.966               -
+Silence entre ancien et nouveau pod (s, < 0 = chevauchement)                  -1.097               -
+Suppression -> dernier message avant la coupure (s)                                -            1.42
+Suppression -> pod RabbitMQ Ready (s)                                              -          54.164
+Pod Ready -> 1er message traité (s)                                                -           0.829
+Plus long silence de traitement (s)                                            0.036          53.573
+Indisponibilité vue par le producteur (s)                                          -          53.793
+Indisponibilité vue par le consommateur (s)                                        -          53.539
+Republications du producteur                                                       -             107
+
+Scénario C : message empoisonné C-00050
+Messages sains traités (distincts, sur 99)                                                        99
+Messages sains manquants                                                                           0
+Tentatives de traitement du message empoisonné                                                     2
+Issues successives                                                     failed_requeued puis rejected
+Lignes de journal « message_rejected »                                                             1
+
+=== Suppression du cluster ===
+INFO[0000] Deleting cluster 'collector-exp1'            
+INFO[0001] Deleting cluster network 'k3d-collector-exp1' 
+INFO[0001] Deleting 1 attached volumes...               
+INFO[0001] Removing cluster details from default kubeconfig... 
+INFO[0001] Removing standalone kubeconfig file (if there is one)... 
+INFO[0001] Successfully deleted cluster collector-exp1! 

@@ -7,6 +7,7 @@ set -euo pipefail
 
 # --- Versions figées -------------------------------------------------------------------
 K3S_IMAGE="rancher/k3s:v1.35.8-k3s1"
+CERT_MANAGER_MANIFEST="manifests/cert-manager-v1.21.2.yaml"  # cert-manager v1.21.2 (exigé par l'opérateur)
 OPERATOR_MANIFEST="manifests/cluster-operator-v2.23.0.yml" # RabbitMQ Cluster Operator v2.23.0
 RABBITMQ_IMAGE="rabbitmq:4.3.5-management"                 # référencée dans manifests/rabbitmq-cluster.yaml
 APP_IMAGE="exp-rabbitmq-app:local"                         # aio-pika 10.1.1 (voir app/uv.lock)
@@ -96,9 +97,19 @@ k3d cluster create "$CLUSTER" --servers 1 --agents 2 --image "$K3S_IMAGE" \
   --k3s-arg "--disable=traefik@server:0" --wait --timeout 600s
 $K get nodes -o wide
 
-step "2. RabbitMQ Cluster Operator"
+step "2a. cert-manager (certificats internes des webhooks de l'opérateur)"
+$K apply --server-side -f "$CERT_MANAGER_MANIFEST" >/dev/null
+$K -n cert-manager wait --for=condition=Available deployment --all --timeout=300s
+
+step "2b. RabbitMQ Cluster Operator"
 $K apply --server-side -f "$OPERATOR_MANIFEST" >/dev/null
 $K -n rabbitmq-system rollout status deployment/rabbitmq-cluster-operator --timeout=180s
+# Le webhook n'est utilisable qu'une fois son certificat émis par cert-manager.
+for _ in $(seq 1 90); do
+  $K -n rabbitmq-system get secret cluster-operator-webhook-server-cert >/dev/null 2>&1 && break
+  sleep 2
+done
+$K -n rabbitmq-system get secret cluster-operator-webhook-server-cert >/dev/null
 
 step "3. RabbitmqCluster (1 nœud, image ${RABBITMQ_IMAGE})"
 $K create namespace "$NS"
@@ -159,6 +170,10 @@ echo "$RESULT_B"
 
 # --- Synthèse -------------------------------------------------------------------------------
 step "Synthèse"
+echo "--- Mémoire consommée (kubectl top) ---"
+$K top pods -n cert-manager || true
+$K top pods -n rabbitmq-system || true
+$K top pods -n "$NS" || true
 PROD_B=$($K -n "$NS" logs job/producer-b | grep producer_done)
 CONS_LOG=$($K -n "$NS" logs "$CONSUMER_POD" | grep -E 'amqp_' || true)
 RESULT_A="$RESULT_A" RESULT_B="$RESULT_B" PROD_B="$PROD_B" CONS_LOG="$CONS_LOG" python3 - <<'PY'

@@ -54,7 +54,7 @@ Aucune image ni aucun chart Bitnami. Le mot de passe de Grafana est généré pa
 
 ## 4. Étapes reproductibles
 
-Commande unique, depuis `docs/04-experimentations/03-observabilite/` : `./run.sh` (option `--keep` pour garder le cluster). Prérequis : Docker Desktop démarré avec 8 Go, `k3d`, `kubectl`, `helm`, `uv`, `python3`, `perl`, `curl`, 7 Go de disque libre. Le script écrit sa sortie complète dans `resultats/run-AAAAMMJJ-HHMM.log`. Durée de l'exécution de référence : environ 8 minutes (22:43 à 22:51).
+Commande unique, depuis `docs/04-experimentations/03-observabilite/` : `./run.sh` (option `--keep` pour garder le cluster). Prérequis : Docker Desktop démarré avec 8 Go, `k3d`, `kubectl`, `helm`, `uv`, `python3`, `perl`, `curl`, 7 Go de disque libre. Le script écrit sa sortie complète dans `resultats/run-AAAAMMJJ-HHMM.log`. L'exécution de référence a commencé le 02/11/2026 à 22:43 (heure de fin non journalisée).
 
 | Étape | Ce que fait le script |
 | --- | --- |
@@ -101,7 +101,7 @@ Le « injecté » de la latence est l'attente de `/slow` (200 ms), qui est aussi
 **Effet des bornes de l'histogramme.** `histogram_quantile` ne connaît que le nombre de requêtes sous chaque borne ; il suppose les durées réparties de façon uniforme dans le seuil qui contient le quantile.
 - Bornes de la bibliothèque (0,1 / 0,5 / 1 s) : toutes les requêtes `/slow` (≈ 0,2 s) tombent dans l'intervalle ]0,1 ; 0,5], d'où `0,1 + (0,5 − 0,1) × 0,95 = 0,48 s`, exactement la valeur lue (0,4800 s), soit +140 % : l'estimation dépend de la largeur de l'intervalle, pas de la mesure.
 - Bornes serrées : elles tombent dans ]0,2 ; 0,25] (l'attente de 200 ms et le surcoût dépassent 0,2 s), d'où `0,2 + 0,05 × 0,95 = 0,2475 s`, valeur lue : 0,2474 s (+23,7 %). Toutes routes : 90 % des requêtes sont sous 0,05 s et les 10 % lentes dans ]0,2 ; 0,25], le rang 95 % est au milieu de l'intervalle : `0,2 + 0,05 × 0,5 = 0,225 s`, valeur lue : 0,2239 s.
-- **Écarts résiduels** (0,1 ms pour 3a, 1,1 ms pour 3c) : hypothèse non vérifiée. `rate` extrapole les compteurs aux bords de la fenêtre d'une minute et les instants de collecte (toutes les 15 s) ne coïncident pas avec ses bords, de sorte que les parts de requêtes rapides et lentes vues dans la fenêtre ne sont pas exactement 90 % et 10 %. Le taux d'erreur lu (5,006 %) va dans ce sens : la part vue de `/fail` n'est pas exactement 5 %.
+- **Écarts résiduels** (0,1 ms pour 3a, 1,1 ms pour 3c) : hypothèse non vérifiée. `rate` extrapole les compteurs aux bords de la fenêtre d'une minute et les instants de collecte (toutes les 15 s) ne coïncident pas avec ses bords, de sorte que les parts vues dans la fenêtre ne sont pas exactement les parts injectées (le taux d'erreur lu, 5,006 %, va dans ce sens). Cela explique 3c (mélange de requêtes rapides et lentes), mais pas 3a, qui ne porte que sur `/slow` : il faudrait qu'environ 4 % des requêtes `/slow` tombent sous la borne de 0,2 s, ce que la mesure côté client ne permet pas de confirmer. L'écart de 3a reste donc inexpliqué ; il est sans effet sur la conclusion (0,1 ms).
 - Une borne plus proche de la vraie valeur (par exemple 0,21 s) réduirait l'écart. Le p95 d'un histogramme est donc un encadrement, pas une mesure exacte.
 
 **Mesure 4 : délai de collecte** (5 essais, intervalle du ServiceMonitor 15 s) :

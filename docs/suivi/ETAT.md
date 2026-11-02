@@ -42,4 +42,4 @@ Demander au développeur de relancer `docs/04-experimentations/01-rabbitmq/run.s
 
 ## Dernière mise à jour
 
-02/11/2026 13:49 — clusters kind d'autres projets arrêtés avec l'accord de Lucas, P3-01 relancée.
+02/11/2026 13:51 — P3-01 : cluster k3d démarré ; l'opérateur RabbitMQ exige cert-manager, installé par son manifeste officiel (journal des décisions).

@@ -4,7 +4,7 @@
 
 ## Phase en cours
 
-**Phase 3** : expérimentations en bac à sable (`docs/04-experimentations`, critère 1). Pas encore découpée en tâches.
+**Phase 3** : expérimentations en bac à sable (`docs/04-experimentations`, critère 1). Découpage validé par Lucas le 02/11/2026 : 4 tâches (l'option Kafka est écartée), réalisées une par une dans l'ordre du tableau. Infrastructure installée par les opérateurs officiels (journal des décisions).
 
 Phases précédentes : phase 0 (outillage, reste des actions de Lucas), phase 1 terminée et refondue pour le POC simplifié (ADR 0007), **phase 2 terminée le 31/10/2026** (7 tâches ci-dessous, toutes fusionnées après audit conforme).
 
@@ -21,12 +21,16 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | fusionnée |
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | fusionnée |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
+| P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | en cours |
+| P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | à faire |
+| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | à faire (après `mkcert -install` par Lucas) |
+| P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Découper la phase 3 du plan de réalisation en tâches (une par expérimentation : RabbitMQ sur k3d, Keycloak + Traefik + TLS mkcert, kube-prometheus-stack), présenter le découpage à Lucas, puis, après sa validation, créer la fiche `P3-01`, l'inscrire ici et la confier au développeur.
+Confier P3-01 au développeur (fiche `docs/suivi/taches/P3-01.md`, branche `phase-3/exp-rabbitmq`) ; si la branche existe déjà, lui demander de reprendre à partir du « Reste à faire » de son journal.
 
 ## Décisions en attente
 
@@ -38,4 +42,4 @@ Découper la phase 3 du plan de réalisation en tâches (une par expérimentatio
 
 ## Dernière mise à jour
 
-31/10/2026 22:29 — P2-07 fusionnée (audit n° 2 conforme, contre-vérification du chef : 48 liens valides, export des 13 diagrammes sans erreur). Phase 2 terminée.
+02/11/2026 11:38 — découpage de la phase 3 validé, P3-01 lancée.

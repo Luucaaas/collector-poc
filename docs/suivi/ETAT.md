@@ -21,7 +21,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-05 | Matrice de compétences et recrutements | developpeur | `phase-2/matrice-competences` | fusionnée |
 | P2-06 | Plan d'une action de formation | developpeur | `phase-2/plan-formation` | fusionnée |
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
-| P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | en cours (bloquée : ressources Docker) |
+| P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | en cours |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | à faire |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | à faire |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
@@ -30,16 +30,16 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre que Lucas libère les ressources de Docker Desktop (clusters kind arrêtés), puis demander au développeur de relancer `docs/04-experimentations/01-rabbitmq/run.sh` sur la branche `phase-3/exp-rabbitmq` et d'écrire `protocole.md` avec les valeurs mesurées.
+Demander au développeur de relancer `docs/04-experimentations/01-rabbitmq/run.sh` sur la branche `phase-3/exp-rabbitmq` (Docker Desktop libéré), puis d'écrire `protocole.md` avec les valeurs mesurées.
 
 ## Décisions en attente
 
 | Sujet | Qui décide | Remarque |
 | --- | --- | --- |
 | Acceptation du cluster local k3d pour le critère 5 | Lucas (question à l'intervenant) | Sinon migration vers Oracle OKE Always Free |
-| Libérer Docker Desktop pour k3d : 7 conteneurs kind d'autres projets (`projet-*`, `tp-affinity-*`, `tp-k8s-*`) occupent environ 6 Go et plus de 6 CPU ; le serveur k3s ne démarre pas | Lucas (ses autres projets) | **Bloquant pour P3-01**. `mkcert -install` fait le 02/11/2026. Restent Node 22 (recommandé) et `check-tools.sh --cluster` |
+| **À relancer à la fin de P3-03** : 7 conteneurs kind d'autres projets de Lucas, arrêtés par le chef avec son accord le 02/11/2026 13:49 : `docker start projet-control-plane projet-worker projet-worker2 tp-affinity-control-plane tp-affinity-worker tp-affinity-worker2 tp-k8s-control-plane` | Chef (accord de Lucas) | Ne pas les supprimer. `mkcert -install` fait le 02/11/2026. Restent Node 22 (recommandé) et `check-tools.sh --cluster` |
 | Cache npm : `sudo chown -R 501:20 ~/.npm` | Lucas (mot de passe) | Non bloquant : contourné par `npm_config_cache` pour l'export des diagrammes |
 
 ## Dernière mise à jour
 
-02/11/2026 13:48 — P3-01 bloquée : le serveur k3s ne démarre pas faute de ressources (clusters kind d'autres projets actifs) ; code, manifestes et `run.sh` écrits sur la branche (`bac9322`).
+02/11/2026 13:49 — clusters kind d'autres projets arrêtés avec l'accord de Lucas, P3-01 relancée.

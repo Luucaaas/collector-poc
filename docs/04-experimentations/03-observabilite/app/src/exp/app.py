@@ -58,12 +58,12 @@ async def correlation_and_log(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     """Reprend ou génère X-Request-ID, le renvoie, et journalise chaque requête en JSON."""
-    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    correlation_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(request_id=request_id)
+    structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
     started = time.perf_counter()
     response = await call_next(request)
-    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Request-ID"] = correlation_id
     if not request.url.path.startswith(("/health", "/metrics")):
         logger.info(
             "request",

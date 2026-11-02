@@ -11,6 +11,7 @@ set -euo pipefail
 K3S_IMAGE="rancher/k3s:v1.35.8-k3s1"
 STACK_CHART="oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack"
 STACK_VERSION="91.9.0"   # publié le 02/10/2026 ; Prometheus 3.15.0, Grafana 13.2.3, opérateur 0.94.1
+ALPINE_IMAGE="alpine:3.24.3"   # image utilitaire : mesure de l'espace disque de la VM Docker
 APP_IMAGE="exp-observabilite-app:local"   # FastAPI 0.142.2, instrumentator 8.1.0, structlog 26.1.0,
                                           # httpx 0.28.1, uvicorn 0.52.4 (voir app/uv.lock)
 
@@ -44,10 +45,11 @@ GRAFANA_URL="http://127.0.0.1:13000"
 APP_URL="http://127.0.0.1:18000"
 
 step() { printf '\n=== %s ===\n' "$*"; }
-disk() { echo "Espace disque libre de la VM Docker ($1) : $(docker run --rm alpine df -h / | awk 'NR==2 {print $4 " sur " $2 " (" $5 " utilisé)"}')"; }
+disk() { echo "Espace disque libre de la VM Docker ($1) : $(docker run --rm "$ALPINE_IMAGE" df -h / | awk 'NR==2 {print $4 " sur " $2 " (" $5 " utilisé)"}')"; }
 now() { python3 -c 'import time; print(f"{time.time():.3f}")'; }
 
 cleanup() {
+  local rc=$?   # code de sortie du script, relevé avant toute autre commande
   for pid in "${PF_PIDS[@]:-}"; do [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true; done
   rm -rf "$WORK"
   if [[ "$KEEP" == true ]]; then
@@ -55,7 +57,11 @@ cleanup() {
   else
     step "Suppression du cluster"
     k3d cluster delete "$CLUSTER" || true
+    disk "après suppression du cluster"
+    echo "--- k3d cluster list (après suppression) ---"
+    k3d cluster list || true
   fi
+  echo "Code de sortie de run.sh : ${rc}"
 }
 trap cleanup EXIT
 
@@ -114,7 +120,7 @@ k3d version | head -1
 kubectl version --client | head -1
 echo "Helm $(helm version --short)"
 echo "Chart ${STACK_CHART} version ${STACK_VERSION}"
-FREE_MB=$(docker run --rm alpine df -m / | awk 'NR==2 {print $4}')
+FREE_MB=$(docker run --rm "$ALPINE_IMAGE" df -m / | awk 'NR==2 {print $4}')
 disk "avant"
 if [[ "$FREE_MB" -lt "$MIN_FREE_MB" ]]; then
   echo "Espace disque insuffisant : ${FREE_MB} Mo libres, ${MIN_FREE_MB} Mo requis" >&2
@@ -216,7 +222,7 @@ sed -e "s|__NAME__|loadgen|" \
 $K -n "$NS_APP" wait --for=condition=complete job/loadgen --timeout=400s >/dev/null
 LOAD_RESULT=$($K -n "$NS_APP" logs job/loadgen | sed -n 's/^RESULT //p')
 echo "$LOAD_RESULT"
-echo "Attente de deux cycles de collecte après la fin de la charge..."
+echo "Attente de trois cycles de collecte (45 s) après la fin de la charge..."
 sleep 45
 top_all "juste après la charge"
 
@@ -259,8 +265,8 @@ for panel in dash["panels"]:
         print(f"  [{target['refId']}] {target['expr']}")
         exprs[f"{panel['id']}{target['refId']}"] = target["expr"]
 json.dump(exprs, open(os.environ["EXPRS_FILE"], "w"))
-assert health["status"] == "OK" and found and len(dash["panels"]) == 3
-print("GRAFANA OK : source de données saine, tableau de bord chargé, 3 panneaux")
+assert health["status"] == "OK" and found and len(dash["panels"]) == 5
+print("GRAFANA OK : source de données saine, tableau de bord chargé, 5 panneaux")
 PY
 
 # --- Mesures 1 à 3 : Prometheus contre la vérité terrain ------------------------------------
@@ -333,6 +339,14 @@ for label, key, ref in (
 print(f"{'Mesure':<44}{'Injecté':>12}{'Prometheus':>14}{'Écart':>13}{'Écart relatif':>15}")
 for r in rows:
     print(f"{r[0]:<44}{r[1]:>12}{r[2]:>14}{r[3]:>13}{r[4]:>15}")
+print()
+print("Panneaux d'infrastructure (requêtes lues dans Grafana, évaluées à la fin de la charge) :")
+for key, label in (("4A", "Réplicas du Deployment exp-app"), ("5A", "CPU par pod (cœurs)")):
+    result = query(exprs[key], end)
+    if not result:
+        raise SystemExit(f"La requête du panneau {key[0]} ne renvoie aucune valeur")
+    for row in result:
+        print(f"  {label} : {row['value'][1]}  {row['metric']}")  # type: ignore[index]
 print()
 print("Latence p95 mesurée côté client (httpx, générateur de charge) :",
       json.dumps(client))

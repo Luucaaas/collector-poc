@@ -12,9 +12,9 @@ defaultRules:
 nodeExporter:
   enabled: false            # métriques de la machine : non demandées
 kubeStateMetrics:
-  enabled: false            # métriques des objets Kubernetes : non demandées
+  enabled: true             # réplicas des Deployments et de l'HPA (démo de montée en charge, critère 5)
 kubelet:
-  enabled: false
+  enabled: true             # collecte du kubelet dont cAdvisor : CPU et mémoire par conteneur
 kubeApiServer:
   enabled: false
 kubeControllerManager:
@@ -27,6 +27,11 @@ kubeEtcd:
   enabled: false
 coreDns:
   enabled: false
+
+kube-state-metrics:
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 128Mi}
 
 # --- Opérateur Prometheus ---------------------------------------------------------------
 prometheusOperator:

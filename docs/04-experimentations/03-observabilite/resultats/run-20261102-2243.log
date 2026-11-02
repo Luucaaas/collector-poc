@@ -1,6 +1,6 @@
 
 === 0. Pré-requis et environnement ===
-Date de l'exécution : 02/11/2026 22:27
+Date de l'exécution : 02/11/2026 22:43
 macOS 26.6.2 arm64 ; Python hôte 3.15.2 ; uv 0.13.6
 Docker moteur 28.5.1 ; 10 CPU, 8322555904 octets de mémoire
 k3d version v5.9.0
@@ -22,12 +22,12 @@ INFO[0001] Creating LoadBalancer 'k3d-collector-exp3-serverlb'
 INFO[0001] Using the k3d-tools node to gather environment information 
 INFO[0001] Starting new tools node...                   
 INFO[0001] Starting node 'k3d-collector-exp3-tools'     
-INFO[0002] Starting cluster 'collector-exp3'            
-INFO[0002] Starting servers...                          
-INFO[0002] Starting node 'k3d-collector-exp3-server-0'  
+INFO[0003] Starting cluster 'collector-exp3'            
+INFO[0003] Starting servers...                          
+INFO[0003] Starting node 'k3d-collector-exp3-server-0'  
 INFO[0008] Starting agents...                           
-INFO[0008] Starting node 'k3d-collector-exp3-agent-1'   
 INFO[0008] Starting node 'k3d-collector-exp3-agent-0'   
+INFO[0008] Starting node 'k3d-collector-exp3-agent-1'   
 INFO[0011] Starting helpers...                          
 INFO[0011] Starting node 'k3d-collector-exp3-serverlb'  
 INFO[0017] Injecting records for hostAliases (incl. host.k3d.internal) and for 5 network members into CoreDNS configmap... 
@@ -35,18 +35,18 @@ INFO[0019] Cluster 'collector-exp3' created successfully!
 INFO[0019] You can now use it like this:                
 kubectl cluster-info
 NAME                          STATUS   ROLES           AGE   VERSION        INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION     CONTAINER-RUNTIME
-k3d-collector-exp3-agent-0    Ready    <none>          8s    v1.35.8+k3s1   172.20.0.5    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
-k3d-collector-exp3-agent-1    Ready    <none>          8s    v1.35.8+k3s1   172.20.0.4    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
-k3d-collector-exp3-server-0   Ready    control-plane   11s   v1.35.8+k3s1   172.20.0.3    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+k3d-collector-exp3-agent-0    Ready    <none>          9s    v1.35.8+k3s1   172.20.0.4    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+k3d-collector-exp3-agent-1    Ready    <none>          9s    v1.35.8+k3s1   172.20.0.5    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+k3d-collector-exp3-server-0   Ready    control-plane   12s   v1.35.8+k3s1   172.20.0.3    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
 
 === 2. Image de l'application ===
-sha256:9bf223c2e45550414901671f977da4d0ae446852badda1e4d83ca86a5e4092e0
+sha256:afdde1ff9f8af6b530b3b74af24d51d24f9f9b669ec990feca2123d1b2437bb0
 INFO[0000] Importing image(s) into cluster 'collector-exp3' 
 INFO[0000] Saving 1 image(s) from runtime...            
 INFO[0003] Importing images into nodes...               
-INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp3-images-20261102222810.tar' into node 'k3d-collector-exp3-server-0'... 
-INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp3-images-20261102222810.tar' into node 'k3d-collector-exp3-agent-0'... 
-INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp3-images-20261102222810.tar' into node 'k3d-collector-exp3-agent-1'... 
+INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp3-images-20261102224401.tar' into node 'k3d-collector-exp3-agent-0'... 
+INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp3-images-20261102224401.tar' into node 'k3d-collector-exp3-server-0'... 
+INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp3-images-20261102224401.tar' into node 'k3d-collector-exp3-agent-1'... 
 INFO[0006] Removing the tarball(s) from image volume... 
 INFO[0007] Removing k3d-tools node...                   
 INFO[0007] Successfully imported image(s)               
@@ -57,7 +57,7 @@ Release "kps" does not exist. Installing it now.
 Pulled: ghcr.io/prometheus-community/charts/kube-prometheus-stack:91.9.0
 Digest: sha256:04047e500c803dc8d2bc284ecb43e9229bb32b5c36bd13fc89592c8a2f3cdc72
 NAME: kps
-LAST DEPLOYED: Mon Nov  2 22:28:20 2026
+LAST DEPLOYED: Mon Nov  2 22:44:12 2026
 NAMESPACE: monitoring
 STATUS: deployed
 REVISION: 1
@@ -82,17 +82,19 @@ Get your grafana admin user password by running:
 
 Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
 pod/prometheus-kps-prometheus-0 condition met
-NAME                            READY   STATUS    RESTARTS   AGE   IP          NODE                          NOMINATED NODE   READINESS GATES
-kps-grafana-586f467c85-w5w6m    3/3     Running   0          29s   10.42.2.3   k3d-collector-exp3-server-0   <none>           <none>
-kps-operator-5bcd5dbd9f-jz8cj   1/1     Running   0          29s   10.42.1.3   k3d-collector-exp3-agent-1    <none>           <none>
-prometheus-kps-prometheus-0     2/2     Running   0          24s   10.42.0.3   k3d-collector-exp3-agent-0    <none>           <none>
+NAME                                      READY   STATUS    RESTARTS   AGE   IP          NODE                          NOMINATED NODE   READINESS GATES
+kps-grafana-6cdb5c7667-4kx9n              3/3     Running   0          31s   10.42.2.3   k3d-collector-exp3-agent-1    <none>           <none>
+kps-kube-state-metrics-6855b75755-94z8m   1/1     Running   0          31s   10.42.1.3   k3d-collector-exp3-server-0   <none>           <none>
+kps-operator-5bcd5dbd9f-fp9rg             1/1     Running   0          31s   10.42.0.3   k3d-collector-exp3-agent-0    <none>           <none>
+prometheus-kps-prometheus-0               2/2     Running   0          25s   10.42.1.4   k3d-collector-exp3-server-0   <none>           <none>
 --- Images de la pile ---
 docker.io/grafana/grafana:13.2.3-distroless
 quay.io/kiwigrid/k8s-sidecar:2.11.2
 quay.io/prometheus-operator/prometheus-config-reloader:v0.94.1
 quay.io/prometheus-operator/prometheus-operator:v0.94.1
 quay.io/prometheus/prometheus:v3.15.0-distroless
-Espace disque libre de la VM Docker (après téléchargement de la pile) : 4.3G sur 58.4G (92% utilisé)
+registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0
+Espace disque libre de la VM Docker (après téléchargement de la pile) : 4.2G sur 58.4G (92% utilisé)
 
 === 4. Application de test, ServiceMonitor et tableau de bord ===
 namespace/exp created
@@ -109,37 +111,39 @@ configmap/exp-dashboard labeled
 up{job="exp-app"} = 1
 --- Mémoire et CPU des pods (au repos, avant la charge) ---
 Espace de noms monitoring :
-kps-grafana-586f467c85-w5w6m    34m   401Mi   
-kps-operator-5bcd5dbd9f-jz8cj   9m    21Mi    
-prometheus-kps-prometheus-0     7m    59Mi    
+kps-grafana-6cdb5c7667-4kx9n              18m   403Mi   
+kps-kube-state-metrics-6855b75755-94z8m   2m    16Mi    
+kps-operator-5bcd5dbd9f-fp9rg             3m    17Mi    
+prometheus-kps-prometheus-0               22m   164Mi   
 Espace de noms exp :
-exp-app-6cfb689b79-zb2pg   6m    56Mi   
-TOTAL pile (au repos, avant la charge) : 481 Mi, 50 m CPU
+exp-app-6cfb689b79-l6gzg   6m    56Mi   
+TOTAL pile (au repos, avant la charge) : 600 Mi, 45 m CPU
 
 === Mesure 4 : délai entre une requête et sa visibilité dans Prometheus (5 essais) ===
-Essai 1 : visible après 13.07 s
-Essai 2 : visible après 12.00 s
-Essai 3 : visible après 7.12 s
-Essai 4 : visible après 13.24 s
-Essai 5 : visible après 3.78 s
-DELAI min 3.78 s, moyenne 9.84 s, max 13.24 s (intervalle du ServiceMonitor : 15 s)
+Essai 1 : visible après 13.12 s
+Essai 2 : visible après 11.78 s
+Essai 3 : visible après 7.41 s
+Essai 4 : visible après 13.11 s
+Essai 5 : visible après 3.69 s
+DELAI min 3.69 s, moyenne 9.82 s, max 13.12 s (intervalle du ServiceMonitor : 15 s)
 
 === 6. Charge : 3000 requêtes à 20 par seconde (85 % /items, 10 % /slow, 5 % /fail) ===
-{"start_ts": 1793655120.07, "end_ts": 1793655270.037, "total": 3000, "rate": 20.0, "statuses": {"/fail 500": 150, "/items 200": 2550, "/slow 200": 300}, "client_p95_s": {"/fail": 0.0062, "/items": 0.0069, "/slow": 0.209, "all": 0.2056}}
-Attente de deux cycles de collecte après la fin de la charge...
+{"start_ts": 1793656064.485, "end_ts": 1793656214.447, "total": 3000, "rate": 20.0, "statuses": {"/fail 500": 150, "/items 200": 2550, "/slow 200": 300}, "client_p95_s": {"/fail": 0.007, "/items": 0.0072, "/slow": 0.2087, "all": 0.205}}
+Attente de trois cycles de collecte (45 s) après la fin de la charge...
 --- Mémoire et CPU des pods (juste après la charge) ---
 Espace de noms monitoring :
-kps-grafana-586f467c85-w5w6m    23m   361Mi   
-kps-operator-5bcd5dbd9f-jz8cj   4m    24Mi    
-prometheus-kps-prometheus-0     10m   71Mi    
+kps-grafana-6cdb5c7667-4kx9n              30m   377Mi   
+kps-kube-state-metrics-6855b75755-94z8m   2m    16Mi    
+kps-operator-5bcd5dbd9f-fp9rg             10m   19Mi    
+prometheus-kps-prometheus-0               15m   200Mi   
 Espace de noms exp :
-exp-app-6cfb689b79-zb2pg   6m    56Mi   
-TOTAL pile (juste après la charge) : 456 Mi, 37 m CPU
+exp-app-6cfb689b79-l6gzg   6m    56Mi   
+TOTAL pile (juste après la charge) : 612 Mi, 57 m CPU
 
 === 7. Grafana : santé, source de données, tableau de bord chargé par le sidecar ===
 GET /api/health : {"database": "ok", "version": "13.2.3", "commit": "90ffed056f0884267356c12a0eeb72a022af53f1"}
 Source de données Prometheus (uid prometheus) : {"details": {"application": "Prometheus", "features": {"rulerApiEnabled": false}}, "message": "Successfully queried the Prometheus API.", "status": "OK"}
-GET /api/search?query=Collector : [{"id": 676552920174592, "uid": "collector-service", "orgId": 1, "title": "Collector - service de test", "uri": "db/collector-service-de-test", "url": "/d/collector-service/collector-service-de-test", "slug": "", "type": "dash-db", "tags": ["collector", "exp3"], "isStarred": false, "sortMeta": 0, "isDeleted": false}]
+GET /api/search?query=Collector : [{"id": 680547046244352, "uid": "collector-service", "orgId": 1, "title": "Collector - service de test", "uri": "db/collector-service-de-test", "url": "/d/collector-service/collector-service-de-test", "slug": "", "type": "dash-db", "tags": ["collector", "exp3"], "isStarred": false, "sortMeta": 0, "isDeleted": false}]
 Panneau 1 « Débit (requêtes par seconde) » :
   [A] sum(rate(http_requests_total{job="exp-app"}[1m]))
 Panneau 2 « Taux d'erreur (réponses 5xx) » :
@@ -148,10 +152,14 @@ Panneau 3 « Latence p95 » :
   [A] histogram_quantile(0.95, sum by (le) (rate(http_request_duration_fine_seconds_bucket{job="exp-app"}[1m])))
   [B] histogram_quantile(0.95, sum by (le) (rate(http_request_duration_fine_seconds_bucket{job="exp-app",handler="/slow"}[1m])))
   [C] histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="exp-app",handler="/slow"}[1m])))
-GRAFANA OK : source de données saine, tableau de bord chargé, 3 panneaux
+Panneau 4 « Réplicas du Deployment exp-app » :
+  [A] kube_deployment_status_replicas{namespace="exp",deployment="exp-app"}
+Panneau 5 « CPU par pod (cœurs) » :
+  [A] sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="exp",pod=~"exp-app-.*",container!=""}[1m]))
+GRAFANA OK : source de données saine, tableau de bord chargé, 5 panneaux
 
 === Mesures 1 à 3 : Prometheus contre les valeurs injectées (requêtes lues dans Grafana) ===
-Charge : début 1793655120.07, fin 1793655270.037 (horloge du cluster), durée 150.0 s
+Charge : début 1793656064.485, fin 1793656214.447 (horloge du cluster), durée 150.0 s
 Requêtes envoyées : {"/fail 500": 150, "/items 200": 2550, "/slow 200": 300}
 
 Compteur http_requests_total          Envoyé  Prometheus   Écart
@@ -159,29 +167,33 @@ Compteur http_requests_total          Envoyé  Prometheus   Écart
 /slow                                    300         300      +0
 /fail                                    150         150      +0
 
-Instants évalués : fin de la charge (1793655270.037), fenêtre de 1 minute.
+Instants évalués : fin de la charge (1793656214.447), fenêtre de 1 minute.
 Mesure                                           Injecté    Prometheus        Écart  Écart relatif
-1. Débit (req/s)                                   20.00        20.000       +0.000         +0.0 %
-2. Taux d'erreur 5xx                              5.00 %       5.000 %    +0.000 pt         +0.0 %
+1. Débit (req/s)                                   20.00        19.979       -0.021         -0.1 %
+2. Taux d'erreur 5xx                              5.00 %       5.006 %    +0.006 pt         +0.1 %
 3a. p95 /slow, bornes serrées (B)                0.200 s      0.2474 s    +0.0474 s        +23.7 %
 3b. p95 /slow, bornes par défaut (C)             0.200 s      0.4800 s    +0.2800 s       +140.0 %
-3c. p95 toutes routes, bornes serrées (A)        0.200 s      0.2235 s    +0.0235 s        +11.8 %
+3c. p95 toutes routes, bornes serrées (A)        0.200 s      0.2239 s    +0.0239 s        +11.9 %
 
-Latence p95 mesurée côté client (httpx, générateur de charge) : {"/fail": 0.0062, "/items": 0.0069, "/slow": 0.209, "all": 0.2056}
+Panneaux d'infrastructure (requêtes lues dans Grafana, évaluées à la fin de la charge) :
+  Réplicas du Deployment exp-app : 1  {'__name__': 'kube_deployment_status_replicas', 'container': 'kube-state-metrics', 'deployment': 'exp-app', 'endpoint': 'http', 'instance': '10.42.1.3:8080', 'job': 'kube-state-metrics', 'namespace': 'exp', 'pod': 'kps-kube-state-metrics-6855b75755-94z8m', 'service': 'kps-kube-state-metrics'}
+  CPU par pod (cœurs) : 0.04228206860096324  {'pod': 'exp-app-6cfb689b79-l6gzg'}
+
+Latence p95 mesurée côté client (httpx, générateur de charge) : {"/fail": 0.007, "/items": 0.0072, "/slow": 0.2087, "all": 0.205}
 
 === 8. Journaux JSON et X-Request-ID ===
 x-request-id: exp3-corr-check
-{"method": "GET", "path": "/items", "status": 200, "duration_ms": 0.4, "event": "request", "request_id": "exp3-corr-check", "level": "info", "timestamp": "2026-11-02T21:35:18.887822Z"}
+{"method": "GET", "path": "/items", "status": 200, "duration_ms": 0.4, "event": "request", "correlation_id": "exp3-corr-check", "level": "info", "timestamp": "2026-11-02T21:51:03.346961Z"}
 --- Dernière ligne de journal de la charge ---
-{"method": "GET", "path": "/items", "status": 200, "duration_ms": 0.6, "event": "request", "request_id": "a2303501-3cb4-40d0-8912-8a27230b6712", "level": "info", "timestamp": "2026-11-02T21:34:30.035891Z"}
+{"method": "GET", "path": "/items", "status": 200, "duration_ms": 0.4, "event": "request", "correlation_id": "9aa715ee-0403-4152-a014-48644a4b6225", "level": "info", "timestamp": "2026-11-02T21:50:14.444827Z"}
 
 === Synthèse ===
-Espace disque libre de la VM Docker (fin des mesures) : 4.3G sur 58.4G (92% utilisé)
+Espace disque libre de la VM Docker (fin des mesures) : 4.2G sur 58.4G (92% utilisé)
 --- kubectl top nodes ---
 NAME                          CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
-k3d-collector-exp3-agent-0    34m          0%       276Mi           3%          
-k3d-collector-exp3-agent-1    62m          0%       274Mi           3%          
-k3d-collector-exp3-server-0   126m         1%       1361Mi          17%         
+k3d-collector-exp3-agent-0    51m          0%       281Mi           3%          
+k3d-collector-exp3-agent-1    80m          0%       957Mi           12%         
+k3d-collector-exp3-server-0   125m         1%       1064Mi          13%         
 
 === Suppression du cluster ===
 INFO[0000] Deleting cluster 'collector-exp3'            
@@ -190,3 +202,7 @@ INFO[0002] Deleting 1 attached volumes...
 INFO[0002] Removing cluster details from default kubeconfig... 
 INFO[0002] Removing standalone kubeconfig file (if there is one)... 
 INFO[0002] Successfully deleted cluster collector-exp3! 
+Espace disque libre de la VM Docker (après suppression du cluster) : 7.9G sur 58.4G (86% utilisé)
+--- k3d cluster list (après suppression) ---
+NAME   SERVERS   AGENTS   LOADBALANCER
+Code de sortie de run.sh : 0

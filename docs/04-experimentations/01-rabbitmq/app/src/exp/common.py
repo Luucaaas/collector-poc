@@ -33,8 +33,19 @@ async def connect() -> AbstractRobustConnection:
         password=os.environ["RABBITMQ_PASS"],
         reconnect_interval=1,
     )
-    connection.reconnect_callbacks.add(lambda *_: log("amqp_reconnected"))
-    connection.close_callbacks.add(lambda *_: log("amqp_connection_lost"))
+    state = {"down": False}
+
+    def on_lost(*_: Any) -> None:
+        if not state["down"]:  # aio-pika rappelle ce hook à chaque tentative échouée
+            state["down"] = True
+            log("amqp_connection_lost")
+
+    def on_back(*_: Any) -> None:
+        state["down"] = False
+        log("amqp_reconnected")
+
+    connection.reconnect_callbacks.add(on_back)
+    connection.close_callbacks.add(on_lost)
     return connection
 
 

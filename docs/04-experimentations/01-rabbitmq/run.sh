@@ -64,7 +64,8 @@ for line in sys.stdin:
         continue
     if d.get("event") == "progress":
         n = d["confirmed"]
-print(n)' || echo 0)
+print(n)' || true)
+    last=${last:-0}
     [[ "$last" -ge "$target" ]] && return 0
     sleep 0.2
   done
@@ -198,14 +199,14 @@ rows = [
     ("Messages manquants", a["missing"], b["missing"]),
     ("Doublons (accusés en trop)", a["duplicates"], b["duplicates"]),
     ("Accusés marqués redelivered", a["redelivered_flag"], b["redelivered_flag"]),
-    ("Suppression -> 1er message traité (s)", a.get("delete_to_first_processed_s"),
-     b.get("delete_to_first_processed_s")),
+    ("Suppression -> dernier message de l'ancien pod (s)", a.get("old_pod_last_after_delete_s"), "-"),
+    ("Suppression -> 1er message du nouveau pod (s)", a.get("new_pod_first_after_delete_s"), "-"),
     ("Plus grand silence de traitement (s)", a["max_gap_s"], b["max_gap_s"]),
     ("Indisponibilité vue par le producteur (s)", "-", prod["max_outage_s"]),
     ("Indisponibilité vue par le consommateur (s)", "-", cons_outage),
     ("Tentatives de republication du producteur", "-", prod["retries"]),
 ]
-print(f"{'Mesure':<48}{'A (consommateur)':>20}{'B (broker)':>16}")
+print(f"{'Mesure':<54}{'A (consommateur)':>20}{'B (broker)':>16}")
 for label, va, vb in rows:
-    print(f"{label:<48}{va!s:>20}{vb!s:>16}")
+    print(f"{label:<54}{va!s:>20}{vb!s:>16}")
 PY

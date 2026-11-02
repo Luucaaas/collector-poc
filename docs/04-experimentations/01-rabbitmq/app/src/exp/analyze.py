@@ -58,10 +58,18 @@ async def main() -> None:
         "max_gap_s": round(max_gap, 3),
         "max_gap_between_pods": [gap_a.get("pod"), gap_b.get("pod")],
     }
-    if args.delete_ts:
-        after = [r["ts"] for r in ordered if r["ts"] > args.delete_ts]
-        if after:
-            result["delete_to_first_processed_s"] = round(after[0] - args.delete_ts, 3)
+    if args.delete_ts and ordered:
+        # Pod le plus ancien = celui supprimé (scénario A) ; le suivant = son remplaçant.
+        first_seen: dict[str, float] = {}
+        for r in ordered:
+            first_seen.setdefault(r["pod"], r["ts"])
+        pods_by_age = sorted(first_seen, key=lambda p: first_seen[p])
+        old_last = max(r["ts"] for r in ordered if r["pod"] == pods_by_age[0])
+        result["old_pod_last_after_delete_s"] = round(old_last - args.delete_ts, 3)
+        if len(pods_by_age) > 1:
+            new_first = first_seen[pods_by_age[1]]
+            result["new_pod_first_after_delete_s"] = round(new_first - args.delete_ts, 3)
+            result["handover_gap_s"] = round(new_first - old_last, 3)
     print("RESULT " + json.dumps(result), flush=True)
 
 

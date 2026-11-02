@@ -13,6 +13,9 @@ spec:
       labels:
         app: consumer
     spec:
+      # Arrêt immédiat à la suppression du pod : on simule un crash. Python étant le PID 1 du
+      # conteneur et n'interceptant pas SIGTERM, le signal serait ignoré jusqu'au délai de grâce.
+      terminationGracePeriodSeconds: 0
       containers:
         - name: consumer
           image: exp-rabbitmq-app:local

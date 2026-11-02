@@ -1,0 +1,15 @@
+# Dit à Prometheus de collecter /metrics du Service exp-app. Le job Prometheus prend le nom du
+# Service (job="exp-app"), repris par les requêtes PromQL du tableau de bord.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: exp-app
+  namespace: exp
+spec:
+  selector:
+    matchLabels:
+      app: exp-app
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

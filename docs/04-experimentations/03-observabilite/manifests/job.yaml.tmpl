@@ -1,0 +1,22 @@
+# Modèle de Job : run.sh remplace __NAME__ et __COMMAND__ (générateur de charge).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __NAME__
+  namespace: exp
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: job
+          image: exp-observabilite-app:local
+          imagePullPolicy: Never
+          command: __COMMAND__
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 192Mi

@@ -30,7 +30,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | fusionnée |
 | P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | fusionnée |
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
-| P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | en audit |
+| P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | en cours (corrections de l'audit n° 1) |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | à faire |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
 
@@ -38,7 +38,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Recopier dans la fiche le rapport de l'auditeur sur P4-03 (branche `phase-4/articles-prix`, commit 17fd020), trancher les questions du développeur, puis fusionner si CONFORME.
+Attendre les corrections du développeur sur P4-03 (aller-retour n° 1), puis audit n° 2 et fusion.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Recopier dans la fiche le rapport de l'auditeur sur P4-03 (branche `phase-4/arti
 
 ## Dernière mise à jour
 
-03/11/2026 21:11 — P4-03 livrée (265 tests, couverture 99,05 %, événements vérifiés sur RabbitMQ), en audit.
+03/11/2026 21:18 — P4-03 : audit n° 1 en DOUTE (règle 404, frais de port, tests et doc), renvoyée au développeur.

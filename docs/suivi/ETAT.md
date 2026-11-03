@@ -23,7 +23,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
-| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en cours |
+| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en audit |
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | à faire |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
@@ -31,7 +31,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre le rapport du développeur sur la première exécution complète de P3-03 (branche `phase-3/exp-keycloak-tls`), puis audit et contre-vérification du chef.
+Recopier dans la fiche le rapport de l'auditeur sur P3-03 (branche `phase-3/exp-keycloak-tls`, commit 9df6f8b), puis faire la contre-vérification du chef (tâche de sécurité) avant toute fusion.
 
 ## Décisions en attente
 
@@ -43,4 +43,4 @@ Attendre le rapport du développeur sur la première exécution complète de P3-
 
 ## Dernière mise à jour
 
-03/11/2026 13:52 — Lucas a supprimé de Docker tout ce qui n'appartient pas au projet (clusters kind, Kubernetes de Docker Desktop) : 53,8 Go libres, ports 80 et 443 libres. P3-03 relancée.
+03/11/2026 18:23 — P3-03 livrée par le développeur (exécution de référence 18:18, matrice 15/15), en audit.

@@ -23,7 +23,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
-| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en audit |
+| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en cours (corrections de l'audit n° 1) |
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | à faire |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
@@ -31,7 +31,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Recopier dans la fiche le rapport de l'auditeur sur P3-03 (branche `phase-3/exp-keycloak-tls`, commit 9df6f8b), puis faire la contre-vérification du chef (tâche de sécurité) avant toute fusion.
+Attendre les corrections du développeur sur P3-03 (aller-retour n° 1 : écarts 1 à 6 de l'audit et titre unique des 401, nouvelle exécution de référence), puis audit n° 2, contre-vérification du chef et fusion `--squash`.
 
 ## Décisions en attente
 
@@ -43,4 +43,4 @@ Recopier dans la fiche le rapport de l'auditeur sur P3-03 (branche `phase-3/exp-
 
 ## Dernière mise à jour
 
-03/11/2026 18:23 — P3-03 livrée par le développeur (exécution de référence 18:18, matrice 15/15), en audit.
+03/11/2026 18:28 — P3-03 : audit n° 1 non conforme (données personnelles dans le journal, 5 écarts mineurs), renvoyée au développeur.

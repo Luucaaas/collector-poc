@@ -4,7 +4,7 @@
 
 ## Phase en cours
 
-**Phase 3** : expérimentations en bac à sable (`docs/04-experimentations`, critère 1). Découpage validé par Lucas le 02/11/2026 : 4 tâches (l'option Kafka est écartée), réalisées une par une dans l'ordre du tableau. Infrastructure installée depuis les images officielles par des manifestes simples, sans opérateur ni cert-manager (décision de Lucas du 03/11/2026, journal des décisions) ; kube-prometheus-stack conservé. L'expérimentation 1, faite avec l'opérateur RabbitMQ, est refaite en P3-06.
+**Phase 3 terminée le 03/11/2026** (5 tâches, toutes fusionnées après audit ; bilan fait à Lucas). Prochaine phase : **phase 4** (backend : socle commun, `catalog-service`, `notification-service`, docker-compose, tests), à découper par le chef et à faire valider par Lucas.
 
 Phases précédentes : phase 0 (outillage, reste des actions de Lucas), phase 1 terminée et refondue pour le POC simplifié (ADR 0007), **phase 2 terminée le 31/10/2026** (7 tâches ci-dessous, toutes fusionnées après audit conforme).
 
@@ -25,13 +25,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | fusionnée |
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | fusionnée |
-| P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | en cours (corrections de l'audit n° 1) |
+| P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre le rapport du développeur sur P3-05 (branche `phase-3/synthese`), puis audit, contre-vérification de fin de phase par le chef et fusion. Ensuite clôture de la phase 3 : `CLAUDE.md` (stack, avancement), cases du plan, bilan à Lucas.
+Attendre que Lucas demande la phase 4, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Points à reprendre : section « Synthèse et conséquences pour le POC » de `docs/04-experimentations/README.md`.
 
 ## Décisions en attente
 
@@ -43,4 +43,4 @@ Attendre le rapport du développeur sur P3-05 (branche `phase-3/synthese`), puis
 
 ## Dernière mise à jour
 
-03/11/2026 19:31 — P3-05 : audit n° 1 non conforme (sources et contradictions de documentation), décisions D1 à D6, renvoyée au développeur.
+03/11/2026 19:39 — Phase 3 close : P3-05 fusionnée, `CLAUDE.md` mis à jour, cases de la phase 3 cochées dans le plan.

@@ -11,10 +11,12 @@ import httpx
 import jwt
 import pytest
 from fastapi import FastAPI
+from pydantic import ValidationError
 
 from catalog.auth import JwksCache
+from catalog.config import Settings
 from catalog.errors import ProblemError
-from tests.conftest import JwksServer, TestKey, TokenFactory, bearer
+from tests.conftest import JWKS_URL, JwksServer, TestKey, TokenFactory, bearer
 
 ME = "/api/v1/_probe/me"
 
@@ -460,3 +462,46 @@ def test_logs_d_uvicorn_en_json(capsys: pytest.CaptureFixture[str]) -> None:
         "Started server process",
     }
     assert all(e["level"] == "info" and "timestamp" in e for e in entries)
+
+
+async def test_exception_imprevue_du_chargement_jwks_donne_503_et_non_500(
+    client: httpx.AsyncClient, make_token: TokenFactory, jwks_server: JwksServer
+) -> None:
+    """D-C : une exception que `_fetch` ne prévoyait pas (ici un RuntimeError) donne un 503."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise RuntimeError("panne imprévue")
+
+    jwks = JwksCache(JWKS_URL, 600, 30, transport=httpx.MockTransport(handler))
+    with pytest.raises(ProblemError) as raised:
+        await jwks.get("test-key-1")
+    assert raised.value.status == 503
+
+
+async def test_le_timeout_du_jwks_est_configurable_et_vaut_2_secondes_par_defaut() -> None:
+    """D-A : le délai transmis à httpx vient du paramètre `timeout` (2 s par défaut)."""
+    seen: list[float | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.extensions["timeout"]["read"])
+        return httpx.Response(200, json={"keys": []})
+
+    default = JwksCache(JWKS_URL, 600, 30, transport=httpx.MockTransport(handler))
+    custom = JwksCache(JWKS_URL, 600, 30, timeout=0.5, transport=httpx.MockTransport(handler))
+    for cache in (default, custom):
+        with pytest.raises(ProblemError):  # aucune clé : 401 `unknown_kid`
+            await cache.get("kid")
+    assert seen == [2.0, 0.5]
+    assert Settings.model_fields["jwks_timeout_seconds"].default == 2.0
+
+
+@pytest.mark.parametrize("value", [0, 0.5, -1])
+def test_delai_minimal_de_rechargement_inferieur_a_1_seconde_est_refuse(value: float) -> None:
+    """D-B : rejeté au démarrage (la construction de `Settings` échoue)."""
+    with pytest.raises(ValidationError):
+        Settings(database_url="postgresql+psycopg://u:p@h/db", jwks_min_refetch_seconds=value)
+
+
+def test_delai_minimal_de_rechargement_de_1_seconde_est_accepte() -> None:
+    settings = Settings(database_url="postgresql+psycopg://u:p@h/db", jwks_min_refetch_seconds=1)
+    assert settings.jwks_min_refetch_seconds == 1

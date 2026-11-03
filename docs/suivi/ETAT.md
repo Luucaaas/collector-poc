@@ -29,7 +29,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | fusionnée |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | fusionnée |
 | P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | fusionnée |
-| P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | en cours (corrections de l'audit n° 1) |
+| P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | à faire |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | à faire |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
@@ -38,7 +38,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre les corrections du développeur sur P4-02 (aller-retour n° 1), puis audit n° 2 et fusion.
+Rédiger la fiche de P4-03 (articles, prix et événements, US-03 et US-04), la commiter avec `ETAT.md`, puis la confier au développeur sur `phase-4/articles-prix`.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Attendre les corrections du développeur sur P4-02 (aller-retour n° 1), puis au
 
 ## Dernière mise à jour
 
-03/11/2026 20:49 — P4-02 : audit n° 1 non conforme (500 sur un slug long, pagination, contrôle des coordonnées), renvoyée au développeur.
+03/11/2026 20:59 — P4-02 fusionnée (squash) après deux audits ; détection des téléphones réécrite par le chef ; 183 tests, couverture 99,26 %.

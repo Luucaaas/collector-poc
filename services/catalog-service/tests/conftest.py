@@ -1,16 +1,21 @@
 """Fixtures communes. Les clés RSA sont générées à l'exécution des tests et jamais versionnées."""
 
 import json
+import os
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Annotated, Any
 
 import httpx
 import jwt
 import pytest
+from alembic import command
+from alembic.config import Config
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import APIRouter, Depends, FastAPI
 from jwt.algorithms import RSAAlgorithm
+from sqlalchemy import create_engine, text
+from testcontainers.community.postgres import PostgresContainer
 
 from catalog.auth import CurrentUser, JwksCache, TokenVerifier, require_role
 from catalog.config import Settings
@@ -163,3 +168,52 @@ def make_token(key: TestKey) -> TokenFactory:
 
 def bearer(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
+
+
+POSTGRES_IMAGE = "postgres:18.4-alpine"  # version retenue pour le POC (ADR 0008)
+
+
+@pytest.fixture(scope="session")
+def migrated_database_url() -> Iterator[str]:
+    """Un PostgreSQL réel pour toute la session de tests, schéma créé par Alembic (`head`)."""
+    with PostgresContainer(POSTGRES_IMAGE, driver="psycopg") as container:
+        url = container.get_connection_url()
+        previous = os.environ.get("DATABASE_URL")
+        os.environ["DATABASE_URL"] = url
+        try:
+            command.upgrade(Config("alembic.ini"), "head")
+        finally:
+            if previous is None:
+                os.environ.pop("DATABASE_URL")
+            else:
+                os.environ["DATABASE_URL"] = previous
+        yield url
+
+
+@pytest.fixture
+def db_url(migrated_database_url: str) -> Iterator[str]:
+    """Base vidée avant chaque test."""
+    engine = create_engine(migrated_database_url)
+    with engine.begin() as connection:
+        connection.execute(text("TRUNCATE shops, categories"))
+    engine.dispose()
+    yield migrated_database_url
+
+
+@pytest.fixture
+async def db_client(db_url: str, jwks_server: JwksServer):  # type: ignore[no-untyped-def]
+    """Client HTTP sur l'application complète, avec PostgreSQL réel et faux JWKS."""
+    application = create_app(build_settings(db_url))
+    jwks = JwksCache(JWKS_URL, 600, 30, transport=httpx.MockTransport(jwks_server.handler))
+    application.state.verifier = TokenVerifier(ISSUER, AUDIENCE, jwks)
+    async with application.router.lifespan_context(application):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=application, raise_app_exceptions=False),
+            base_url="http://testserver",
+        ) as http_client:
+            yield http_client
+
+
+def roles_headers(make_token: Callable[..., str], sub: str, *roles: str) -> dict[str, str]:
+    """En-tête Bearer d'un utilisateur de démonstration (alice, bob, chloe, admin)."""
+    return bearer(make_token(sub=sub, realm_access={"roles": list(roles)}))

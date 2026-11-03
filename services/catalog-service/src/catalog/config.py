@@ -24,7 +24,10 @@ class Settings(BaseSettings):
     audience: str = "collector-api"
     cors_origin: str = "https://app.127.0.0.1.sslip.io"
     jwks_ttl_seconds: float = 600.0
-    jwks_min_refetch_seconds: float = 30.0
+    # Borne basse : un délai nul ou négatif ferait rappeler Keycloak à chaque requête.
+    jwks_min_refetch_seconds: float = Field(default=30.0, ge=1)
     jwks_max_stale_seconds: float = 3600.0
+    # Le verrou du cache est tenu pendant l'appel : un délai court limite l'attente des requêtes.
+    jwks_timeout_seconds: float = Field(default=2.0, gt=0)
     db_connect_timeout_seconds: int = 3
     log_level: str = "INFO"

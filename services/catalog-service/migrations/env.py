@@ -5,6 +5,7 @@ import os
 from alembic import context
 from sqlalchemy import create_engine
 
+from catalog import models  # noqa: F401  (enregistre les tables dans Base.metadata)
 from catalog.db import Base
 
 target_metadata = Base.metadata

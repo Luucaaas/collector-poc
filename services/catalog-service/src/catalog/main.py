@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from catalog.auth import JwksCache, TokenVerifier
+from catalog.categories import router as categories_router
 from catalog.config import Settings
 from catalog.correlation import REQUEST_ID_HEADER, CorrelationMiddleware
 from catalog.db import create_engine
@@ -15,6 +16,7 @@ from catalog.errors import register_error_handlers
 from catalog.health import router as health_router
 from catalog.logging import configure_logging
 from catalog.metrics import setup_metrics
+from catalog.shops import router as shops_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -48,11 +50,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             settings.jwks_ttl_seconds,
             settings.jwks_min_refetch_seconds,
             max_stale=settings.jwks_max_stale_seconds,
+            timeout=settings.jwks_timeout_seconds,
         ),
     )
 
     register_error_handlers(app)
     app.include_router(health_router)
+    app.include_router(categories_router)
+    app.include_router(shops_router)
     setup_metrics(app)
     # Le dernier middleware ajouté est le plus externe : la corrélation enveloppe tout.
     app.add_middleware(

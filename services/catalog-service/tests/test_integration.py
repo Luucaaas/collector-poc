@@ -65,18 +65,59 @@ async def test_live_ne_depend_pas_de_la_base() -> None:
         assert (await client.get("/health/live")).status_code == 200
 
 
-def test_la_migration_alembic_de_reference_s_applique(
-    postgres_url: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("DATABASE_URL", postgres_url)
-    config = Config("alembic.ini")
-    command.upgrade(config, "head")
-    engine = create_engine(postgres_url)
+def _tables_and_indexes(url: str) -> tuple[set[str], set[str]]:
+    engine = create_engine(url)
     with engine.connect() as connection:
-        version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+        tables = {
+            row[0]
+            for row in connection.execute(
+                text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+            )
+        }
+        indexes = {
+            row[0]
+            for row in connection.execute(
+                text("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")
+            )
+        }
     engine.dispose()
-    assert version == "0001"
-    command.downgrade(config, "base")
+    return tables, indexes
+
+
+def test_migration_0002_monte_puis_descend(monkeypatch: pytest.MonkeyPatch) -> None:
+    with _container() as container:
+        url = container.get_connection_url()
+        monkeypatch.setenv("DATABASE_URL", url)
+        config = Config("alembic.ini")
+
+        command.upgrade(config, "0001")
+        tables, _ = _tables_and_indexes(url)
+        assert "categories" not in tables
+        assert "shops" not in tables
+
+        command.upgrade(config, "head")
+        tables, indexes = _tables_and_indexes(url)
+        assert {"categories", "shops"} <= tables
+        assert {
+            "uq_categories_name_lower",
+            "categories_slug_key",
+            "uq_shops_name_lower",
+            "ix_shops_owner_id",
+        } <= indexes
+
+        command.downgrade(config, "0001")
+        tables, indexes = _tables_and_indexes(url)
+        assert "categories" not in tables
+        assert "shops" not in tables
+        assert not {i for i in indexes if i.startswith(("uq_", "ix_shops"))}
+
+        command.upgrade(config, "head")  # la migration se rejoue après une descente
+        engine = create_engine(url)
+        with engine.connect() as connection:
+            version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        engine.dispose()
+        assert version == "0002"
+        command.downgrade(config, "base")
 
 
 def test_alembic_exige_database_url(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -35,6 +35,7 @@ class JwksCache:
         min_refetch: float,
         *,
         max_stale: float = 3600.0,
+        timeout: float = 2.0,
         transport: httpx.AsyncBaseTransport | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -42,6 +43,7 @@ class JwksCache:
         self._ttl = ttl
         self._min_refetch = min_refetch
         self._max_stale = max_stale
+        self._timeout = timeout
         self._transport = transport
         self._clock = clock
         self._keys: dict[str, jwt.PyJWK] = {}
@@ -105,18 +107,13 @@ class JwksCache:
 
     async def _fetch(self, reason: str) -> None:
         try:
-            async with httpx.AsyncClient(timeout=5, transport=self._transport) as client:
+            async with httpx.AsyncClient(
+                timeout=self._timeout, transport=self._transport
+            ) as client:
                 response = await client.get(self._url)
                 response.raise_for_status()
             keys = self._parse(response.json())
-        except (
-            httpx.HTTPError,
-            ValueError,
-            KeyError,
-            TypeError,
-            AttributeError,
-            jwt.PyJWTError,
-        ) as error:
+        except Exception as error:  # toute panne du JWKS donne 503, jamais 500
             logger.error(
                 "jwks_fetch_failed", url=self._url, reason=reason, error=type(error).__name__
             )

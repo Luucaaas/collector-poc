@@ -34,7 +34,8 @@ Ce document fixe les contrats entre les composants du POC : API REST des deux se
 - JSON en UTF-8. Identifiants en UUID v4. Dates en ISO 8601 et en UTC (`2026-11-02T14:05:00Z`).
 - **Montants en chaîne décimale** (`"120.00"`) avec une devise ISO 4217 (`"EUR"`). On évite ainsi les erreurs d'arrondi des nombres flottants.
 - Les champs inconnus sont refusés (Pydantic `extra="forbid"`, ENF-07).
-- Pagination par `limit` (20 par défaut, 100 au maximum) et `offset`. La réponse contient `items` et `total`.
+- Pagination par `limit` (20 par défaut, 100 au maximum) et `offset` pour `GET /articles` et `GET /me/notifications`. La réponse contient `items` et `total`.
+- Les listes de référence, bornées par nature (`GET /categories`, `GET /shops/me`), ne sont pas paginées : elles renvoient tous les éléments sous la forme `{"items": [...], "total": n}`.
 - Les erreurs suivent la RFC 9457 (*Problem Details*, `application/problem+json`) :
 
 ```json
@@ -59,10 +60,10 @@ Codes communs à tous les endpoints protégés, non répétés dans les tableaux
 
 | Méthode | Chemin | Rôle requis | Codes de retour | Story |
 | --- | --- | --- | --- | --- |
-| GET | `/api/v1/categories` | public | 200 | US-01, US-03, US-05 |
+| GET | `/api/v1/categories` | public | 200 (liste complète triée par nom, non paginée) | US-01, US-03, US-05 |
 | POST | `/api/v1/categories` | `admin` | 201, 403, 409 (nom déjà utilisé) | US-01 |
 | POST | `/api/v1/shops` | `seller` | 201, 403, 409 (nom déjà utilisé), 422 (dont `CONTACT_EMAIL`, `CONTACT_PHONE`) | US-02 |
-| GET | `/api/v1/shops/me` | `seller` | 200, 403 | US-02, US-03 |
+| GET | `/api/v1/shops/me` | `seller` | 200 (liste complète, non paginée), 403 | US-02, US-03 |
 | GET | `/api/v1/shops/{shop_id}` | public | 200, 404 | US-02 |
 | POST | `/api/v1/articles` | `seller`, propriétaire de la boutique | 201 (`PUBLISHED` ou `REJECTED`), 403 (boutique d'un autre vendeur), 422 (dont `SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) | US-03 |
 | GET | `/api/v1/articles?category_id=&shop_id=&limit=&offset=` | public, articles `PUBLISHED` seulement | 200 | US-03 |
@@ -108,6 +109,10 @@ Réponse 201, article conforme :
 Si le contrôle échoue (RM-02), la réponse est aussi un 201, avec `"status": "REJECTED"` et `"rejection_reasons": ["CONTACT_EMAIL"]`.
 
 **Codes de motif.** Le même vocabulaire sert partout : `rejection_reasons` d'un article rejeté, et `errors[].code` d'un refus 422.
+- `NAME_ALREADY_USED` (409) : nom de catégorie ou de boutique déjà utilisé, sans tenir compte de la casse, ou nom différent qui donne un slug déjà pris. Le `detail` est le même dans les deux cas : « Nom déjà utilisé ou trop proche d'un nom existant ».
+- `NAME_INVALID` (422) : nom de catégorie qui ne contient aucune lettre ni chiffre, ou dont le slug dépasse 120 caractères.
+- Les autres refus de validation (longueur, format, champ manquant ou inconnu) portent le code générique de Pydantic en majuscules : `STRING_TOO_SHORT`, `STRING_TOO_LONG`, `MISSING`, `EXTRA_FORBIDDEN`, `UUID_PARSING`…
+- Description d'une boutique : facultative, au plus 1 000 caractères ; vide, elle est enregistrée `null`.
 - Une boutique ou une catégorie inexistante, référencée dans le corps de la requête, donne un 422 (`SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) et non un 404 : c'est le contenu de la requête qui est invalide, pas l'URL.
 - Une boutique qui contient des coordonnées est refusée en 422 (`CONTACT_EMAIL`, `CONTACT_PHONE`) au lieu d'être enregistrée : elle n'a pas de cycle de modération (RM-05).
 

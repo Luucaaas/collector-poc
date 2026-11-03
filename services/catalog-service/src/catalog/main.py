@@ -7,12 +7,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from catalog.articles import router as articles_router
 from catalog.auth import JwksCache, TokenVerifier
 from catalog.categories import router as categories_router
 from catalog.config import Settings
 from catalog.correlation import REQUEST_ID_HEADER, CorrelationMiddleware
 from catalog.db import create_engine
 from catalog.errors import register_error_handlers
+from catalog.events import RabbitPublisher
 from catalog.health import router as health_router
 from catalog.logging import configure_logging
 from catalog.metrics import setup_metrics
@@ -26,9 +28,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     engine = create_engine(settings.database_url, settings.db_connect_timeout_seconds)
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        await application.state.publisher.start()  # n'échoue pas si RabbitMQ est absent
         yield
-        await engine.dispose()  # arrêt propre : le pool de connexions est fermé
+        await application.state.publisher.close()
+        await engine.dispose()  # arrêt propre : les connexions sont fermées
 
     app = FastAPI(
         title="catalog-service",
@@ -41,6 +45,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.session_factory = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
+    )
+    app.state.publisher = RabbitPublisher(
+        settings.rabbitmq_url, budget_seconds=settings.event_publish_budget_seconds
     )
     app.state.verifier = TokenVerifier(
         settings.issuer,
@@ -58,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(categories_router)
     app.include_router(shops_router)
+    app.include_router(articles_router)
     setup_metrics(app)
     # Le dernier middleware ajouté est le plus externe : la corrélation enveloppe tout.
     app.add_middleware(

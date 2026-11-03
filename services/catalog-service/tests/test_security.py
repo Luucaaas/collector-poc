@@ -499,9 +499,17 @@ async def test_le_timeout_du_jwks_est_configurable_et_vaut_2_secondes_par_defaut
 def test_delai_minimal_de_rechargement_inferieur_a_1_seconde_est_refuse(value: float) -> None:
     """D-B : rejeté au démarrage (la construction de `Settings` échoue)."""
     with pytest.raises(ValidationError):
-        Settings(database_url="postgresql+psycopg://u:p@h/db", jwks_min_refetch_seconds=value)
+        Settings(
+            database_url="postgresql+psycopg://u:p@h/db",
+            rabbitmq_url="amqp://u:p@h/",
+            jwks_min_refetch_seconds=value,
+        )
 
 
 def test_delai_minimal_de_rechargement_de_1_seconde_est_accepte() -> None:
-    settings = Settings(database_url="postgresql+psycopg://u:p@h/db", jwks_min_refetch_seconds=1)
+    settings = Settings(
+        database_url="postgresql+psycopg://u:p@h/db",
+        rabbitmq_url="amqp://u:p@h/",
+        jwks_min_refetch_seconds=1,
+    )
     assert settings.jwks_min_refetch_seconds == 1

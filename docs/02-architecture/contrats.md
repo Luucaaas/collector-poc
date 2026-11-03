@@ -26,7 +26,8 @@ Ce document fixe les contrats entre les composants du POC : API REST des deux se
 - **URL de Keycloak.** Les clés JWKS sont récupérées par l'URL interne du Service, `http://keycloak.collector.svc.cluster.local:8080` (un seul namespace `collector`, Service `keycloak`). `iss` est comparé à l'URL publique `https://auth.127.0.0.1.sslip.io/realms/collector`, car dans un pod `127.0.0.1` désigne le pod lui-même.
 - Les rôles sont lus dans `realm_access.roles`. L'identifiant de l'utilisateur est le claim `sub`.
 - Jeton absent, invalide ou expiré → **401**. Rôle insuffisant ou ressource appartenant à un autre utilisateur → **403** (ENF-03).
-- Une ressource non publiée, consultée par un autre utilisateur que son propriétaire ou un admin, renvoie **404** et non 403. On ne révèle pas son existence.
+- Une ressource non publiée, consultée par un autre utilisateur que son propriétaire ou un admin, renvoie **404** et non 403. On ne révèle pas son existence : la règle vaut pour le détail, la modification du prix et l'historique d'un article non publié. Sur un article publié, un autre utilisateur reçoit 403 pour la modification du prix et l'historique ; le détail reste public. Le contrôle du rôle passe avant la lecture de la ressource : un utilisateur sans le rôle requis (par exemple `buyer` sur `PUT /price`) reçoit 403, que l'article existe ou non, ce qui ne révèle rien.
+- **Routes publiques et jeton.** Sur une route publique, le jeton n'est évalué que si l'identité change la réponse (détail d'un article : un jeton invalide donne 401). Ailleurs (liste des articles, catégories, boutiques), il est ignoré.
 - Le front est un client public OIDC (`collector-web`) qui utilise le flux *Authorization Code* avec PKCE. CORS n'autorise que l'origine `https://app.127.0.0.1.sslip.io`.
 
 ### 1.3 Formats
@@ -68,8 +69,8 @@ Codes communs à tous les endpoints protégés, non répétés dans les tableaux
 | POST | `/api/v1/articles` | `seller`, propriétaire de la boutique | 201 (`PUBLISHED` ou `REJECTED`), 403 (boutique d'un autre vendeur), 422 (dont `SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) | US-03 |
 | GET | `/api/v1/articles?category_id=&shop_id=&limit=&offset=` | public, articles `PUBLISHED` seulement | 200 | US-03 |
 | GET | `/api/v1/articles/{article_id}` | public si `PUBLISHED`, sinon propriétaire ou `admin` | 200, 404 | US-03, US-04 |
-| PUT | `/api/v1/articles/{article_id}/price` | `seller`, propriétaire de l'article | 200, 403, 404, 409 (article non publié), 422 | US-04 |
-| GET | `/api/v1/articles/{article_id}/price-history` | propriétaire ou `admin` | 200, 403, 404 | US-04 |
+| PUT | `/api/v1/articles/{article_id}/price` | `seller`, propriétaire de l'article | 200, 403, 404 (aussi pour un tiers sur un article non publié), 409 (article non publié), 422 | US-04 |
+| GET | `/api/v1/articles/{article_id}/price-history` | propriétaire ou `admin` | 200 (`{items, total}`, ordre chronologique), 403, 404 (aussi pour un tiers sur un article non publié) | US-04 |
 
 **Pourquoi `PUT` pour le prix.** On remplace une valeur : renvoyer la même requête produit le même état, ce qui correspond à la définition HTTP de l'idempotence (RFC 9110). RM-04 en découle : un prix identique ne crée ni ligne d'historique ni événement.
 
@@ -88,6 +89,8 @@ Codes communs à tous les endpoints protégés, non répétés dans les tableaux
 }
 ```
 
+`shipping_fee` est obligatoire (`0.00` pour une livraison gratuite) ; `currency` vaut `EUR` si elle est omise.
+
 Réponse 201, article conforme :
 
 ```json
@@ -97,6 +100,8 @@ Réponse 201, article conforme :
   "category_id": "3f1e9a62-7c1d-4a8b-9f3e-2d5c6b7a8e90",
   "seller_id": "a7f3c2e1-5b4d-4c3a-9e8f-1d2c3b4a5f60",
   "title": "Boba Fett Kenner 1979",
+  "description": "Figurine originale Kenner de 1979, complète avec son arme, très bon état.",
+  "photo_urls": ["https://images.example.com/boba-1.jpg"],
   "price": "120.00",
   "shipping_fee": "8.00",
   "currency": "EUR",
@@ -123,6 +128,8 @@ Si le contrôle échoue (RM-02), la réponse est aussi un 201, avec `"status": "
 ```
 
 Réponse 200 : l'article mis à jour, au même format que ci-dessus.
+
+**Historique des prix** (`GET /api/v1/articles/{article_id}/price-history`) : `{"items": [...], "total": 1}`. Chaque ligne porte `old_price`, `new_price`, `changed_by` (le `sub` de l'auteur) et `changed_at` (ISO 8601 UTC).
 
 ### 2.2 notification-service
 
@@ -178,7 +185,7 @@ flowchart LR
 
 | Point | Comportement dans le POC | Cible |
 | --- | --- | --- |
-| Publication | `catalog-service` publie l'événement **juste après le commit** de la transaction. Si le broker est indisponible à cet instant, l'écriture est conservée, mais l'événement est perdu et l'erreur est journalisée | *Transactional outbox* : événement écrit dans la même transaction, puis publié par un relais |
+| Publication | `catalog-service` publie l'événement **juste après le commit** de la transaction. Si le broker est indisponible à cet instant, l'écriture est conservée, mais l'événement est perdu et l'erreur est journalisée. Le producteur réessaie pendant un budget borné (5 s par défaut) : un réessai peut produire un doublon (même `event_id`), absorbé côté consommateur par `UNIQUE (user_id, source_event_id)` | *Transactional outbox* : événement écrit dans la même transaction, puis publié par un relais |
 | Livraison | Au moins une fois entre le broker et le consommateur : acquittement après traitement | Inchangé |
 | Doublons | Une notification par acheteur et par événement, garantie par la contrainte `UNIQUE (user_id, source_event_id)` | Table `processed_events` pour tout consommateur |
 | Messages en échec | Rejetés après une nouvelle tentative et journalisés | *Dead-letter queue* par consommateur, avec rejeu |
@@ -195,7 +202,7 @@ Tous les événements partagent une enveloppe inspirée de CloudEvents 1.0. Seul
 | `event_id` | UUID | Identifiant unique de l'événement : clé d'idempotence pour les consommateurs |
 | `event_type` | chaîne | `article.published` ou `article.price_changed`. Identique à la clé de routage |
 | `schema_version` | entier | Version du schéma de `data`. Démarre à 1 |
-| `occurred_at` | date-heure UTC | Moment du fait métier (la transaction), et non de la publication |
+| `occurred_at` | date-heure UTC (ISO 8601, avec fraction de seconde éventuelle, ex. `2026-11-02T14:05:00.123456Z`) | Moment du fait métier (la transaction), et non de la publication |
 | `producer` | chaîne | Service émetteur (`catalog-service`) |
 | `correlation_id` | chaîne | `X-Request-ID` de la requête HTTP d'origine, pour suivre un parcours de bout en bout dans les logs |
 | `data` | objet | Contenu métier |
@@ -369,7 +376,7 @@ erDiagram
         text description
         numeric price "10,2 ; CHECK > 0"
         numeric shipping_fee "10,2 ; CHECK >= 0"
-        char currency "EUR"
+        varchar currency "3 caractères, EUR"
         varchar status "PUBLISHED | REJECTED"
         jsonb rejection_reasons
         timestamptz created_at

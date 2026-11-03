@@ -30,7 +30,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | fusionnée |
 | P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | fusionnée |
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
-| P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | en cours (corrections de l'audit n° 1) |
+| P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | à faire |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
 
@@ -38,7 +38,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre les corrections du développeur sur P4-03 (aller-retour n° 1), puis audit n° 2 et fusion.
+Rédiger la fiche de P4-04 (`notification-service`, US-05 : socle recopié de catalog-service, centres d'intérêt, préférences, consommateur des événements, notifications), la commiter avec `ETAT.md`, puis la confier au développeur sur `phase-4/notification`.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Attendre les corrections du développeur sur P4-03 (aller-retour n° 1), puis au
 
 ## Dernière mise à jour
 
-03/11/2026 21:18 — P4-03 : audit n° 1 en DOUTE (règle 404, frais de port, tests et doc), renvoyée au développeur.
+03/11/2026 21:28 — P4-03 fusionnée (squash) après deux audits : 269 tests, couverture 99,05 %, événements vérifiés sur RabbitMQ.

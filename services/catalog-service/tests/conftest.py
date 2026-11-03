@@ -19,6 +19,7 @@ from testcontainers.community.postgres import PostgresContainer
 
 from catalog.auth import CurrentUser, JwksCache, TokenVerifier, require_role
 from catalog.config import Settings
+from catalog.events import Event
 from catalog.main import create_app
 from catalog.schemas import ApiModel
 
@@ -105,6 +106,8 @@ def jwks_server(key: TestKey) -> JwksServer:
 def build_settings(database_url: str = "postgresql+psycopg://u:p@127.0.0.1:1/db") -> Settings:
     return Settings(
         database_url=database_url,
+        # Inatteignable : les tests injectent un faux producteur ou démarrent un vrai broker.
+        rabbitmq_url="amqp://guest:guest@127.0.0.1:1/",
         issuer=ISSUER,
         jwks_url=JWKS_URL,
         audience=AUDIENCE,
@@ -195,15 +198,49 @@ def db_url(migrated_database_url: str) -> Iterator[str]:
     """Base vidée avant chaque test."""
     engine = create_engine(migrated_database_url)
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE shops, categories"))
+        connection.execute(
+            text("TRUNCATE price_history, article_photos, articles, shops, categories")
+        )
     engine.dispose()
     yield migrated_database_url
 
 
+class RecordingPublisher:
+    """Faux producteur : garde les événements. `on_publish` s'exécute au moment de la publication
+    (pour vérifier l'état de la base à cet instant) ; `ok = False` simule un broker indisponible."""
+
+    def __init__(self) -> None:
+        self.events: list[Event] = []
+        self.ok = True
+        self.on_publish: Callable[[Event], None] | None = None
+
+    async def start(self) -> None:
+        pass
+
+    async def close(self) -> None:
+        pass
+
+    async def publish(self, event: Event) -> bool:
+        if self.on_publish is not None:
+            self.on_publish(event)
+        if not self.ok:
+            return False
+        self.events.append(event)
+        return True
+
+
 @pytest.fixture
-async def db_client(db_url: str, jwks_server: JwksServer):  # type: ignore[no-untyped-def]
-    """Client HTTP sur l'application complète, avec PostgreSQL réel et faux JWKS."""
+def publisher() -> RecordingPublisher:
+    return RecordingPublisher()
+
+
+@pytest.fixture
+async def db_client(  # type: ignore[no-untyped-def]
+    db_url: str, jwks_server: JwksServer, publisher: RecordingPublisher
+):
+    """Client HTTP sur l'application complète, avec PostgreSQL réel, faux JWKS et faux broker."""
     application = create_app(build_settings(db_url))
+    application.state.publisher = publisher
     jwks = JwksCache(JWKS_URL, 600, 30, transport=httpx.MockTransport(jwks_server.handler))
     application.state.verifier = TokenVerifier(ISSUER, AUDIENCE, jwks)
     async with application.router.lifespan_context(application):

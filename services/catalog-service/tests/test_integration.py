@@ -9,6 +9,7 @@ from alembic import command
 from alembic.config import Config
 from fastapi import Depends
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.community.postgres import PostgresContainer
 
@@ -116,7 +117,78 @@ def test_migration_0002_monte_puis_descend(monkeypatch: pytest.MonkeyPatch) -> N
         with engine.connect() as connection:
             version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
         engine.dispose()
-        assert version == "0002"
+        assert version == "0003"
+        command.downgrade(config, "base")
+
+
+def test_migration_0003_monte_puis_descend_et_les_contraintes_sont_appliquees(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with _container() as container:
+        url = container.get_connection_url()
+        monkeypatch.setenv("DATABASE_URL", url)
+        config = Config("alembic.ini")
+
+        command.upgrade(config, "0002")
+        tables, _ = _tables_and_indexes(url)
+        assert not {"articles", "article_photos", "price_history"} & tables
+
+        command.upgrade(config, "head")
+        tables, indexes = _tables_and_indexes(url)
+        assert {"articles", "article_photos", "price_history"} <= tables
+        assert {
+            "ix_articles_catalog",
+            "ix_articles_shop_id",
+            "ix_article_photos_article_id",
+            "ix_price_history_article_id",
+            "uq_article_photos_position",
+        } <= indexes
+
+        # Les contraintes CHECK et les clés étrangères sont portées par la base.
+        engine = create_engine(url)
+        with engine.begin() as connection:
+            connection.execute(
+                text("INSERT INTO categories (id, name, slug) VALUES (gen_random_uuid(), 'C', 'c')")
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO shops (id, owner_id, name, seller_type) "
+                    "VALUES (gen_random_uuid(), 'u', 'Boutique', 'INDIVIDUAL')"
+                )
+            )
+
+        def insert(price: str = "10.00", fee: str = "0.00", status: str = "PUBLISHED") -> None:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "INSERT INTO articles (id, shop_id, category_id, title, description, "
+                        "price, shipping_fee, currency, status) "
+                        "SELECT gen_random_uuid(), s.id, c.id, 'Titre', 'Description', "
+                        ":price, :fee, 'EUR', :status FROM shops s, categories c"
+                    ),
+                    {"price": price, "fee": fee, "status": status},
+                )
+
+        insert()
+        for bad in ({"price": "0"}, {"price": "-1"}, {"fee": "-0.01"}, {"status": "DRAFT"}):
+            with pytest.raises(IntegrityError):
+                insert(**bad)
+        with pytest.raises(IntegrityError), engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO price_history (id, article_id, old_price, new_price, changed_by)"
+                    " VALUES (gen_random_uuid(), gen_random_uuid(), 1, 2, 'u')"
+                )
+            )
+        engine.dispose()
+
+        command.downgrade(config, "0002")
+        tables, indexes = _tables_and_indexes(url)
+        assert not {"articles", "article_photos", "price_history"} & tables
+        assert {"categories", "shops"} <= tables
+        assert not {i for i in indexes if i.startswith(("ix_articles", "ix_price", "ix_article"))}
+
+        command.upgrade(config, "head")  # rejouable
         command.downgrade(config, "base")
 
 

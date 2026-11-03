@@ -205,6 +205,14 @@ async def get_current_user(request: Request) -> CurrentUser:
     return user
 
 
+async def get_optional_user(request: Request) -> CurrentUser | None:
+    """Dépendance des routes publiques : `None` sans jeton ; un jeton invalide reste un 401."""
+    if "Authorization" not in request.headers:
+        return None
+    return await get_current_user(request)
+
+
+OptionalUserDep = Annotated[CurrentUser | None, Depends(get_optional_user)]
 CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 

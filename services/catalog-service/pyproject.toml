@@ -17,6 +17,7 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.26",
     "starlette>=1.10",
+    "aio-pika>=10.2.2",
 ]
 
 [dependency-groups]
@@ -28,6 +29,7 @@ dev = [
     "cryptography>=43",
     "mypy>=2.4.1",
     "ruff>=0.17.3",
+    "jsonschema>=4.26.0",
 ]
 
 [build-system]

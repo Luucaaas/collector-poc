@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     database_url: str = Field(
         description="URL SQLAlchemy, ex. postgresql+psycopg://user:***@host/catalog_db"
     )
+    rabbitmq_url: str = Field(
+        description="URL AMQP, ex. amqp://user:***@host:5672/ (Secret Kubernetes)"
+    )
+    # Durée totale accordée à la publication d'un événement, réessais compris.
+    event_publish_budget_seconds: float = Field(default=5.0, gt=0)
     issuer: str = "https://auth.127.0.0.1.sslip.io/realms/collector"
     jwks_url: str = (
         "http://keycloak.collector.svc.cluster.local:8080"

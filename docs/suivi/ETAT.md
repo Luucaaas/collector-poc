@@ -25,13 +25,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | fusionnée |
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | fusionnée |
-| P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
+| P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Rédiger la fiche de P3-05 (synthèse, ADR 0008 « images officielles sans opérateur », règles du README des expérimentations, cohérence avec `architecture-poc.md`, `contrats.md` et `CLAUDE.md`), la commiter avec `ETAT.md`, puis la confier au développeur sur `phase-3/synthese`.
+Attendre le rapport du développeur sur P3-05 (branche `phase-3/synthese`), puis audit, contre-vérification de fin de phase par le chef et fusion. Ensuite clôture de la phase 3 : `CLAUDE.md` (stack, avancement), cases du plan, bilan à Lucas.
 
 ## Décisions en attente
 
@@ -43,4 +43,4 @@ Rédiger la fiche de P3-05 (synthèse, ADR 0008 « images officielles sans opér
 
 ## Dernière mise à jour
 
-03/11/2026 19:19 — P3-06 fusionnée (squash) : RabbitMQ sans opérateur, broker de nouveau prêt en 10,0 s contre 54,2 s, 64 Mi de mémoire en moins.
+03/11/2026 19:20 — Brief de P3-05 rédigé, tâche confiée au développeur.

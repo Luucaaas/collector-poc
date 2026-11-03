@@ -32,13 +32,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | fusionnée |
-| P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
+| P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Rédiger la fiche de P4-05 (pile `docker compose`, 17 tests d'acceptation, rendu JSON des journaux `aio_pika` repris dans catalog-service), la commiter avec `ETAT.md`, puis la confier au développeur sur `phase-4/acceptance`.
+Attendre le rapport du développeur sur P4-05 (branche `phase-4/acceptance`), puis audit, contre-vérification de fin de phase par le chef (pile relancée et 17 tests rejoués) et fusion. Ensuite clôture de la phase 4.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Rédiger la fiche de P4-05 (pile `docker compose`, 17 tests d'acceptation, rendu
 
 ## Dernière mise à jour
 
-03/11/2026 21:58 — P4-04 fusionnée (squash) après deux audits et la contre-vérification du chef : 186 tests, couverture 98,43 %.
+03/11/2026 22:00 — Brief de P4-05 rédigé, tâche confiée au développeur.

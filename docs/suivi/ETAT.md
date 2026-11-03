@@ -24,14 +24,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | fusionnée |
-| P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | en audit |
+| P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | en cours (corrections de l'audit n° 1) |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Recopier dans la fiche le rapport de l'auditeur sur P3-06 (branche `phase-3/exp-rabbitmq-simple`, commit 4ef5031), puis fusionner si CONFORME. Ensuite P3-05.
+Attendre les corrections du développeur sur P3-06 (aller-retour n° 1, rédaction seulement, sans nouvelle exécution), puis audit n° 2 et fusion `--squash`. Ensuite P3-05.
 
 ## Décisions en attente
 
@@ -43,4 +43,4 @@ Recopier dans la fiche le rapport de l'auditeur sur P3-06 (branche `phase-3/exp-
 
 ## Dernière mise à jour
 
-03/11/2026 19:08 — P3-06 livrée (exécution de référence 18:55 : A, B, C conformes ; retour à Ready du broker 10,0 s contre 54,2 s avec l'opérateur), en audit.
+03/11/2026 19:12 — P3-06 : audit n° 1 non conforme (rédaction), renvoyée au développeur.

@@ -31,14 +31,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | fusionnée |
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
-| P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | en cours |
+| P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | en audit |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre le rapport du développeur sur P4-04 (branche `phase-4/notification`), puis audit, contre-vérification du chef et fusion.
+Recopier dans la fiche le rapport de l'auditeur sur P4-04 (branche `phase-4/notification`, commit f7f7e55), faire la contre-vérification du chef (socle d'authentification recopié), trancher les 5 questions du développeur, puis fusionner.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Attendre le rapport du développeur sur P4-04 (branche `phase-4/notification`), 
 
 ## Dernière mise à jour
 
-03/11/2026 21:28 — Brief de P4-04 rédigé, tâche confiée au développeur.
+03/11/2026 21:42 — P4-04 livrée (175 tests, couverture 98,36 %, CA2 en 27 ms), en audit.

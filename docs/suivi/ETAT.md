@@ -31,14 +31,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | fusionnée |
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
-| P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | à faire |
+| P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | en cours |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Rédiger la fiche de P4-04 (`notification-service`, US-05 : socle recopié de catalog-service, centres d'intérêt, préférences, consommateur des événements, notifications), la commiter avec `ETAT.md`, puis la confier au développeur sur `phase-4/notification`.
+Attendre le rapport du développeur sur P4-04 (branche `phase-4/notification`), puis audit, contre-vérification du chef et fusion.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Rédiger la fiche de P4-04 (`notification-service`, US-05 : socle recopié de ca
 
 ## Dernière mise à jour
 
-03/11/2026 21:28 — P4-03 fusionnée (squash) après deux audits : 269 tests, couverture 99,05 %, événements vérifiés sur RabbitMQ.
+03/11/2026 21:28 — Brief de P4-04 rédigé, tâche confiée au développeur.

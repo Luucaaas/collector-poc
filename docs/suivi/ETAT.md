@@ -23,7 +23,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P2-07 | Index et cohérence de fin de phase | developpeur | `phase-2/coherence` | fusionnée |
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
-| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en cours (bloquée : ports 80 et 443 pris par le cluster kind `projet`) |
+| P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | en cours |
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | à faire |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
@@ -31,17 +31,16 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre l'accord de Lucas pour arrêter de nouveau ses 7 conteneurs kind (redémarrés le 03/11/2026 vers 13:38, `projet-control-plane` publie les ports 80 et 443), puis demander au développeur de lancer la première exécution complète de P3-03 (infrastructure sans opérateur déjà réécrite sur la branche `phase-3/exp-keycloak-tls`).
+Attendre le rapport du développeur sur la première exécution complète de P3-03 (branche `phase-3/exp-keycloak-tls`), puis audit et contre-vérification du chef.
 
 ## Décisions en attente
 
 | Sujet | Qui décide | Remarque |
 | --- | --- | --- |
 | Acceptation du cluster local k3d pour le critère 5 | Lucas (question à l'intervenant) | Sinon migration vers Oracle OKE Always Free |
-| Disque virtuel de Docker Desktop trop petit (58,4 Go) : P3-03 consomme plus de 4,5 Go et la phase 6 déploiera toute la pile. 47,7 Go occupés, dont environ 30 Go de volumes des clusters kind et 13 Go d'images des autres projets ; collector-poc en utilise environ 1 Go. Options : agrandir (plafond, fichier creux, 70 à 100 Go) ou supprimer les clusters kind devenus inutiles | Lucas (réglage de Docker Desktop) | Sans réponse. P3-03 est retentée avec 7,7 Go libres après la simplification ; arrêt si le disque passe sous 3,5 Go |
-| **À relancer à la fin de P3-06** (dernière tâche qui crée un cluster) : 7 conteneurs kind d'autres projets de Lucas, arrêtés par le chef avec son accord le 02/11/2026 13:49, **de nouveau démarrés le 03/11/2026 vers 13:38** (nouvel accord nécessaire pour les arrêter) : `docker start projet-control-plane projet-worker projet-worker2 tp-affinity-control-plane tp-affinity-worker tp-affinity-worker2 tp-k8s-control-plane` | Chef (accord de Lucas) | Ne pas les supprimer. `mkcert -install` fait le 02/11/2026. Restent Node 22 (recommandé) et `check-tools.sh --cluster` |
+| Outillage restant de Lucas | Lucas | `mkcert -install` fait le 02/11/2026. Restent Node 22 (recommandé) et `check-tools.sh --cluster` |
 | Cache npm : `sudo chown -R 501:20 ~/.npm` | Lucas (mot de passe) | Non bloquant : contourné par `npm_config_cache` pour l'export des diagrammes |
 
 ## Dernière mise à jour
 
-03/11/2026 13:42 — P3-03 : infrastructure sans opérateur écrite ; exécution bloquée par les ports 80 et 443, pris par le cluster kind `projet` redémarré.
+03/11/2026 13:52 — Lucas a supprimé de Docker tout ce qui n'appartient pas au projet (clusters kind, Kubernetes de Docker Desktop) : 53,8 Go libres, ports 80 et 443 libres. P3-03 relancée.

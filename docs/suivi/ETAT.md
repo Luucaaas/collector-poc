@@ -30,17 +30,18 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre que Lucas agrandisse le disque de Docker Desktop, puis demander au développeur de reprendre P3-03 à partir du « Reste à faire » de son journal (branche `phase-3/exp-keycloak-tls`).
+Attendre la décision de Lucas sur la simplification de l'infrastructure (opérateurs remplacés par les images officielles et des manifestes simples) et sur le disque de Docker, puis rebriefer P3-03 en conséquence (branche `phase-3/exp-keycloak-tls`).
 
 ## Décisions en attente
 
 | Sujet | Qui décide | Remarque |
 | --- | --- | --- |
 | Acceptation du cluster local k3d pour le critère 5 | Lucas (question à l'intervenant) | Sinon migration vers Oracle OKE Always Free |
-| Disque virtuel de Docker Desktop trop petit (58,4 Go) : P3-03 consomme plus de 4,5 Go et la phase 6 déploiera toute la pile. Recommandation : l'agrandir à 100 Go (Settings > Resources > Advanced > Disk image size) | Lucas (réglage de Docker Desktop) | **Bloquant pour P3-03** |
+| **Simplifier l'infrastructure** : remplacer les opérateurs RabbitMQ, CloudNativePG et Keycloak, ainsi que cert-manager (prérequis du seul opérateur RabbitMQ, contraire à l'ADR 0006), par les images officielles et des manifestes simples ; opérateurs renvoyés à la cible. Conserver kube-prometheus-stack. Recommandé par le chef | Lucas (décision d'architecture) | Bloquant pour P3-03 ; impose de refaire l'exp. 1 |
+| Disque virtuel de Docker Desktop trop petit (58,4 Go) : P3-03 consomme plus de 4,5 Go et la phase 6 déploiera toute la pile. 47,7 Go occupés, dont environ 30 Go de volumes des clusters kind et 13 Go d'images des autres projets ; collector-poc en utilise environ 1 Go. Options : agrandir (plafond, fichier creux, 70 à 100 Go) ou supprimer les clusters kind devenus inutiles | Lucas (réglage de Docker Desktop) | **Bloquant pour P3-03** |
 | **À relancer à la fin de P3-03** : 7 conteneurs kind d'autres projets de Lucas, arrêtés par le chef avec son accord le 02/11/2026 13:49 : `docker start projet-control-plane projet-worker projet-worker2 tp-affinity-control-plane tp-affinity-worker tp-affinity-worker2 tp-k8s-control-plane` | Chef (accord de Lucas) | Ne pas les supprimer. `mkcert -install` fait le 02/11/2026. Restent Node 22 (recommandé) et `check-tools.sh --cluster` |
 | Cache npm : `sudo chown -R 501:20 ~/.npm` | Lucas (mot de passe) | Non bloquant : contourné par `npm_config_cache` pour l'export des diagrammes |
 
 ## Dernière mise à jour
 
-02/11/2026 23:16 — P3-03 bloquée par le disque de la VM Docker (3,4 Go libres à mi-parcours) ; Traefik, TLS, CloudNativePG et Keycloak démarrent.
+03/11/2026 07:41 — Lucas questionne le besoin de 100 Go et la simplicité de l'architecture : le chef recommande de retirer les opérateurs et cert-manager.

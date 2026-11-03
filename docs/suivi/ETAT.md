@@ -24,14 +24,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | fusionnée |
-| P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | à faire |
+| P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | en cours |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Rédiger la fiche de P3-06 (expérimentation 1 refaite avec l'image officielle `rabbitmq`, sans opérateur ni cert-manager), la commiter avec `ETAT.md`, puis la confier au développeur sur `phase-3/exp-rabbitmq-simple`.
+Attendre le rapport du développeur sur P3-06 (branche `phase-3/exp-rabbitmq-simple`), puis audit et fusion. Ensuite P3-05 (synthèse, ADR 0008, cohérence de fin de phase).
 
 ## Décisions en attente
 
@@ -43,4 +43,4 @@ Rédiger la fiche de P3-06 (expérimentation 1 refaite avec l'image officielle `
 
 ## Dernière mise à jour
 
-03/11/2026 18:38 — P3-03 fusionnée (squash) après deux audits et la contre-vérification du chef : matrice 15/15, sans opérateur.
+03/11/2026 18:40 — Brief de P3-06 rédigé, tâche confiée au développeur.

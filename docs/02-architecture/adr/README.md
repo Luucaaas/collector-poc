@@ -13,3 +13,4 @@ Nommage : `NNNN-titre-court.md`.
 | [0005](0005-react-typescript.md) | React et TypeScript pour le front | Acceptée, mise à jour par 0007 | 2026-10-30, 2026-10-31 |
 | [0006](0006-kubernetes-local-k3d-argocd.md) | Kubernetes local (k3d), Traefik, Helm et déploiement par script. Argo CD et cert-manager dans la cible, repli sur Oracle OKE | Acceptée sous réserve (critère 5), mise à jour par 0007 | 2026-10-30, 2026-10-31 |
 | [0007](0007-simplification-perimetre-poc.md) | Simplification du périmètre du POC : chaque retrait justifié, avec son risque | Acceptée | 2026-10-31 |
+| [0008](0008-infrastructure-images-officielles.md) | Infrastructure du POC : images officielles et manifestes simples, sans opérateur ni cert-manager (essai des opérateurs abandonné). Exception : kube-prometheus-stack. Opérateurs dans la cible | Acceptée | 2026-11-03 |

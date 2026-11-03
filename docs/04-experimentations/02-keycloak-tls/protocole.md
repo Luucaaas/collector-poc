@@ -44,7 +44,7 @@ flowchart LR
 | Outils de mesure | OpenSSL 4.1.0, curl 8.7.1, Python hôte 3.15.2 ; le client de test tourne sous Python 3.12.16 (uv) |
 | Vérification du code | Ruff 0.17.3, mypy 2.4.1 (`--strict`) |
 | Image utilitaire | `alpine:3.24.3` (mesure de l'espace disque de la VM Docker) |
-| **Disque libre requis** | **au moins 7 Go** (`run.sh` refuse de démarrer sinon). L'exécution consomme 3,7 Go (53,5 Go libres avant, 49,8 Go après l'installation, 53,4 Go après la suppression du cluster) ; le kubelet évince les pods sous environ 3,1 Go libres (constaté à l'expérimentation 1) ; seuil = consommation + marge du kubelet, arrondi |
+| **Disque libre requis** | **au moins 7 Go** (`run.sh` refuse de démarrer sinon). L'exécution consomme 3,7 Go (53,5 Go libres avant, 49,8 Go après l'installation, 53,4 Go après la suppression du cluster) ; le kubelet évince les pods sous environ 3,1 Go libres (valeur relevée lors de l'expérimentation 3, journal des décisions du 02/11/2026, fiche P3-02) ; seuil = consommation + marge du kubelet, arrondi |
 
 Aucun opérateur, aucune CRD ajoutée, aucun cert-manager, aucune image ni aucun chart Bitnami. Les ports 80 et 443 de l'hôte doivent être libres (le script s'arrête sinon).
 
@@ -169,4 +169,4 @@ Conditions et enseignements pour le POC :
 - Mémoire de l'ensemble Keycloak, PostgreSQL, Traefik et API : environ 700 Mi (703 Mi au repos), à ajouter à celle de RabbitMQ (expérimentation 1) et de la pile d'observabilité (expérimentation 3).
 - Cible : TLS jusqu'aux pods (mTLS), Keycloak à plusieurs réplicas, PostgreSQL répliqué et sauvegardé, restriction de la console d'administration, test de la rotation des clés et du flux PKCE avec le front.
 
-L'ADR 0004 (Keycloak) est confirmée sur la validation locale du jeton et les cas 401 et 403 ; la vérification du flux PKCE dans un navigateur, prévue par sa section « Confirmation », reste à faire avec le front. Le choix d'installer l'infrastructure par les images officielles et des manifestes simples sera consigné dans l'ADR 0008 (P3-05).
+L'ADR 0004 (Keycloak) est confirmée sur la validation locale du jeton et les cas 401 et 403 ; la vérification du flux PKCE dans un navigateur, prévue par sa section « Confirmation », reste à faire avec le front. Le choix d'installer l'infrastructure par les images officielles et des manifestes simples est consigné dans l'ADR [0008](../../02-architecture/adr/0008-infrastructure-images-officielles.md).

@@ -183,10 +183,10 @@ Lecture des résultats :
 - Sur 2 × 1 000 messages, aucun message confirmé n'a été perdu, ni à la suppression du consommateur (A), ni à l'arrêt propre du broker (B). La règle d'échec du contrat est vérifiée : un message en échec est traité 2 fois puis rejeté et journalisé, sans bloquer les autres (C). Pertes, doublons et résultat de C sont identiques à ceux de la version avec opérateur ; B est nettement plus court (9,995 s contre 54,164 s, 21 republications contre 107).
 - La version simple est plus légère (64 Mi de mémoire en moins : 54 + 19 Mi retirés, broker de 126 à 135 Mi ; deux composants de moins, sans CRD ni webhook) et le broker revient prêt en 10 s au lieu de 54 s. Le délai de 10 s est en partie le coût des sondes (période de 5 s) : il se règle.
 - Les doublons possibles sont couverts par `UNIQUE (user_id, source_event_id)` côté `notification-service`. La reconnexion automatique d'aio-pika suffit : la sonde `/health/ready` ne dépend donc pas de RabbitMQ (`contrats.md` §2.3).
-- Le TLS de l'ingress reste en mkcert (ADR 0006) ; cert-manager et les opérateurs restent dans la cible (limite **L11**).
+- Le TLS de l'ingress reste en mkcert (ADR 0006) ; cert-manager reste dans la cible (limite **L11**), les opérateurs aussi (limites **L3** et **L7**).
 - Avec un nœud unique, une indisponibilité du broker d'une dizaine de secondes est à prévoir : les services doivent publier avec confirmation et réessayer. Sans *outbox* (L2), l'événement est perdu s'il n'est pas confirmé : limite assumée du POC.
 - Ne pas poser de `fsGroup` sur le volume du broker (§6). Les images Python du POC doivent traiter SIGTERM (gestionnaire de signal ou init), faute de quoi l'arrêt d'un pod attend la fin du délai de grâce.
 - Ressources à prévoir : environ 135 Mi pour le broker (requête de 200m CPU, 512 Mi de mémoire en requête et en limite).
 - Cible : cluster de 3 nœuds, *quorum queues*, *dead-letter queue*, *outbox* (L2, L7) et, pour ce cluster répliqué, RabbitMQ Cluster Operator.
 
-Voir l'ADR [0003](../../02-architecture/adr/0003-rabbitmq-plutot-que-kafka.md). Le choix d'installer l'infrastructure depuis les images officielles est consigné dans le journal des décisions du 03/11/2026 (ADR 0008 en P3-05).
+Voir l'ADR [0003](../../02-architecture/adr/0003-rabbitmq-plutot-que-kafka.md). Le choix d'installer l'infrastructure depuis les images officielles est consigné dans le journal des décisions du 03/11/2026 (ADR [0008](../../02-architecture/adr/0008-infrastructure-images-officielles.md)).

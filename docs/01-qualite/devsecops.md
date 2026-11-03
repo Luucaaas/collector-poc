@@ -5,7 +5,7 @@ La démarche DevSecOps intègre la sécurité à chaque étape du cycle de déve
 - ***Shift left*** : un défaut est détecté le plus tôt possible, là où il coûte le moins cher à corriger. Une règle d'autorisation oubliée se trouve par un test en pull request, pas par un audit en production.
 - **Responsabilité partagée** : la sécurité n'est pas déléguée à une équipe distincte. Le développeur écrit le test de sécurité avec le code, la CI l'exécute et bloque la livraison en cas d'échec, l'exploitation observe et renvoie ses constats au backlog.
 
-Le cycle s'inspire du NIST SSDF (SP 800-218), qui organise ses pratiques en quatre groupes (PO, PS, PW, RV) que les étapes ci-dessous répartissent. « POC » désigne une mesure dans le périmètre du POC, mise en œuvre pendant les phases 3 à 9 ; la phase est indiquée quand la mesure n'existe pas encore. Les mesures marquées « cible » sont documentées comme limites dans [architecture-poc.md](../02-architecture/architecture-poc.md#8-limites-assumées-du-poc) (L1 à L16) et alimentent le plan de remédiation de `docs/06-securite`.
+Le cycle s'inspire du NIST SSDF (SP 800-218), qui organise ses pratiques en quatre groupes (PO, PS, PW, RV) que les étapes ci-dessous répartissent. « POC » désigne une mesure dans le périmètre du POC, mise en œuvre pendant les phases 3 à 9 ; la phase est indiquée quand la mesure n'existe pas encore. Les mesures marquées « cible » sont documentées comme limites dans [architecture-poc.md](../02-architecture/architecture-poc.md#8-limites-assumées-du-poc) (L1 à L20) et alimentent le plan de remédiation de `docs/06-securite`.
 
 ![Cycle DevSecOps de Collector](img/cycle-devsecops.svg)
 
@@ -44,7 +44,7 @@ Les indicateurs I1 à I5 sont définis dans [indicateurs.md](indicateurs.md). «
 | 4. Test | Exécuter les tests automatisés | Tests de sécurité écrits avec le code : jeton absent ou invalide → 401, mauvais rôle ou ressource d'un autre vendeur → 403, données invalides → 422 (ENF-02, ENF-03, ENF-07). Couverture ≥ 80 % | pytest, pytest-cov, tests d'acceptation pytest + httpx | POC | I1, I5 |
 | 4. Test | Analyser dépendances, image et secrets | Détection des vulnérabilités connues (SCA) et des secrets embarqués, bloquante sur CRITICAL ou HIGH avec correctif (ENF-05) | Trivy (dépendances, image, secrets) | POC (S8) ; pip-audit et Gitleaks sur l'historique Git : cible (L13) | I4 |
 | 5. Release | Publier l'artefact | Aucune image publiée si Trivy ou la quality gate échoue. L'image porte un tag `sha-<commit>` propre à chaque commit, que la CI ne réécrit jamais ; seul le digest garantit l'immuabilité, il est relevé au déploiement | GitHub Actions, GHCR (`ghcr.io/luucaaas/<service>`, amd64 + arm64) | POC (S8) | I4 |
-| 6. Deploy | Déployer sur le cluster | Secrets Kubernetes créés par le script à partir d'un `.env` local non versionné (S6). TLS 1.2 minimum, redirection HTTP → HTTPS, certificat mkcert (S1, ENF-01). Ressources bornées et sondes `/health/live` et `/health/ready` | Helm, `deploy/local/deploy.sh`, Traefik, mkcert | POC (S1, S6) ; NetworkPolicies : cible (L4) ; mTLS : cible (L10) ; cert-manager : cible (L11) ; Argo CD : cible (L12) | — |
+| 6. Deploy | Déployer sur le cluster | `deploy.sh` génère les mots de passe manquants dans un `.env` local non versionné (modèle `.env.example` versionné, à créer en phase 6), puis crée les Secrets Kubernetes (S6). TLS 1.2 minimum, redirection HTTP → HTTPS, certificat mkcert (S1, ENF-01). Ressources bornées et sondes `/health/live` et `/health/ready` | Helm, `deploy/local/deploy.sh`, Traefik, mkcert | POC (S1, S6) ; NetworkPolicies : cible (L4) ; mTLS : cible (L10) ; cert-manager : cible (L11) ; Argo CD : cible (L12) | — |
 | 7. Operate | Exploiter l'application | Authentification OIDC avec PKCE, jeton de 5 min en mémoire (S2). Vérification du JWT par chaque service (S3). RBAC puis propriété de la ressource (S4). Un utilisateur PostgreSQL par service (S5) | Keycloak, PyJWT, rôles `buyer`, `seller`, `admin` | POC (S2 à S5) ; limitation de débit : cible (L6) ; BFF et CSP : cible (L5) | — |
 | 8. Monitor | Surveiller, auditer | Logs JSON avec identifiant de corrélation et `sub` de l'utilisateur (ENF-08). Métriques de débit, latence p95 et taux d'erreur. Audit dynamique de l'application en fonctionnement | structlog, Prometheus, Grafana, OWASP ZAP lancé ponctuellement | POC ; ZAP intégré à la CI : cible (L13) | I3 |
 
@@ -71,3 +71,7 @@ Dans le POC, les étapes Code à Release sont automatisées dans le pipeline, ta
 | L11 | cert-manager | Deploy |
 | L12 | Argo CD (GitOps) | Deploy |
 | L13 | Semgrep, Bandit, pip-audit, Gitleaks, ZAP en CI | Build, Test, Monitor |
+| L17 | `securityContext` de l'infrastructure (Keycloak, PostgreSQL) | Deploy |
+| L18 | Broker RabbitMQ démarré en root | Deploy |
+| L19 | Console d'administration de Keycloak exposée, en-têtes `X-Forwarded-*` | Deploy, Operate |
+| L20 | Observabilité sans stockage persistant ni contrôle d'accès | Operate, Monitor |

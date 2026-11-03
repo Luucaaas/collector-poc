@@ -23,6 +23,7 @@ Ce document fixe les contrats entre les composants du POC : API REST des deux se
 
 - Chaque requête protégée porte `Authorization: Bearer <jeton d'accès>`, un JWT émis par Keycloak.
 - Chaque service vérifie localement la signature RS256 avec les clés publiques du realm (endpoint JWKS, mises en cache), puis `iss`, `aud = collector-api` et `exp` (ENF-02). Keycloak n'ajoute pas cette audience par défaut : un *client scope* importé avec le realm porte un mapper « Audience » qui l'insère dans le jeton du client `collector-web`.
+- **URL de Keycloak.** Les clés JWKS sont récupérées par l'URL interne du Service, `http://keycloak.collector.svc.cluster.local:8080` (un seul namespace `collector`, Service `keycloak`). `iss` est comparé à l'URL publique `https://auth.127.0.0.1.sslip.io/realms/collector`, car dans un pod `127.0.0.1` désigne le pod lui-même.
 - Les rôles sont lus dans `realm_access.roles`. L'identifiant de l'utilisateur est le claim `sub`.
 - Jeton absent, invalide ou expiré → **401**. Rôle insuffisant ou ressource appartenant à un autre utilisateur → **403** (ENF-03).
 - Une ressource non publiée, consultée par un autre utilisateur que son propriétaire ou un admin, renvoie **404** et non 403. On ne révèle pas son existence.
@@ -47,7 +48,7 @@ Ce document fixe les contrats entre les composants du POC : API REST des deux se
 }
 ```
 
-- **Corrélation.** L'en-tête `X-Request-ID` est repris s'il est fourni par l'appelant, sinon généré par le service à l'entrée de la requête (middleware ASGI). Il est écrit dans chaque log JSON, renvoyé dans la réponse et recopié dans le champ `correlation_id` des événements émis (ENF-08).
+- **Corrélation.** L'en-tête `X-Request-ID` est repris s'il est fourni par l'appelant **et** s'il fait au plus 128 caractères parmi `[A-Za-z0-9._-]` ; sinon (absent, trop long ou caractères autres), un UUID est généré par le service à l'entrée de la requête (middleware ASGI). Il est écrit dans chaque log JSON, renvoyé dans la réponse et recopié dans le champ `correlation_id` des événements émis (ENF-08).
 - Le contrat OpenAPI 3.1 est généré par FastAPI à `/api/v1/openapi.json` (ENF-27).
 
 ## 2. Endpoints REST

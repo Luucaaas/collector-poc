@@ -170,7 +170,7 @@ Les événements `article.published` et `article.price_changed` sont implément�
 
 La production vise un **Kubernetes managé chez un hébergeur européen**, pour la conformité RGPD et dans la continuité de l'hébergeur français actuel du site vitrine. Le choix précis (OVHcloud Managed Kubernetes, Scaleway Kapsule…) sera fait après le POC. Les charts Helm et les images multi-architecture du POC sont réutilisés tels quels (ENF-31). Le POC tourne sur un cluster k3d local, déployé par script (ADR 0006).
 
-Les composants avec état passent sur des offres managées ou des opérateurs : PostgreSQL managé ou opérateur CloudNativePG avec réplicas, RabbitMQ en cluster de 3 nœuds avec *quorum queues*, sauvegardes automatiques (ENF-20).
+Les composants avec état passent sur des offres managées ou des opérateurs : PostgreSQL managé ou opérateur CloudNativePG avec réplicas, RabbitMQ en cluster de 3 nœuds avec *quorum queues* (RabbitMQ Cluster Operator, qui exige cert-manager), Keycloak Operator, sauvegardes automatiques (ENF-20). Le POC, lui, installe ces composants à partir des images officielles par des manifestes simples, sans opérateur : l'essai des opérateurs a été abandonné avec ses mesures ([ADR 0008](adr/0008-infrastructure-images-officielles.md)).
 
 ## 7. Ce que le POC démontre de la cible
 
@@ -186,3 +186,4 @@ Le POC retient le minimum qui démontre chaque principe (ADR [0007](adr/0007-sim
 | Disponibilité et montée en charge | Réplicas répartis de force, PodDisruptionBudget, stockage répliqué | 2 réplicas, sondes, HPA, démonstrations de perte d'un pod et de montée en charge |
 | Déploiement reproductible | GitOps avec Argo CD | Helm, déployé par le script `deploy.sh` |
 | Observabilité | OpenTelemetry, Prometheus, Loki, Grafana, alertes | Prometheus et Grafana (un tableau de bord), logs JSON corrélés |
+| Installation de l'infrastructure | Opérateurs ou services managés (sauvegarde, bascule, mises à jour), cert-manager | Images officielles et manifestes simples, sans opérateur ni cert-manager ([ADR 0008](adr/0008-infrastructure-images-officielles.md)) ; kube-prometheus-stack par son chart Helm |

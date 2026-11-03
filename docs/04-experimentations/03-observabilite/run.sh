@@ -25,7 +25,7 @@ KEEP=false
 [[ "${1:-}" == "--keep" ]] && KEEP=true
 
 cd "$(dirname "$0")"
-MIN_FREE_MB=7000   # l'exécution consomme environ 3,6 Go et le kubelet évince sous environ 3,1 Go libres
+MIN_FREE_MB=7000   # l'exécution consomme 3,7 Go et le kubelet évince sous environ 3,1 Go libres (relevé ici, journal des décisions du 02/11/2026)
 
 # Journalise toute la sortie (sans codes de couleur) dans resultats/ : le script se relance
 # lui-même à travers `tee`.

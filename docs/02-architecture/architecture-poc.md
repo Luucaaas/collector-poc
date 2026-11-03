@@ -2,7 +2,7 @@
 
 Le POC réalise une tranche verticale de l'[architecture cible](architecture-cible.md) : **publication d'un article, contrôle automatique, événement, notification des acheteurs intéressés.** Il retient la solution la plus simple qui démontre chaque point évalué : découpage en services, communication asynchrone, sécurité, orchestration, disponibilité et montée en charge. Les éléments retirés sont listés, avec leur risque, en [section 8](#8-limites-assumées-du-poc), et justifiés dans l'ADR [0007](adr/0007-simplification-perimetre-poc.md).
 
-Tout tourne sur le Mac de développement, dans un cluster Kubernetes k3d de trois nœuds, déployé par Helm via le script `deploy/local/deploy.sh`. Les contrats d'API, d'événements et de données sont dans [contrats.md](contrats.md).
+Tout tourne sur le Mac de développement, dans un cluster Kubernetes k3d de trois nœuds, déployé par le script `deploy/local/deploy.sh` (chart Helm générique pour les deux services, manifestes pour l'infrastructure). Les contrats d'API, d'événements et de données sont dans [contrats.md](contrats.md). L'infrastructure (PostgreSQL, RabbitMQ, Keycloak) est installée à partir des **images officielles par des manifestes simples, sans opérateur ni cert-manager** ; seule la pile d'observabilité passe par un chart Helm ([ADR 0008](adr/0008-infrastructure-images-officielles.md)).
 
 ![Vue logique du POC](img/architecture-poc.svg)
 
@@ -122,7 +122,8 @@ flowchart TB
 | Orchestration | k3d (k3s dans Docker), 1 server + 2 agents | Cluster Kubernetes multi-nœuds local | 0006 |
 | Exposition et TLS | Traefik (fourni par k3s), certificat mkcert chargé comme Secret TLS | Routage par hôte et par chemin, HTTPS | 0006 |
 | Déploiement | Un chart Helm générique pour les 2 services, script `deploy/local/deploy.sh` | 2 réplicas, sondes, HPA, ressources, secrets | 0006 |
-| Observabilité | kube-prometheus-stack allégé (sans Alertmanager), structlog | Un tableau de bord Grafana : débit, latence p95, taux d'erreur. Logs JSON corrélés | — |
+| Infrastructure | Images officielles `postgres`, `rabbitmq` et Keycloak, manifestes simples dans `deploy/infra`, Secrets générés par script | Installation sans opérateur ni cert-manager | 0008 |
+| Observabilité | kube-prometheus-stack allégé (sans Alertmanager), structlog | Un tableau de bord Grafana : débit, latence p95, taux d'erreur. Logs JSON corrélés | 0008 |
 | CI/CD | GitHub Actions, GHCR | Ruff + mypy → pytest + couverture → SonarCloud → build Docker multi-arch → Trivy → push GHCR | — |
 
 Les versions exactes sont fixées dans les protocoles d'expérimentation (`docs/04-experimentations`).
@@ -151,12 +152,12 @@ Le chart Helm donne à chaque service **2 réplicas minimum**, des **sondes** `l
 | S3 | Chaque service vérifie lui-même le JWT : signature RS256, `iss`, `aud`, `exp`. Aucune confiance implicite accordée au réseau interne | Usurpation d'identité, rejeu d'un jeton expiré | ENF-02 |
 | S4 | RBAC par rôle, puis contrôle de propriété de la ressource. Les routes `/me` dérivent l'utilisateur du jeton | Élévation de privilèges, accès aux données d'un autre utilisateur (IDOR) | ENF-03 |
 | S5 | Un utilisateur PostgreSQL par service, sans droit de connexion à la base de l'autre. Validation stricte des entrées (Pydantic) et requêtes paramétrées (ORM) | Lecture des données d'un autre service, injection SQL | ENF-07, ENF-21 |
-| S6 | Secrets Kubernetes créés par `deploy.sh` à partir d'un `.env` local non versionné, injectés dans les pods par le chart | Fuite de secrets dans Git | ENF-04 |
+| S6 | `deploy.sh` génère les mots de passe manquants dans un `.env` local non versionné (modèle `.env.example`, versionné, à créer en phase 6), stables d'un déploiement à l'autre, puis crée les Secrets Kubernetes, injectés dans les pods par le chart | Fuite de secrets dans Git | ENF-04 |
 | S7 | Images multi-stage `python:3.12-slim`, utilisateur non root, système de fichiers racine en lecture seule, toutes les capacités Linux retirées | Exploitation d'une vulnérabilité de l'image, évasion de conteneur | ENF-05 |
 | S8 | Pipeline : SonarCloud (analyse statique, quality gate) et Trivy (dépendances, image, secrets) bloquants avant la publication sur GHCR | Vulnérabilité connue ou secret embarqué dans une image livrée | ENF-04, ENF-05 |
 
 > [!TIP]
-> **À défendre à l'oral : le piège du nom de domaine dans le cluster.** Le navigateur obtient ses jetons via `https://auth.127.0.0.1.sslip.io`, et c'est cette URL qui figure dans le claim `iss`. Or, dans un pod, `127.0.0.1` désigne le pod lui-même. Les services téléchargent donc les clés publiques par l'URL interne du Service Kubernetes (`http://keycloak.collector.svc…/certs`) tout en vérifiant que `iss` vaut bien l'URL publique. Cette difficulté sera documentée dans le protocole d'expérimentation de Keycloak.
+> **À défendre à l'oral : le piège du nom de domaine dans le cluster.** Le navigateur obtient ses jetons via `https://auth.127.0.0.1.sslip.io`, et c'est cette URL qui figure dans le claim `iss`. Or, dans un pod, `127.0.0.1` désigne le pod lui-même. Les services téléchargent donc les clés publiques par l'URL interne du Service Kubernetes (`http://keycloak.collector.svc.cluster.local:8080`, voir `contrats.md` §1.2) tout en vérifiant que `iss` vaut bien l'URL publique. Cette difficulté est vérifiée par l'[expérimentation 2](../04-experimentations/02-keycloak-tls/protocole.md) (mesures 4 et 5) : un jeton obtenu par l'URL interne porte le même `iss` que celui obtenu par l'URL publique, et un seul appel JWKS sert 216 requêtes. Le bac à sable utilisait `keycloak-service` dans le namespace `keycloak` (nommage hérité de l'opérateur) ; le POC utilise le Service `keycloak` du namespace `collector`.
 
 ## 6. Parcours principal : publication d'un article
 
@@ -269,6 +270,10 @@ Chaque élément de l'architecture cible absent du POC laisse un risque connu. C
 | L14 | Internationalisation et contrôle d'accessibilité | Non-conformité à l'European Accessibility Act, applicable au commerce en ligne depuis juin 2025, et au RGAA | react-i18next, contrôle axe dans les tests de bout en bout, audit RGAA | Moyenne |
 | L15 | Détection des coordonnées obfusquées et revue manuelle | Contournement du contrôle (« zéro six… », texte dans les photos), donc transactions hors plateforme | Service moderation et statut `PENDING_REVIEW` (architecture cible) | Moyenne |
 | L16 | Plan de contrôle redondant | Le server k3d unique est un point de défaillance du cluster | Kubernetes managé, plan de contrôle géré par le fournisseur | Basse en POC |
+| L17 | `securityContext` sur l'infrastructure (Keycloak, PostgreSQL), révélé par la phase 3 | Les manifestes de bac à sable des images officielles ne posent ni `runAsNonRoot`, ni système de fichiers racine en lecture seule, ni retrait des capacités Linux : une vulnérabilité de ces images donne plus de droits dans le conteneur que nécessaire. Le POC n'applique S7 qu'aux services | `securityContext` explicite (utilisateur non root, `readOnlyRootFilesystem`, capacités retirées, `seccompProfile: RuntimeDefault`) sur chaque composant. Poser les règles en phase 6 là où les images le supportent (à vérifier composant par composant : seul le cas du broker est testé, voir L18) | Moyenne |
+| L18 | Broker RabbitMQ démarré en root, sans `securityContext` (phase 3, expérimentation 1) | Le point d'entrée de l'image démarre en root puis passe la main à l'utilisateur `rabbitmq`. Lors d'un essai non conservé, `fsGroup: 999` a rendu le cookie Erlang lisible par le groupe et le nœud a refusé de démarrer à la recréation du pod ; d'autres réglages n'ont pas été essayés | Pistes à étudier, non testées : préparer le volume autrement (conteneur d'initialisation qui fixe les droits, cookie fourni par un Secret), puis exécuter le broker en non-root ; hypothèse non testée : un opérateur (RabbitMQ Cluster Operator, cible) pourrait gérer ce démarrage | Moyenne |
+| L19 | Console d'administration de Keycloak sur l'hôte public et confiance accordée aux en-têtes `X-Forwarded-*` (phase 3, expérimentation 2) | La console est joignable sur `auth.…` comme le realm. Keycloak (`KC_PROXY_HEADERS=xforwarded`) fait confiance aux en-têtes de tout appelant qui l'atteint dans le cluster, sans restriction par adresse. Un seul réplica de Keycloak | Restreindre la console (hôte ou réseau d'administration séparé), limiter les appelants autorisés à fixer ces en-têtes (NetworkPolicies, L4), Keycloak à plusieurs réplicas (L9) | Haute |
+| L20 | Observabilité sans stockage persistant ni contrôle d'accès (phase 3, expérimentation 3) | Prometheus et Grafana utilisent des volumes `emptyDir` avec une rétention de 2 h : les mesures sont perdues au redémarrage du pod. Aucune authentification n'est posée devant Prometheus (accès par `port-forward` dans l'expérimentation) | Stockage persistant, Alertmanager et alertes sur le taux d'erreur et le p95, contrôle d'accès à Prometheus et à Grafana, supervision du plan de contrôle et des nœuds | Basse en POC |
 
 ## 9. Correspondance avec les critères d'évaluation
 
@@ -276,4 +281,4 @@ Chaque élément de l'architecture cible absent du POC laisse un risque connu. C
 | --- | --- |
 | 2. Qualité du POC (découpage, communication, sécurité, orchestration) | 2 services et 2 bases logiques, REST et AMQP, points S1 à S8, k3d + Helm |
 | 5. Environnement d'exécution (disponibilité, montée en charge) | 2 réplicas, sondes, HPA, démonstrations de perte d'un pod et de montée en charge |
-| 8. Sécurité | Points S1 à S8 dans le POC, limites L1 à L16 pour le plan de remédiation |
+| 8. Sécurité | Points S1 à S8 dans le POC, limites L1 à L20 pour le plan de remédiation |

@@ -4,7 +4,9 @@
 
 ## Phase en cours
 
-**Phase 3 terminée le 03/11/2026** (5 tâches, toutes fusionnées après audit ; bilan fait à Lucas). Prochaine phase : **phase 4** (backend : socle commun, `catalog-service`, `notification-service`, docker-compose, tests), à découper par le chef et à faire valider par Lucas.
+**Phase 4** : backend (`catalog-service`, `notification-service`, `docker compose`, tests). Découpage validé par Lucas le 03/11/2026 : 5 tâches réalisées une par une dans l'ordre du tableau. Livrable : les 5 user stories fonctionnent en local avec `docker compose`, tous les tests passent.
+
+Phase 3 terminée le 03/11/2026 (5 tâches fusionnées après audit).
 
 Phases précédentes : phase 0 (outillage, reste des actions de Lucas), phase 1 terminée et refondue pour le POC simplifié (ADR 0007), **phase 2 terminée le 31/10/2026** (7 tâches ci-dessous, toutes fusionnées après audit conforme).
 
@@ -26,12 +28,17 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | fusionnée |
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | fusionnée |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | fusionnée |
+| P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | en cours |
+| P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | à faire |
+| P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | à faire |
+| P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | à faire |
+| P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre que Lucas demande la phase 4, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Points à reprendre : section « Synthèse et conséquences pour le POC » de `docs/04-experimentations/README.md`.
+Attendre le rapport du développeur sur P4-01 (branche `phase-4/socle-catalog`), puis audit, contre-vérification du chef (sécurité) et fusion.
 
 ## Décisions en attente
 
@@ -43,4 +50,4 @@ Attendre que Lucas demande la phase 4, puis présenter son découpage en tâches
 
 ## Dernière mise à jour
 
-03/11/2026 19:39 — Phase 3 close : P3-05 fusionnée, `CLAUDE.md` mis à jour, cases de la phase 3 cochées dans le plan.
+03/11/2026 20:18 — Phase 4 lancée : découpage validé par Lucas, brief de P4-01 rédigé, tâche confiée au développeur.

@@ -28,7 +28,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | fusionnée |
 | P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | fusionnée |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | fusionnée |
-| P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | en audit |
+| P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | en cours (corrections de l'audit n° 1) |
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | à faire |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | à faire |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | à faire |
@@ -50,4 +50,4 @@ Recopier dans la fiche le rapport de l'auditeur sur P4-01 (branche `phase-4/socl
 
 ## Dernière mise à jour
 
-03/11/2026 20:25 — P4-01 livrée (73 tests, couverture 99,38 %, image non-root, arrêt en 0,4 s), en audit.
+03/11/2026 20:30 — P4-01 : audit n° 1 non conforme (rechargement JWKS sans délai après un échec), renvoyée au développeur.

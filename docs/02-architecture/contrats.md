@@ -34,7 +34,7 @@ Ce document fixe les contrats entre les composants du POC : API REST des deux se
 
 - JSON en UTF-8. Identifiants en UUID v4. Dates en ISO 8601 et en UTC (`2026-11-02T14:05:00Z`).
 - **Montants en chaîne décimale** (`"120.00"`) avec une devise ISO 4217 (`"EUR"`). On évite ainsi les erreurs d'arrondi des nombres flottants.
-- Les champs inconnus sont refusés (Pydantic `extra="forbid"`, ENF-07).
+- Dans l'API REST, les champs inconnus sont refusés (Pydantic `extra="forbid"`, ENF-07). Les événements suivent une autre règle (§3.3 : producteur strict, consommateur tolérant).
 - Pagination par `limit` (20 par défaut, 100 au maximum) et `offset` pour `GET /articles` et `GET /me/notifications`. La réponse contient `items` et `total`.
 - Les listes de référence, bornées par nature (`GET /categories`, `GET /shops/me`), ne sont pas paginées : elles renvoient tous les éléments sous la forme `{"items": [...], "total": n}`.
 - Les erreurs suivent la RFC 9457 (*Problem Details*, `application/problem+json`) :
@@ -152,6 +152,8 @@ Tous les chemins sont sous `/me` : l'utilisateur est toujours celui du jeton (`s
 ```
 
 - **Valeurs par défaut.** Sans préférences enregistrées, les deux types de notification sont actifs.
+- **Vingt catégories distinctes au plus.** `PUT /me/interests` dédoublonne la liste, puis refuse plus de 20 identifiants distincts (422, code `TOO_MANY_CATEGORIES`) ; une liste brute de plus de 200 identifiants est refusée par la validation (422). 21 identifiants dont un doublon sont donc acceptés.
+- **Réponse de `GET /me/notifications`** : `{"items": [...], "total": n}`, de la plus récente à la plus ancienne. Un élément porte `id`, `type` (`NEW_ARTICLE` ou `PRICE_CHANGED`), `article_id`, `content` et `created_at`. `content` vaut `{"title", "price", "currency"}` pour `NEW_ARTICLE` et `{"title", "old_price", "new_price", "currency"}` pour `PRICE_CHANGED` (montants en chaîne décimale).
 - **Catégories non vérifiées.** `notification-service` ne connaît pas la liste des catégories, et n'appelle pas le catalogue de façon synchrone (ADR 0001). `PUT /me/interests` vérifie donc le format des identifiants, mais pas leur existence. Le front ne propose que des catégories existantes, lues sur `GET /categories`. Un identifiant inconnu ne déclenche simplement jamais de notification.
 
 ### 2.3 Endpoints techniques (les deux services)
@@ -209,6 +211,7 @@ Tous les événements partagent une enveloppe inspirée de CloudEvents 1.0. Seul
 
 **Règles d'évolution.**
 - Un ajout de champ optionnel est rétrocompatible et garde la même version. Les consommateurs ignorent les champs qu'ils ne connaissent pas.
+- **Producteur strict, consommateur tolérant.** Les schémas JSON de §3.4 et §3.5 (`additionalProperties: false` sur l'enveloppe) décrivent ce que le **producteur doit émettre** ; ils sont vérifiés dans les tests de `catalog-service`. Le consommateur, lui, ignore les champs inconnus de l'enveloppe et de `data`, mais exige les champs qu'il connaît, avec leurs types. Il acquitte sans traitement (journal `event_ignored`) un `event_type` qu'il ne connaît pas, pourvu que l'enveloppe soit valide, car la liaison `article.*` peut lui livrer de futurs types. Un message illisible (JSON invalide, champ requis absent ou mal typé) ou d'une `schema_version` inconnue pour un type connu est rejeté sans remise.
 - Une suppression, un renommage ou un changement de type crée une nouvelle version. Le producteur publie alors les deux versions pendant la transition.
 
 ### 3.4 `article.published`
@@ -428,6 +431,7 @@ erDiagram
     }
 ```
 
+- **Index `ix_interests_category_id`** sur `interests (category_id)`, en plus de la clé primaire `(user_id, category_id)` : la requête des destinataires cherche les acheteurs d'une catégorie, que la clé primaire (qui commence par `user_id`) ne sert pas.
 - Les destinataires d'un événement sont calculés par une seule requête : les `user_id` de `interests` pour la `category_id` de l'événement, joints à `preferences` (valeur par défaut si absente), sauf le `seller_id` de l'événement (RM-08).
 - La contrainte `UNIQUE (user_id, source_event_id)` empêche une notification en double si un message est relivré (RM-09). L'insertion utilise `ON CONFLICT DO NOTHING`.
 

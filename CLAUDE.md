@@ -68,7 +68,7 @@ Décisions (détail dans `docs/02-architecture/contrats.md`, `architecture-poc.m
 - Démo de disponibilité : suppression d'un pod et scaling HPA (2 → 5 réplicas) pendant un test Locust. Pas de démo de panne de nœud.
 - Secrets : `deploy.sh` génère les mots de passe manquants dans un `.env` local non versionné (modèle `.env.example`, à créer en phase 6), puis crée les Secrets Kubernetes. Un utilisateur PostgreSQL par service, sans droit de superutilisateur.
 - Ce que la phase 3 impose aux phases 4 et 6 : section « Synthèse et conséquences pour le POC » de `docs/04-experimentations/README.md`.
-- Limites assumées L1 à L20 dans `architecture-poc.md` section 8 : elles alimentent le plan de remédiation (critère 8).
+- Limites assumées L1 à L22 dans `architecture-poc.md` section 8 : elles alimentent le plan de remédiation (critère 8).
 - Cible (dans `architecture-cible.md`) : fraud-service, outbox, quorum queues et DLQ, NetworkPolicies, PostgreSQL par service et répliqué, Argo CD, cert-manager, PDB et répartition imposée, mTLS, BFF, statut `PENDING_REVIEW` et service moderation.
 - Diagrammes : Mermaid dans les `.md` de `docs/02-architecture` et `docs/01-qualite`, export SVG par `docs/02-architecture/export-diagrams.sh` (mermaid-cli 11.17.0, car la 12 exige Node 22). Le rendu n'est pas déterministe : ne jamais commiter un SVG régénéré dont la source n'a pas changé (`git checkout --` après l'export). Vérifier la lisibilité d'un nouveau schéma en PNG (`qlmanage -t -s 1600`).
 

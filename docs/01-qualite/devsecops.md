@@ -5,7 +5,7 @@ La démarche DevSecOps intègre la sécurité à chaque étape du cycle de déve
 - ***Shift left*** : un défaut est détecté le plus tôt possible, là où il coûte le moins cher à corriger. Une règle d'autorisation oubliée se trouve par un test en pull request, pas par un audit en production.
 - **Responsabilité partagée** : la sécurité n'est pas déléguée à une équipe distincte. Le développeur écrit le test de sécurité avec le code, la CI l'exécute et bloque la livraison en cas d'échec, l'exploitation observe et renvoie ses constats au backlog.
 
-Le cycle s'inspire du NIST SSDF (SP 800-218), qui organise ses pratiques en quatre groupes (PO, PS, PW, RV) que les étapes ci-dessous répartissent. « POC » désigne une mesure dans le périmètre du POC, mise en œuvre pendant les phases 3 à 9 ; la phase est indiquée quand la mesure n'existe pas encore. Les mesures marquées « cible » sont documentées comme limites dans [architecture-poc.md](../02-architecture/architecture-poc.md#8-limites-assumées-du-poc) (L1 à L20) et alimentent le plan de remédiation de `docs/06-securite`.
+Le cycle s'inspire du NIST SSDF (SP 800-218), qui organise ses pratiques en quatre groupes (PO, PS, PW, RV) que les étapes ci-dessous répartissent. « POC » désigne une mesure dans le périmètre du POC, mise en œuvre pendant les phases 3 à 9 ; la phase est indiquée quand la mesure n'existe pas encore. Les mesures marquées « cible » sont documentées comme limites dans [architecture-poc.md](../02-architecture/architecture-poc.md#8-limites-assumées-du-poc) (L1 à L22) et alimentent le plan de remédiation de `docs/06-securite`.
 
 ![Cycle DevSecOps de Collector](img/cycle-devsecops.svg)
 

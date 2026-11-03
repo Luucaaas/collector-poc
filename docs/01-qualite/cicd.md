@@ -1,6 +1,6 @@
 # Schéma CI/CD
 
-Ce document décrit le pipeline de livraison continue de Collector, du commit au déploiement. C'est le **contrat** que les workflows GitHub Actions de la phase 5 devront suivre à l'identique : chaque job, chaque condition de blocage et chaque artefact ci-dessous doit se retrouver dans `.github/workflows`. Les workflows ne sont pas encore écrits ; « POC » désigne, comme dans [devsecops.md](devsecops.md), une mesure dans le périmètre du POC mise en œuvre pendant les phases 3 à 9, et « cible » une mesure documentée comme limite (L1 à L20 de [architecture-poc.md](../02-architecture/architecture-poc.md#8-limites-assumées-du-poc)).
+Ce document décrit le pipeline de livraison continue de Collector, du commit au déploiement. C'est le **contrat** que les workflows GitHub Actions de la phase 5 devront suivre à l'identique : chaque job, chaque condition de blocage et chaque artefact ci-dessous doit se retrouver dans `.github/workflows`. Les workflows ne sont pas encore écrits ; « POC » désigne, comme dans [devsecops.md](devsecops.md), une mesure dans le périmètre du POC mise en œuvre pendant les phases 3 à 9, et « cible » une mesure documentée comme limite (L1 à L22 de [architecture-poc.md](../02-architecture/architecture-poc.md#8-limites-assumées-du-poc)).
 
 ## 1. Vue d'ensemble
 

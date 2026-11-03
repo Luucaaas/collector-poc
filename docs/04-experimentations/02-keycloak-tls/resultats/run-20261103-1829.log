@@ -1,0 +1,295 @@
+
+=== 0. Pré-requis et environnement ===
+Date de l'exécution : 03/11/2026 18:29
+macOS 26.6.2 arm64 ; Python hôte 3.15.2 ; uv 0.13.6
+Docker moteur 28.5.1 ; 10 CPU, 8322555904 octets de mémoire
+k3d version v5.9.0
+Client Version: v1.34.1
+mkcert v1.4.4 ; OpenSSL 4.1.0 23 Oct 2026 (Library: OpenSSL 4.1.0 23 Oct 2026) ; curl 8.7.1 (x86_64-apple-darwin25.0) libcurl/8.7.1
+Image k3s rancher/k3s:v1.35.8-k3s1 ; quay.io/keycloak/keycloak:26.8.0 ; postgres:18.4-alpine
+Ports 80 et 443 de l'hôte : libres
+Espace disque libre de la VM Docker (avant) : 53.5G sur 58.4G (3% utilisé)
+
+=== 1. Certificat mkcert et mots de passe (dossier .local/, ignoré par Git) ===
+
+Created a new certificate valid for the following names 📜
+ - "*.127.0.0.1.sslip.io"
+
+Reminder: X.509 wildcards only go one level deep, so this won't match a.b.127.0.0.1.sslip.io ℹ️
+
+The certificate is at ".local/certs/tls.crt" and the key at ".local/certs/tls.key" ✅
+
+It will expire on 3 February 2029 🗓
+
+Mots de passe générés dans .local/secrets/ (4 utilisateurs du realm, PostgreSQL, administrateur initial de Keycloak ; non affichés).
+
+=== 2. Cluster k3d (1 server, 2 agents, ports 80 et 443 publiés ; Traefik de k3s conservé) ===
+INFO[0000] portmapping '80:80' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+INFO[0000] portmapping '443:443' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+INFO[0000] Prep: Network                                
+INFO[0000] Created network 'k3d-collector-exp2'         
+INFO[0000] Created image volume k3d-collector-exp2-images 
+INFO[0000] Starting new tools node...                   
+INFO[0000] Starting node 'k3d-collector-exp2-tools'     
+INFO[0001] Creating node 'k3d-collector-exp2-server-0'  
+INFO[0001] Creating node 'k3d-collector-exp2-agent-0'   
+INFO[0001] Creating node 'k3d-collector-exp2-agent-1'   
+INFO[0001] Creating LoadBalancer 'k3d-collector-exp2-serverlb' 
+INFO[0001] Using the k3d-tools node to gather environment information 
+INFO[0001] Starting new tools node...                   
+INFO[0001] Starting node 'k3d-collector-exp2-tools'     
+INFO[0002] Starting cluster 'collector-exp2'            
+INFO[0002] Starting servers...                          
+INFO[0002] Starting node 'k3d-collector-exp2-server-0'  
+INFO[0007] Starting agents...                           
+INFO[0007] Starting node 'k3d-collector-exp2-agent-0'   
+INFO[0007] Starting node 'k3d-collector-exp2-agent-1'   
+INFO[0019] Starting helpers...                          
+INFO[0019] Starting node 'k3d-collector-exp2-serverlb'  
+INFO[0025] Injecting records for hostAliases (incl. host.k3d.internal) and for 5 network members into CoreDNS configmap... 
+INFO[0027] Cluster 'collector-exp2' created successfully! 
+INFO[0027] You can now use it like this:                
+kubectl cluster-info
+NAME                          STATUS   ROLES           AGE   VERSION        INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION     CONTAINER-RUNTIME
+k3d-collector-exp2-agent-0    Ready    <none>          9s    v1.35.8+k3s1   172.18.0.4    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+k3d-collector-exp2-agent-1    Ready    <none>          10s   v1.35.8+k3s1   172.18.0.5    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+k3d-collector-exp2-server-0   Ready    control-plane   20s   v1.35.8+k3s1   172.18.0.3    <none>        K3s v1.35.8+k3s1   6.11.11-linuxkit   containerd://2.2.7-k3s1
+Espace disque libre de la VM Docker (après la création du cluster) : 53.5G sur 58.4G (3% utilisé)
+
+=== 3. Image de l'API de test ===
+sha256:ae4c4abedb7628d9b18bd4dc256faaf062fa8c467ca63b41ef9c377f4f8dc0b0
+Using CPython 3.12.16
+Creating virtual environment at: app/.venv
+Installed 22 packages in 31ms
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.16.0
+ + certifi==2026.10.23
+ + cffi==2.1.1
+ + click==8.5.0
+ + cryptography==50.0.2
+ + fastapi==0.142.2
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + idna==3.20
+ + opentelemetry-api==1.45.2
+ + pycparser==3.12
+ + pydantic==2.14.2
+ + pydantic-core==2.50.2
+ + pyjwt==2.14.0
+ + starlette==1.10.0
+ + structlog==26.1.0
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + uvicorn==0.52.4
+INFO[0000] Importing image(s) into cluster 'collector-exp2' 
+INFO[0000] Saving 1 image(s) from runtime...            
+INFO[0003] Importing images into nodes...               
+INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp2-images-20261103182935.tar' into node 'k3d-collector-exp2-agent-1'... 
+INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp2-images-20261103182935.tar' into node 'k3d-collector-exp2-agent-0'... 
+INFO[0003] Importing images from tarball '/k3d/images/k3d-collector-exp2-images-20261103182935.tar' into node 'k3d-collector-exp2-server-0'... 
+INFO[0006] Removing the tarball(s) from image volume... 
+INFO[0007] Removing k3d-tools node...                   
+INFO[0007] Successfully imported image(s)               
+INFO[0007] Successfully imported 1 image(s) into 1 cluster(s) 
+Espace disque libre de la VM Docker (après l'import de l'image de l'API) : 51.8G sur 58.4G (6% utilisé)
+
+=== 4. Traefik : certificat mkcert par défaut et redirection HTTP -> HTTPS ===
+secret/mkcert-wildcard created
+helmchartconfig.helm.cattle.io/traefik created
+tlsstore.traefik.io/default created
+Waiting for deployment "traefik" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "traefik" rollout to finish: 1 old replicas are pending termination...
+deployment "traefik" successfully rolled out
+--- Arguments de Traefik relatifs à la redirection ---
+--entryPoints.web.address=:8000/tcp
+--entryPoints.websecure.address=:8443/tcp
+--entryPoints.web.http.redirections.entryPoint.to=:443
+--entryPoints.web.http.redirections.entryPoint.scheme=https
+--entryPoints.web.http.redirections.entryPoint.permanent=true
+--- Image de Traefik ---
+rancher/mirrored-library-traefik:3.7.8
+Espace disque libre de la VM Docker (après Traefik) : 51.1G sur 58.4G (8% utilisé)
+
+=== 5. PostgreSQL : image officielle postgres:18.4-alpine, StatefulSet d'un réplica, volume local-path ===
+namespace/keycloak created
+secret/postgres-credentials created
+secret/keycloak-admin created
+configmap/postgres-init created
+service/postgres created
+statefulset.apps/postgres created
+Waiting for statefulset spec update to be observed...
+Waiting for 1 pods to be ready...
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 1 new pods have been updated...
+NAME                        READY   AGE
+statefulset.apps/postgres   1/1     12s
+
+NAME                                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-postgres-0   Bound    pvc-e68c0a64-2fb7-4440-b98a-bb760ea74575   1Gi        RWO            local-path     <unset>                 12s
+--- Rôles et bases (superutilisateur) ---
+keycloak | f | f | f
+postgres | t | t | t
+keycloak | keycloak
+--- PostgreSQL : version ---
+PostgreSQL 18.4 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+Espace disque libre de la VM Docker (après PostgreSQL) : 50.7G sur 58.4G (8% utilisé)
+
+=== 6. Keycloak : image officielle quay.io/keycloak/keycloak:26.8.0, start --import-realm ===
+secret/keycloak-realm created
+deployment.apps/keycloak created
+service/keycloak-service created
+ingress.networking.k8s.io/keycloak created
+Waiting for deployment "keycloak" rollout to finish: 0 of 1 updated replicas are available...
+deployment "keycloak" successfully rolled out
+--- Image de Keycloak ---
+quay.io/keycloak/keycloak:26.8.0
+--- Journal de Keycloak : import du realm ---
+INFO  [io.quarkus] (main) Keycloak 26.8.0 on JVM (powered by Quarkus 3.40.1) started in 3.691s. Listening on: http://0.0.0.0:8080. Management interface listening on http://0.0.0.0:9000.
+INFO  [org.jgroups.protocols.FD_SOCK2] (executor-thread-1) server listening on *:57800
+INFO  [org.keycloak.exportimport.dir.DirImportProvider] (executor-thread-1) Importing from directory /opt/keycloak/bin/../data/import
+INFO  [org.keycloak.services] (executor-thread-1) KC-SERVICES0030: Full model import requested. Strategy: IGNORE_EXISTING
+INFO  [org.keycloak.exportimport.util.ImportUtils] (executor-thread-1) Realm 'collector' imported
+INFO  [org.keycloak.services] (executor-thread-1) KC-SERVICES0032: Import finished successfully
+Espace disque libre de la VM Docker (après Keycloak) : 49.8G sur 58.4G (10% utilisé)
+Keycloak répond en HTTPS sur https://auth.127.0.0.1.sslip.io (realm collector importé).
+
+=== 7. API de test : Deployment, Service, Middleware StripPrefix et Ingress ===
+namespace/exp created
+deployment.apps/exp-api created
+service/exp-api created
+middleware.traefik.io/strip-exp created
+ingress.networking.k8s.io/exp-api created
+secret/exp-users created
+Waiting for deployment "exp-api" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "exp-api" rollout to finish: 0 of 1 updated replicas are available...
+deployment "exp-api" successfully rolled out
+Espace disque libre de la VM Docker (après l'installation complète) : 49.8G sur 58.4G (10% utilisé)
+--- Mémoire et CPU des pods (au repos, 60 s après le démarrage de l'API) ---
+exp           exp-api-5fc67f9d45-lsdcq                 5m    41Mi    
+keycloak      keycloak-56d8d955d-pqllh                 20m   581Mi   
+keycloak      postgres-0                               6m    56Mi    
+kube-system   svclb-traefik-b9c58167-cfcz8             0m    0Mi     
+kube-system   svclb-traefik-b9c58167-fbn4h             0m    0Mi     
+kube-system   svclb-traefik-b9c58167-gwmrv             0m    0Mi     
+kube-system   traefik-5685c77c78-vz2nl                 1m    25Mi    
+RESSOURCES (au repos, 60 s après le démarrage de l'API)
+  API de test                      41 Mi      5 m CPU
+  Keycloak                        581 Mi     20 m CPU
+  PostgreSQL                       56 Mi      6 m CPU
+  Traefik                          25 Mi      1 m CPU
+  TOTAL                           703 Mi     32 m CPU
+
+=== Mesure 1 : TLS (certificat présenté, version négociée, échec sans la CA mkcert) ===
+--- auth.127.0.0.1.sslip.io:443 ---
+Verification: OK
+New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256
+Protocol: TLSv1.3
+Verify return code: 0 (ok)
+  sujet, organisation : O=mkcert development certificate
+  émetteur, organisation : O=mkcert development CA
+  notAfter=Feb  3 17:29:04 2029 GMT
+  DNS:*.127.0.0.1.sslip.io
+  curl avec la CA mkcert : code HTTP 302
+  httpx sans la CA mkcert (bundle certifi) : échec attendu : [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)
+  openssl sans la CA mkcert : verify error:num=20:unable to get local issuer certificate Verify return code: 20 (unable to get local issuer certificate) 
+--- api.127.0.0.1.sslip.io:443 ---
+Verification: OK
+New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256
+Protocol: TLSv1.3
+Verify return code: 0 (ok)
+  sujet, organisation : O=mkcert development certificate
+  émetteur, organisation : O=mkcert development CA
+  notAfter=Feb  3 17:29:04 2029 GMT
+  DNS:*.127.0.0.1.sslip.io
+  curl avec la CA mkcert : code HTTP 404
+  httpx sans la CA mkcert (bundle certifi) : échec attendu : [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)
+  openssl sans la CA mkcert : verify error:num=20:unable to get local issuer certificate Verify return code: 20 (unable to get local issuer certificate) 
+
+=== Mesure 2 : redirection HTTP -> HTTPS ===
+GET http://auth.127.0.0.1.sslip.io/realms/collector -> code 301, Location https://auth.127.0.0.1.sslip.io/realms/collector
+GET http://api.127.0.0.1.sslip.io/exp/api/v1/public -> code 301, Location https://api.127.0.0.1.sslip.io/exp/api/v1/public
+
+=== Mesure 3 : matrice d'autorisation (httpx, par https://api.127.0.0.1.sslip.io/exp, CA mkcert) ===
+ISS_PUBLIC {"iss": "https://auth.127.0.0.1.sslip.io/realms/collector", "aud": "collector-api", "azp": "collector-tests", "roles": ["buyer"], "lifespan_s": 300}
+JETON_SANS_AUDIENCE {"iss": "https://auth.127.0.0.1.sslip.io/realms/collector", "aud": null, "azp": "collector-tests-noaud", "roles": ["seller", "buyer"], "lifespan_s": 300}
+JETON_COURT {"iss": "https://auth.127.0.0.1.sslip.io/realms/collector", "aud": "collector-api", "azp": "collector-tests-short", "roles": ["seller", "buyer"], "lifespan_s": 10}
+Attente de 11 s pour l'expiration du jeton court...
+
+X-Request-ID    Cas                                          Attendu  Obtenu  Verdict
+exp2-case-01    /public sans jeton                               200     200  OK
+exp2-case-02    /me sans jeton                                   401     401  OK
+exp2-case-03    chloe (buyer) sur /me                            200     200  OK
+exp2-case-04    chloe (buyer) sur /seller                        403     403  OK
+exp2-case-05    bob (seller) sur /seller                         200     200  OK
+exp2-case-06    alice (seller, buyer) sur /seller                200     200  OK
+exp2-case-07    admin sur /seller                                403     403  OK
+exp2-case-08    jeton sans audience collector-api                401     401  OK
+exp2-case-09    signature altérée                                401     401  OK
+exp2-case-10    signé par une autre clé (kid inconnu)            401     401  OK
+exp2-case-11    signé par une autre clé (kid du realm)           401     401  OK
+exp2-case-12    algorithme none                                  401     401  OK
+exp2-case-13    sonde /health/live par l'ingress                 404     404  OK
+exp2-case-14    jeton court, avant expiration                    200     200  OK
+exp2-case-15    jeton court, après expiration                    401     401  OK
+MATRICE 15/15 cas conformes
+--- Journal de l'API : rejets (reason n'est jamais renvoyé au client) ---
+exp2-case-02     statut 401  reason=missing_token  /api/v1/me
+exp2-case-04     statut 403  reason=missing_role_seller  /api/v1/seller
+exp2-case-07     statut 403  reason=missing_role_seller  /api/v1/seller
+exp2-case-08     statut 401  reason=missing_claim_aud  /api/v1/me
+exp2-case-09     statut 401  reason=invalid_signature  /api/v1/me
+exp2-case-10     statut 401  reason=unknown_kid  /api/v1/me
+exp2-case-11     statut 401  reason=invalid_signature  /api/v1/me
+exp2-case-12     statut 401  reason=invalid_algorithm  /api/v1/me
+exp2-case-15     statut 401  reason=token_expired  /api/v1/me
+Code de sortie de la matrice : 0
+
+=== Mesure 4 : iss d'un jeton obtenu par l'URL interne (Job dans le cluster) ===
+ISS_INTERNE {"iss": "https://auth.127.0.0.1.sslip.io/realms/collector", "aud": "collector-api", "azp": "collector-tests", "roles": ["buyer"], "lifespan_s": 300}
+API_APRES_JETON_INTERNE statut 200
+
+=== Mesure 5 : récupération et cache des clés JWKS (200 requêtes supplémentaires, un même jeton) ===
+BURST 200 requêtes /me avec un même jeton : 200 réponses 200
+Appels JWKS avant le lot : 1 ; après : 1
+Requêtes HTTP journalisées par l'API depuis son démarrage : 216
+--- Lignes jwks_fetch du journal de l'API ---
+{"url": "http://keycloak-service.keycloak.svc.cluster.local:8080/realms/collector/protocol/openid-connect/certs", "reason": "cache_empty", "status": 200, "kids": ["7tNktb1Xdk1VjkQqc0pVjentpe7T9Gy2kQWDsTCpkrY"], "event": "jwks_fetch", "correlation_id": "exp2-case-03", "level": "info", "timestamp": "2026-11-03T17:31:43.756268Z"}
+
+=== Mesure 6 : ressources ===
+--- Mémoire et CPU des pods (après les mesures) ---
+exp           exp-api-5fc67f9d45-lsdcq                 15m   42Mi    
+keycloak      keycloak-56d8d955d-pqllh                 98m   596Mi   
+keycloak      postgres-0                               6m    57Mi    
+kube-system   svclb-traefik-b9c58167-cfcz8             0m    0Mi     
+kube-system   svclb-traefik-b9c58167-fbn4h             0m    0Mi     
+kube-system   svclb-traefik-b9c58167-gwmrv             0m    0Mi     
+kube-system   traefik-5685c77c78-vz2nl                 9m    25Mi    
+RESSOURCES (après les mesures)
+  API de test                      42 Mi     15 m CPU
+  Keycloak                        596 Mi     98 m CPU
+  PostgreSQL                       57 Mi      6 m CPU
+  Traefik                          25 Mi      9 m CPU
+  TOTAL                           720 Mi    128 m CPU
+--- kubectl top nodes ---
+NAME                          CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+k3d-collector-exp2-agent-0    81m          0%       255Mi           3%          
+k3d-collector-exp2-agent-1    73m          0%       890Mi           11%         
+k3d-collector-exp2-server-0   127m         1%       873Mi           11%         
+Espace disque libre de la VM Docker (fin des mesures) : 49.8G sur 58.4G (10% utilisé)
+--- Secrets : aucun mot de passe dans le dépôt ---
+docs/04-experimentations/02-keycloak-tls/.gitignore:2:.local/	.local/certs/tls.key
+docs/04-experimentations/02-keycloak-tls/.gitignore:2:.local/	.local/secrets/passwords.env
+
+=== Suppression du cluster ===
+INFO[0000] Deleting cluster 'collector-exp2'            
+INFO[0001] Deleting cluster network 'k3d-collector-exp2' 
+INFO[0001] Deleting 1 attached volumes...               
+INFO[0001] Removing cluster details from default kubeconfig... 
+INFO[0001] Removing standalone kubeconfig file (if there is one)... 
+INFO[0001] Successfully deleted cluster collector-exp2! 
+Espace disque libre de la VM Docker (après suppression du cluster) : 53.4G sur 58.4G (3% utilisé)
+--- k3d cluster list (après suppression) ---
+NAME   SERVERS   AGENTS   LOADBALANCER
+Code de sortie de run.sh : 0

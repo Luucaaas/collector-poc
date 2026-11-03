@@ -1,0 +1,26 @@
+# Modèle de Job : run.sh remplace __NAME__ et __COMMAND__. Les mots de passe de démonstration
+# viennent du Secret `exp-users` (créé par run.sh), jamais du dépôt.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __NAME__
+  namespace: exp
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: job
+          image: exp-keycloak-tls-app:local
+          imagePullPolicy: Never
+          command: __COMMAND__
+          envFrom:
+            - secretRef:
+                name: exp-users
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 192Mi

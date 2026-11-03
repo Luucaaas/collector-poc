@@ -1,0 +1,97 @@
+# PostgreSQL pour Keycloak : image officielle, un réplica, volume local-path de k3s.
+# Le Secret `postgres-credentials` (POSTGRES_PASSWORD, KEYCLOAK_DB_PASSWORD) est créé par run.sh.
+# Le script d'initialisation ne s'exécute qu'au premier démarrage d'un volume vide : il crée
+# l'utilisateur `keycloak` (sans droit de superutilisateur) et la base `keycloak` dont il est
+# propriétaire, et retire l'accès à cette base à tous les autres rôles.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: keycloak
+data:
+  10-keycloak.sh: |
+    #!/bin/sh
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<SQL
+    CREATE ROLE keycloak LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '${KEYCLOAK_DB_PASSWORD}';
+    CREATE DATABASE keycloak OWNER keycloak;
+    REVOKE ALL ON DATABASE keycloak FROM PUBLIC;
+    SQL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: keycloak
+spec:
+  selector:
+    app: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: keycloak
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:18.4-alpine
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-credentials, key: POSTGRES_PASSWORD}
+            - name: KEYCLOAK_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-credentials, key: KEYCLOAK_DB_PASSWORD}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "postgres"]
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "postgres"]
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql   # PostgreSQL 18 : PGDATA est un sous-dossier versionné
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi

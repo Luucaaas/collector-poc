@@ -6,7 +6,7 @@ Un protocole par technologie testée. Chaque dossier contient le protocole (`pro
 
 | N° | Expérimentation | Dossier | Décision |
 | --- | --- | --- | --- |
-| 1 | RabbitMQ sur Kubernetes (k3d, opérateur officiel) | [01-rabbitmq](01-rabbitmq/protocole.md) | Adoptée (opérateur officiel, cert-manager pour les webhooks) |
+| 1 | RabbitMQ sur Kubernetes (k3d, image officielle, StatefulSet, sans opérateur) | [01-rabbitmq](01-rabbitmq/protocole.md) | Adoptée (0 message perdu sur 2 × 1 000, retour à Ready du broker en 10 s au lieu de 54 s avec l'opérateur, abandonné) |
 | 2 | Keycloak + Traefik + certificat mkcert (images officielles, sans opérateur) | [02-keycloak-tls](02-keycloak-tls/protocole.md) | Adoptée (validation locale des JWT, 15 cas d'autorisation conformes ; PKCE et rotation des clés à tester avec le front) |
 | 3 | Observabilité : kube-prometheus-stack (Prometheus, Grafana) sur k3d | [03-observabilite](03-observabilite/protocole.md) | Adoptée en version allégée (bornes d'histogramme à définir pour le p95) |
 | 4 | (option) Kafka | écartée (journal des décisions du 02/11/2026) | Rejeté par l'ADR 0003 |

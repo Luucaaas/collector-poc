@@ -24,14 +24,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P3-01 | Exp. 1 : RabbitMQ sur k3d | developpeur | `phase-3/exp-rabbitmq` | fusionnée |
 | P3-02 | Exp. 3 : observabilité (kube-prometheus-stack) | developpeur | `phase-3/exp-observabilite` | fusionnée |
 | P3-03 | Exp. 2 : Keycloak, Traefik et TLS mkcert | developpeur | `phase-3/exp-keycloak-tls` | fusionnée |
-| P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | en cours (corrections de l'audit n° 1) |
+| P3-06 | Exp. 1 refaite sans opérateur ni cert-manager | developpeur | `phase-3/exp-rabbitmq-simple` | fusionnée |
 | P3-05 | Synthèse, ADR 0008 et cohérence de fin de phase | developpeur | `phase-3/synthese` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre les corrections du développeur sur P3-06 (aller-retour n° 1, rédaction seulement, sans nouvelle exécution), puis audit n° 2 et fusion `--squash`. Ensuite P3-05.
+Rédiger la fiche de P3-05 (synthèse, ADR 0008 « images officielles sans opérateur », règles du README des expérimentations, cohérence avec `architecture-poc.md`, `contrats.md` et `CLAUDE.md`), la commiter avec `ETAT.md`, puis la confier au développeur sur `phase-3/synthese`.
 
 ## Décisions en attente
 
@@ -43,4 +43,4 @@ Attendre les corrections du développeur sur P3-06 (aller-retour n° 1, rédacti
 
 ## Dernière mise à jour
 
-03/11/2026 19:12 — P3-06 : audit n° 1 non conforme (rédaction), renvoyée au développeur.
+03/11/2026 19:19 — P3-06 fusionnée (squash) : RabbitMQ sans opérateur, broker de nouveau prêt en 10,0 s contre 54,2 s, 64 Mi de mémoire en moins.

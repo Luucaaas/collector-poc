@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Expérimentation 1 : RabbitMQ sur k3d (voir protocole.md).
-# Crée le cluster, installe cert-manager, l'opérateur et RabbitMQ, exécute les scénarios
+# Crée le cluster, déploie RabbitMQ (image officielle, StatefulSet), exécute les scénarios
 # A (perte du consommateur), B (perte du broker) et C (message empoisonné), affiche les
 # résultats, puis supprime le cluster.
 # Usage : ./run.sh [--keep]   (--keep conserve le cluster à la fin)
@@ -9,9 +9,9 @@ set -euo pipefail
 
 # --- Versions figées -------------------------------------------------------------------
 K3S_IMAGE="rancher/k3s:v1.35.8-k3s1"
-CERT_MANAGER_MANIFEST="manifests/cert-manager-v1.21.2.yaml"  # cert-manager v1.21.2 (exigé par l'opérateur)
-OPERATOR_MANIFEST="manifests/cluster-operator-v2.23.0.yml" # RabbitMQ Cluster Operator v2.23.0
-APP_IMAGE="exp-rabbitmq-app:local"                         # aio-pika 10.1.1 (voir app/uv.lock)
+ALPINE_IMAGE="alpine:3.24.3"   # image utilitaire : mesure de l'espace disque de la VM Docker
+RABBITMQ_IMAGE="rabbitmq:4.3.5-management"             # lu dans manifests/rabbitmq.yaml
+APP_IMAGE="exp-rabbitmq-app:local"                      # aio-pika 10.1.1 (voir app/uv.lock)
 
 # --- Paramètres ------------------------------------------------------------------------
 CLUSTER="collector-exp1"
@@ -22,7 +22,7 @@ KEEP=false
 [[ "${1:-}" == "--keep" ]] && KEEP=true
 
 cd "$(dirname "$0")"
-MIN_FREE_MB=4096
+MIN_FREE_MB=5000   # l'exécution consomme 1,5 Go (53,4 → 51,9 Go libres) et le kubelet évince sous environ 3,1 Go libres (relevé lors de l'expérimentation 3)
 
 # Journalise toute la sortie (sans codes de couleur) dans resultats/ : le script se relance
 # lui-même à travers `tee`.
@@ -34,20 +34,34 @@ if [[ -z "${EXP_LOGGING:-}" ]]; then
   ./run.sh "$@" 2>&1 | perl -pe 'BEGIN{$|=1} s/\e\[[0-9;]*m//g' | tee "$LOG"
   exit "${PIPESTATUS[0]}"
 fi
-RABBITMQ_IMAGE=$(sed -n 's/^ *image: //p' manifests/rabbitmq-cluster.yaml) # image lue dans le manifeste
 K="kubectl --context k3d-${CLUSTER}"
+WORK=$(mktemp -d)   # fichiers temporaires (identifiants), supprimé à la sortie
+grep -q "image: ${RABBITMQ_IMAGE}\$" manifests/rabbitmq.yaml || { echo "Image du manifeste différente de ${RABBITMQ_IMAGE}" >&2; exit 1; }
 
 step() { printf '\n=== %s ===\n' "$*"; }
-disk() { echo "Espace disque libre de la VM Docker ($1) : $(docker run --rm alpine df -h / | awk 'NR==2 {print $4 " sur " $2 " (" $5 " utilisé)"}')"; }
+disk() { echo "Espace disque libre de la VM Docker ($1) : $(docker run --rm "$ALPINE_IMAGE" df -h / | awk 'NR==2 {print $4 " sur " $2 " (" $5 " utilisé)"}')"; }
 now() { python3 -c 'import time; print(f"{time.time():.3f}")'; }
 
+diagnostic() {
+  echo "--- Diagnostic (échec) : pods et derniers événements ---"
+  $K get pods -A -o wide 2>&1 | tail -n 40 || true
+  $K get events -A --sort-by=.lastTimestamp 2>&1 | tail -n 25 || true
+}
+
 cleanup() {
+  local rc=$?   # code de sortie du script, relevé avant toute autre commande
+  rm -rf "$WORK"
+  [[ "$rc" -ne 0 ]] && diagnostic
   if [[ "$KEEP" == true ]]; then
     echo "Cluster conservé (--keep) : k3d cluster delete ${CLUSTER} pour le supprimer."
   else
     step "Suppression du cluster"
     k3d cluster delete "$CLUSTER" || true
+    disk "après suppression du cluster"
+    echo "--- k3d cluster list (après suppression) ---"
+    k3d cluster list || true
   fi
+  echo "Code de sortie de run.sh : ${rc}"
 }
 trap cleanup EXIT
 
@@ -60,7 +74,18 @@ run_job() {
 }
 
 wait_job() {
-  $K -n "$NS" wait --for=condition=complete "job/$1" --timeout="${2:-300}s" >/dev/null
+  $K -n "$NS" wait --for=condition=complete "job/$1" --timeout="${2:-300}s" >/dev/null ||
+    { echo "Le Job $1 n'est pas terminé après ${2:-300} s" >&2; return 1; }
+}
+
+# Attend (au plus $2 secondes) qu'une ressource $1 existe dans le namespace.
+wait_exists() {
+  for _ in $(seq 1 "$2"); do
+    $K -n "$NS" get "$1" >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  echo "Ressource $1 introuvable après $2 s" >&2
+  return 1
 }
 
 # Attend que le producteur ait confirmé au moins $2 messages.
@@ -111,7 +136,7 @@ echo "macOS $(sw_vers -productVersion) $(uname -m) ; Python hôte $(python3 --ve
 echo "Docker moteur $(docker version --format '{{.Server.Version}}') ; $(docker info --format '{{.NCPU}} CPU, {{.MemTotal}} octets de mémoire')"
 k3d version | head -1
 kubectl version --client | head -1
-FREE_MB=$(docker run --rm alpine df -m / | awk 'NR==2 {print $4}')
+FREE_MB=$(docker run --rm "$ALPINE_IMAGE" df -m / | awk 'NR==2 {print $4}')
 disk "avant"
 if [[ "$FREE_MB" -lt "$MIN_FREE_MB" ]]; then
   echo "Espace disque insuffisant : ${FREE_MB} Mo libres, ${MIN_FREE_MB} Mo requis" >&2
@@ -124,37 +149,40 @@ k3d cluster create "$CLUSTER" --servers 1 --agents 2 --image "$K3S_IMAGE" \
   --k3s-arg "--disable=traefik@server:0" --wait --timeout 600s
 $K get nodes -o wide
 
-step "2a. cert-manager (certificats internes des webhooks de l'opérateur)"
-$K apply --server-side -f "$CERT_MANAGER_MANIFEST" >/dev/null
-$K -n cert-manager wait --for=condition=Available deployment --all --timeout=300s
-
-step "2b. RabbitMQ Cluster Operator"
-$K apply --server-side -f "$OPERATOR_MANIFEST" >/dev/null
-$K -n rabbitmq-system rollout status deployment/rabbitmq-cluster-operator --timeout=180s
-# Le webhook n'est utilisable qu'une fois son certificat émis par cert-manager.
-for _ in $(seq 1 90); do
-  $K -n rabbitmq-system get secret cluster-operator-webhook-server-cert >/dev/null 2>&1 && break
-  sleep 2
-done
-$K -n rabbitmq-system get secret cluster-operator-webhook-server-cert >/dev/null
-
-step "3. RabbitmqCluster (1 nœud, image ${RABBITMQ_IMAGE})"
+step "2. Identifiants RabbitMQ (Secret généré, jamais affiché)"
 $K create namespace "$NS"
-$K apply -f manifests/rabbitmq-cluster.yaml
-for _ in $(seq 1 60); do $K -n "$NS" get pod rabbitmq-server-0 >/dev/null 2>&1 && break; sleep 2; done
-$K -n "$NS" wait --for=condition=Ready pod/rabbitmq-server-0 --timeout=300s
-$K -n "$NS" wait --for=condition=AllReplicasReady rabbitmqcluster/rabbitmq --timeout=300s
+(
+  umask 077
+  python3 - "$WORK/rabbitmq.env" <<'PY'
+import secrets
+import sys
+
+with open(sys.argv[1], "w") as f:
+    f.write("RABBITMQ_DEFAULT_USER=exp\n")
+    f.write(f"RABBITMQ_DEFAULT_PASS={secrets.token_urlsafe(24)}\n")
+PY
+)
+$K -n "$NS" create secret generic rabbitmq-credentials --from-env-file="$WORK/rabbitmq.env" >/dev/null
+rm -f "$WORK/rabbitmq.env"
+
+step "3. RabbitMQ (StatefulSet, 1 nœud, image ${RABBITMQ_IMAGE})"
+$K apply -f manifests/rabbitmq.yaml
+# Le pod n'existe qu'une fois créé par le contrôleur de StatefulSet.
+wait_exists pod/rabbitmq-0 60
+$K -n "$NS" wait --for=condition=Ready pod/rabbitmq-0 --timeout=300s ||
+  { echo "Le pod rabbitmq-0 n'est pas Ready après 300 s" >&2; exit 1; }
 
 step "4. Image de l'application"
 docker build -q -t "$APP_IMAGE" app
 k3d image import "$APP_IMAGE" -c "$CLUSTER"
 $K apply -f manifests/consumer.yaml
-$K -n "$NS" rollout status deployment/consumer --timeout=120s
+$K -n "$NS" rollout status deployment/consumer --timeout=120s ||
+  { echo "Le déploiement consumer n'est pas prêt après 120 s" >&2; exit 1; }
 disk "après téléchargement de toutes les images"
 
 # Décalage entre l'horloge du Mac et celle du cluster (VM Docker), pour dater les suppressions.
 before=$(now)
-vm=$($K -n "$NS" exec rabbitmq-server-0 -c rabbitmq -- date +%s.%N)
+vm=$($K -n "$NS" exec rabbitmq-0 -c rabbitmq -- date +%s.%N)
 after=$(now)
 SKEW=$(python3 -c "print(f'{float(\"$vm\") - (float(\"$before\") + float(\"$after\")) / 2:.3f}')")
 echo "Décalage horloge cluster - Mac : ${SKEW} s"
@@ -178,21 +206,34 @@ $K -n "$NS" wait --for=delete "pod/$POD" --timeout=120s || true
 
 # --- Scénario B : perte du broker -----------------------------------------------------------
 step "Scénario B : suppression du pod RabbitMQ en plein flux (volume conservé)"
-$K -n "$NS" rollout status deployment/consumer --timeout=120s
+$K -n "$NS" rollout status deployment/consumer --timeout=120s ||
+  { echo "Le déploiement consumer n'est pas prêt après 120 s" >&2; exit 1; }
 CONSUMER_POD=$($K -n "$NS" get pod -l app=consumer --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}')
 run_job producer-b "$(producer_cmd B "$COUNT")"
 wait_confirmed producer-b $((COUNT / 2))
-OLD_UID=$($K -n "$NS" get pod rabbitmq-server-0 -o jsonpath='{.metadata.uid}')
+OLD_UID=$($K -n "$NS" get pod rabbitmq-0 -o jsonpath='{.metadata.uid}')
 T0=$(now)
-$K -n "$NS" delete pod rabbitmq-server-0 --wait=false
+$K -n "$NS" delete pod rabbitmq-0 --wait=false
 DELETE_TS_B=$(python3 -c "print(float('$T0') + float('$SKEW'))")
-for _ in $(seq 1 600); do
-  uid=$($K -n "$NS" get pod rabbitmq-server-0 -o jsonpath='{.metadata.uid}' 2>/dev/null || true)
-  [[ -n "$uid" && "$uid" != "$OLD_UID" ]] && break
+GONE_TS_B=""
+for _ in $(seq 1 600); do   # au plus 120 s
+  uid=$($K -n "$NS" get pod rabbitmq-0 -o jsonpath='{.metadata.uid}' 2>/dev/null || true)
+  if [[ -n "$uid" && "$uid" != "$OLD_UID" ]]; then
+    GONE_TS_B=$(python3 -c "print(float('$(now)') + float('$SKEW'))")
+    break
+  fi
   sleep 0.2
 done
-$K -n "$NS" wait --for=condition=Ready pod/rabbitmq-server-0 --timeout=300s
+[[ -n "$GONE_TS_B" ]] || { echo "Le pod rabbitmq-0 n'a pas été recréé en 120 s" >&2; exit 1; }
+$K -n "$NS" wait --for=condition=Ready pod/rabbitmq-0 --timeout=300s ||
+  { echo "Le pod rabbitmq-0 n'est pas redevenu Ready en 300 s" >&2; exit 1; }
 READY_TS_B=$(python3 -c "print(float('$(now)') + float('$SKEW'))")
+echo "--- Cause du délai de retour à Ready (pod rabbitmq-0 recréé) ---"
+echo "Suppression -> ancien pod disparu, nouveau pod créé (arrêt propre) : $(python3 -c "print(f'{float(\"$GONE_TS_B\") - float(\"$DELETE_TS_B\"):.3f}')") s"
+echo "Nouveau pod créé -> Ready : $(python3 -c "print(f'{float(\"$READY_TS_B\") - float(\"$GONE_TS_B\"):.3f}')") s"
+$K -n "$NS" get pod rabbitmq-0 -o jsonpath='Conteneur démarré (kubelet) : {.status.containerStatuses[0].state.running.startedAt} ; Ready depuis : {.status.conditions[?(@.type=="Ready")].lastTransitionTime}{"\n"}'
+echo "Journal du nœud RabbitMQ (horodatages du moteur de conteneurs, UTC) :"
+$K -n "$NS" logs --timestamps pod/rabbitmq-0 | grep -E 'Starting RabbitMQ|node           : |Server startup complete' | cut -c1-110 || true
 wait_job producer-b 400
 echo "--- Journal du producteur (événements notables) ---"
 $K -n "$NS" logs job/producer-b | grep -E 'publish_|amqp_|producer_done' || true
@@ -215,8 +256,6 @@ $K -n "$NS" logs "$CONSUMER_POD" | grep -E 'message_requeued|message_rejected' |
 step "Synthèse"
 disk "fin des scénarios"
 echo "--- Mémoire consommée (kubectl top) ---"
-$K top pods -n cert-manager || true
-$K top pods -n rabbitmq-system || true
 $K top pods -n "$NS" || true
 PROD_B=$($K -n "$NS" logs job/producer-b | grep producer_done)
 CONS_LOG=$($K -n "$NS" logs "$CONSUMER_POD" | grep -E 'amqp_' || true)

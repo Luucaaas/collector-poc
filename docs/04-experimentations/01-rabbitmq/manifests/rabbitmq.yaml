@@ -1,0 +1,113 @@
+# RabbitMQ : image officielle, un réplica, volume local-path de k3s.
+# Le Secret `rabbitmq-credentials` (RABBITMQ_DEFAULT_USER, RABBITMQ_DEFAULT_PASS) est créé par
+# run.sh. L'image crée cet utilisateur au premier démarrage d'un volume vide.
+#
+# Nom de nœud : RabbitMQ stocke ses données dans un dossier nommé d'après son nœud
+# (`rabbit@<nom d'hôte>`). Le pod d'un StatefulSet garde le nom d'hôte `rabbitmq-0` après sa
+# recréation, grâce au Service headless `rabbitmq-headless` : le volume est donc repris en B.
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: exp
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: amqp
+    - name: management
+      port: 15672
+      targetPort: management
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-headless
+  namespace: exp
+spec:
+  clusterIP: None
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: amqp
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: exp
+spec:
+  serviceName: rabbitmq-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      # Arrêt propre (scénario B) : RabbitMQ reçoit SIGTERM et s'arrête en quelques secondes
+      # (l'arrêt est mesuré par run.sh). 60 s laissent une large marge pour vider ses
+      # données, sans attendre indéfiniment si l'arrêt se bloque.
+      terminationGracePeriodSeconds: 60
+      # Pas de securityContext : le point d'entrée de l'image démarre en root, donne le volume à
+      # l'utilisateur `rabbitmq` et lui passe la main (gosu). Un `fsGroup` rendrait le cookie
+      # Erlang lisible par le groupe et le nœud refuserait de démarrer (voir protocole.md §6).
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:4.3.5-management
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef: {name: rabbitmq-credentials, key: RABBITMQ_DEFAULT_USER}
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef: {name: rabbitmq-credentials, key: RABBITMQ_DEFAULT_PASS}
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: management
+              containerPort: 15672
+          # Prêt : le nœud écoute sur ses ports (AMQP et gestion). Chaque appel de
+          # rabbitmq-diagnostics démarre une VM Erlang : timeoutSeconds 10 par prudence,
+          # période de 5 s pour que le retour à Ready soit rapide.
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 10
+          # Vivant : le nœud répond à un ping Erlang. Le démarrage mesuré dure environ 3 s
+          # (volume déjà initialisé) ; délai initial de 60 s et 6 échecs de 30 s (3 min) avant
+          # redémarrage laissent une marge large pour ne jamais tuer un broker lent (premier
+          # démarrage, machine chargée).
+          livenessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "-q", "ping"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 512Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi

@@ -31,14 +31,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-01 | Socle de catalog-service | developpeur | `phase-4/socle-catalog` | fusionnée |
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
-| P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | en audit |
+| P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | en cours (corrections de l'audit n° 1) |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Recopier dans la fiche le rapport de l'auditeur sur P4-04 (branche `phase-4/notification`, commit f7f7e55), faire la contre-vérification du chef (socle d'authentification recopié), trancher les 5 questions du développeur, puis fusionner.
+Attendre les corrections du développeur sur P4-04 (aller-retour n° 1), puis audit n° 2 et fusion.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Recopier dans la fiche le rapport de l'auditeur sur P4-04 (branche `phase-4/noti
 
 ## Dernière mise à jour
 
-03/11/2026 21:42 — P4-04 livrée (175 tests, couverture 98,36 %, CA2 en 27 ms), en audit.
+03/11/2026 21:47 — P4-04 : audit n° 1 en DOUTE (lecteur tolérant, limites du consommateur), contre-vérification du socle faite, renvoyée au développeur.

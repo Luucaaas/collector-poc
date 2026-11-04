@@ -37,13 +37,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P5-02 | Jobs `build-scan` et `acceptance`, épinglage des images | developpeur | `phase-5/ci-build-acceptance` | fusionnée |
 | P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | fusionnée |
 | P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | à faire (attend Lucas) |
-| P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | en cours |
+| P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P5-05 confiée au développeur (branche `phase-5/conformite`, sans SonarCloud). À son retour : auditeur, fusion si CONFORME. Puis P5-04 dès que Lucas a créé les deux projets SonarCloud et le secret `SONAR_TOKEN` (`gh secret list`, API publique `search_projects?organization=luucaaas`) ; P5-04 complète alors la ligne `sonar` de `conformite-pipeline.md` et la mesure SonarCloud d'I2. Fin de phase 5 après P5-04 : contre-vérification du chef, `CLAUDE.md`, bilan à Lucas.
+Seule P5-04 reste, bloquée par Lucas : vérifier les deux projets SonarCloud (`Luucaaas_collector-poc_catalog-service`, `Luucaaas_collector-poc_notification-service`, API publique `search_projects?organization=luucaaas`) et le secret `SONAR_TOKEN` (`gh secret list`). Dès qu'ils existent : confier P5-04 au développeur (branche `phase-5/ci-sonar` depuis `main`, livrée par pull request), audit, fusion de la PR, relevé du run de `main`, puis clôture de la phase 5 (contre-vérification, `CLAUDE.md`, bilan à Lucas).
 
 ## Décisions en attente
 
@@ -55,4 +55,4 @@ P5-05 confiée au développeur (branche `phase-5/conformite`, sans SonarCloud). 
 
 ## Dernière mise à jour
 
-04/11/2026 13:09 — P5-03 fusionnée, publication réelle sur GHCR vérifiée (run 41825781085, amd64 + arm64, paquets publics). P5-05 confiée au développeur avant P5-04 (SonarCloud pas prêt).
+04/11/2026 13:21 — P5-05 fusionnée (corrections du chef). P5-04 attend les projets SonarCloud et le secret `SONAR_TOKEN` de Lucas.

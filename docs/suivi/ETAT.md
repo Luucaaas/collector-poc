@@ -34,8 +34,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | fusionnée |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | fusionnée |
 | P5-01 | Workflow backend : déclencheurs, `lint` et `test` | developpeur | `phase-5/ci-lint-test` | fusionnée |
-| P5-02 | Jobs `build-scan` et `acceptance`, épinglage des images | developpeur | `phase-5/ci-build-acceptance` | en cours |
-| P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | à faire |
+| P5-02 | Jobs `build-scan` et `acceptance`, épinglage des images | developpeur | `phase-5/ci-build-acceptance` | fusionnée |
+| P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | en cours |
 | P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | à faire (attend Lucas) |
 | P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | à faire |
 
@@ -43,7 +43,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P5-02 confiée au développeur (branche `phase-5/ci-build-acceptance`, depuis `main` après la fusion de P5-01). À son retour : auditeur, fusion si CONFORME, puis P5-03. Avant P5-04 : vérifier que Lucas a créé les deux projets SonarCloud et le secret `SONAR_TOKEN` (`gh secret list`), sinon passer P5-04 et revenir plus tard. Après la fusion de P5-03 sur `main` : vérifier la publication réelle sur GHCR.
+P5-03 confiée au développeur (branche `phase-5/ci-publish`, depuis `main` après la fusion de P5-02). À son retour : auditeur, fusion si CONFORME, puis vérifier la publication réelle sur GHCR par le run de `main` (digests, amd64 et arm64). Ensuite P5-04 si Lucas a créé les deux projets SonarCloud et le secret `SONAR_TOKEN` (`gh secret list`), sinon P5-05 d'abord.
 
 ## Décisions en attente
 
@@ -55,4 +55,4 @@ P5-02 confiée au développeur (branche `phase-5/ci-build-acceptance`, depuis `m
 
 ## Dernière mise à jour
 
-04/11/2026 12:12 — P5-01 fusionnée (corrections du chef, run vert 41819031475), P5-02 confiée au développeur.
+04/11/2026 12:46 — P5-02 fusionnée (corrections du chef, run vert 41822998230), P5-03 confiée au développeur.

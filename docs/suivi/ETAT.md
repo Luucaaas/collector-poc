@@ -35,15 +35,15 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | fusionnée |
 | P5-01 | Workflow backend : déclencheurs, `lint` et `test` | developpeur | `phase-5/ci-lint-test` | fusionnée |
 | P5-02 | Jobs `build-scan` et `acceptance`, épinglage des images | developpeur | `phase-5/ci-build-acceptance` | fusionnée |
-| P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | en cours |
+| P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | fusionnée |
 | P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | à faire (attend Lucas) |
-| P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | à faire |
+| P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P5-03 confiée au développeur (branche `phase-5/ci-publish`, depuis `main` après la fusion de P5-02). À son retour : auditeur, fusion si CONFORME, puis vérifier la publication réelle sur GHCR par le run de `main` (digests, amd64 et arm64). Ensuite P5-04 si Lucas a créé les deux projets SonarCloud et le secret `SONAR_TOKEN` (`gh secret list`), sinon P5-05 d'abord.
+P5-05 confiée au développeur (branche `phase-5/conformite`, sans SonarCloud). À son retour : auditeur, fusion si CONFORME. Puis P5-04 dès que Lucas a créé les deux projets SonarCloud et le secret `SONAR_TOKEN` (`gh secret list`, API publique `search_projects?organization=luucaaas`) ; P5-04 complète alors la ligne `sonar` de `conformite-pipeline.md` et la mesure SonarCloud d'I2. Fin de phase 5 après P5-04 : contre-vérification du chef, `CLAUDE.md`, bilan à Lucas.
 
 ## Décisions en attente
 
@@ -55,4 +55,4 @@ P5-03 confiée au développeur (branche `phase-5/ci-publish`, depuis `main` apr�
 
 ## Dernière mise à jour
 
-04/11/2026 12:46 — P5-02 fusionnée (corrections du chef, run vert 41822998230), P5-03 confiée au développeur.
+04/11/2026 13:09 — P5-03 fusionnée, publication réelle sur GHCR vérifiée (run 41825781085, amd64 + arm64, paquets publics). P5-05 confiée au développeur avant P5-04 (SonarCloud pas prêt).

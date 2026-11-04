@@ -12,7 +12,6 @@ Le socle technique (configuration, logs JSON, RFC 9457, `X-Request-ID`, authenti
 | --- | --- | --- |
 | `config.py` | `event_publish_budget_seconds` retiré ; `consumer_prefetch` (10) et `amqp_retry_seconds` (1 s) ajoutés | ce service consomme au lieu de publier |
 | `metrics.py` | `BusinessMetrics` : `notifications_created_total{type}` et `events_consumed_total{event_type, outcome}` à la place des compteurs d'articles | métriques métier propres au service (contrats.md §2.3) |
-| `logging.py` | les journaux de `aio_pika` et `aiormq` passent aussi par le rendu JSON (niveau WARNING au moins) | sinon une ligne de texte brut par tentative de connexion tant que le broker est absent. `catalog-service` a le même défaut : reprise prévue en P4-05 |
 | `db.py` | seul le commentaire de `Base` change | les modèles existent désormais |
 | `main.py` | spécifique au service (non recopié tel quel) : routeur `/me`, consommateur dans le lifespan, CORS sans `POST` | pas de publication ni de route d'écriture en `POST` |
 

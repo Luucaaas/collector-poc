@@ -44,8 +44,8 @@ Ce document fixe les contrats entre les composants du POC : API REST des deux se
   "type": "https://collector.shop/problems/validation-error",
   "title": "Données invalides",
   "status": 422,
-  "detail": "Le prix doit être strictement positif.",
-  "errors": [{ "field": "price", "code": "PRICE_NOT_POSITIVE" }],
+  "detail": "La requête contient des données invalides.",
+  "errors": [{ "field": "price", "code": "VALUE_ERROR" }],
   "correlation_id": "6f1c2a8e-3d7b-4c55-9e0a-1b2c3d4e5f60"
 }
 ```
@@ -116,7 +116,7 @@ Si le contrôle échoue (RM-02), la réponse est aussi un 201, avec `"status": "
 **Codes de motif.** Le même vocabulaire sert partout : `rejection_reasons` d'un article rejeté, et `errors[].code` d'un refus 422.
 - `NAME_ALREADY_USED` (409) : nom de catégorie ou de boutique déjà utilisé, sans tenir compte de la casse, ou nom différent qui donne un slug déjà pris. Le `detail` est le même dans les deux cas : « Nom déjà utilisé ou trop proche d'un nom existant ».
 - `NAME_INVALID` (422) : nom de catégorie qui ne contient aucune lettre ni chiffre, ou dont le slug dépasse 120 caractères.
-- Les autres refus de validation (longueur, format, champ manquant ou inconnu) portent le code générique de Pydantic en majuscules : `STRING_TOO_SHORT`, `STRING_TOO_LONG`, `MISSING`, `EXTRA_FORBIDDEN`, `UUID_PARSING`…
+- Les autres refus de validation (longueur, format, champ manquant ou inconnu) portent le code générique de Pydantic en majuscules : `STRING_TOO_SHORT`, `STRING_TOO_LONG`, `MISSING`, `EXTRA_FORBIDDEN`, `UUID_PARSING`… Un prix nul ou négatif donne `VALUE_ERROR` sur le champ `price` ; le `detail` du 422 est toujours « La requête contient des données invalides. » (le détail est dans `errors`).
 - Description d'une boutique : facultative, au plus 1 000 caractères ; vide, elle est enregistrée `null`.
 - Une boutique ou une catégorie inexistante, référencée dans le corps de la requête, donne un 422 (`SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`) et non un 404 : c'est le contenu de la requête qui est invalide, pas l'URL.
 - Une boutique qui contient des coordonnées est refusée en 422 (`CONTACT_EMAIL`, `CONTACT_PHONE`) au lieu d'être enregistrée : elle n'a pas de cycle de modération (RM-05).

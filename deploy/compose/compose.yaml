@@ -1,0 +1,151 @@
+# Pile locale du POC Collector : PostgreSQL, RabbitMQ, Keycloak et les deux services.
+# Lancement : ./up.sh (génère .env, rend les fichiers de configuration, démarre et attend).
+# Images des services : construites depuis les Dockerfile, ou prises dans CATALOG_IMAGE et
+# NOTIFICATION_IMAGE (la CI les charge par `docker load`, puis lance up.sh --no-build).
+name: collector-poc
+
+x-service-env: &service-env
+  AUDIENCE: ${AUDIENCE:?}
+  ISSUER: ${ISSUER:?}
+  JWKS_URL: ${JWKS_URL:?}
+  CORS_ORIGIN: ${CORS_ORIGIN:?}
+
+x-service-health: &service-health
+  # Python est déjà dans l'image : aucun outil ajouté (pas de curl).
+  test:
+    - CMD
+    - python
+    - -c
+    - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"
+  interval: 5s
+  timeout: 5s
+  retries: 12
+  start_period: 10s
+
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:?}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?}
+    volumes:
+      - postgres-data:/var/lib/postgresql   # PostgreSQL 18 : PGDATA est un sous-dossier versionné
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4.3.5-management
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/conf.d/20-collector.conf:ro
+      - ./rendered/rabbitmq-definitions.json:/etc/rabbitmq/definitions.json:ro
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.0
+    command: ["start", "--import-realm"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?}
+      # URL publique : `iss` vaut toujours cette valeur, même quand les services lisent les clés
+      # JWKS par http://keycloak:8080 (constat de l'expérimentation 2).
+      KC_HOSTNAME: http://localhost:8080
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?}
+    volumes:
+      - ./rendered/collector-realm.json:/opt/keycloak/data/import/collector-realm.json:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      # L'image n'a pas curl : requête HTTP avec bash. /health/ready (port 9000) peut répondre UP
+      # avant l'import du realm ; on attend donc un 200 sur la configuration OpenID du realm.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /realms/collector/.well-known/openid-configuration HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          head -n 1 <&3 | grep -q ' 200 '
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  catalog-migrate:
+    image: ${CATALOG_IMAGE:-collector/catalog-service:local}
+    build: ../../services/catalog-service
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://catalog:${CATALOG_DB_PASSWORD:?}@postgres:5432/catalog_db
+
+  notification-migrate:
+    image: ${NOTIFICATION_IMAGE:-collector/notification-service:local}
+    build: ../../services/notification-service
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://notification:${NOTIFICATION_DB_PASSWORD:?}@postgres:5432/notification_db
+
+  catalog:
+    image: ${CATALOG_IMAGE:-collector/catalog-service:local}
+    build: ../../services/catalog-service
+    depends_on:
+      catalog-migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql+psycopg://catalog:${CATALOG_DB_PASSWORD:?}@postgres:5432/catalog_db
+      RABBITMQ_URL: amqp://catalog:${RABBITMQ_CATALOG_PASSWORD:?}@rabbitmq:5672/
+    ports:
+      - "127.0.0.1:8001:8000"
+    healthcheck: *service-health
+
+  notification:
+    image: ${NOTIFICATION_IMAGE:-collector/notification-service:local}
+    build: ../../services/notification-service
+    depends_on:
+      notification-migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql+psycopg://notification:${NOTIFICATION_DB_PASSWORD:?}@postgres:5432/notification_db
+      RABBITMQ_URL: amqp://notification:${RABBITMQ_NOTIFICATION_PASSWORD:?}@rabbitmq:5672/
+    ports:
+      - "127.0.0.1:8002:8000"
+    healthcheck: *service-health
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

@@ -4,7 +4,9 @@
 
 ## Phase en cours
 
-**Phase 4** : backend (`catalog-service`, `notification-service`, `docker compose`, tests). Découpage validé par Lucas le 03/11/2026 : 5 tâches réalisées une par une dans l'ordre du tableau. Livrable : les 5 user stories fonctionnent en local avec `docker compose`, tous les tests passent.
+**Phase 4 terminée le 04/11/2026** (5 tâches, toutes fusionnées après audit ; bilan fait à Lucas) : les 5 user stories fonctionnent en local avec `docker compose`, 17 tests d'acceptation sur 17. Prochaine phase : **phase 5** (pipeline CI/CD, contrat dans `docs/01-qualite/cicd.md`), à découper par le chef et à faire valider par Lucas.
+
+Phase 3 terminée le 03/11/2026.
 
 Phase 3 terminée le 03/11/2026 (5 tâches fusionnées après audit).
 
@@ -32,13 +34,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | fusionnée |
-| P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | en cours (corrections de l'audit n° 1) |
+| P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre les corrections du développeur sur P4-05 (aller-retour n° 1 : sonde Keycloak, tests d'US-05, contrat), puis audit n° 2, contre-vérification de fin de phase et fusion.
+Attendre que Lucas demande la phase 5, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Points reportés à la phase 5 : épinglage des images par digest, identifiants factices des tests face à Trivy et SonarCloud, job `acceptance` avec `docker load`.
 
 ## Décisions en attente
 
@@ -50,4 +52,4 @@ Attendre les corrections du développeur sur P4-05 (aller-retour n° 1 : sonde K
 
 ## Dernière mise à jour
 
-04/11/2026 08:14 — P4-05 : audit n° 1 non conforme (sonde Keycloak fausse positive à froid, preuves d'US-05), renvoyée au développeur.
+04/11/2026 08:31 — Phase 4 close : P4-05 fusionnée, contre-vérification du chef (17/17 deux fois après un démarrage à froid), `CLAUDE.md` mis à jour.

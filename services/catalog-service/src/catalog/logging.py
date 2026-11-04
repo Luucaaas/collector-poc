@@ -42,3 +42,10 @@ def configure_logging(level: str = "INFO") -> None:
         logger.setLevel(numeric_level)
     std_logging.getLogger("uvicorn").addHandler(handler)
     std_logging.getLogger("uvicorn.error").propagate = True
+    # Spécifique à ce service : les journaux de la connexion AMQP (aio-pika, aiormq) passent aussi
+    # par le rendu JSON. Sinon Python les écrit en texte brut sur stderr à chaque tentative.
+    for name in ("aio_pika", "aiormq"):
+        logger = std_logging.getLogger(name)
+        logger.handlers = [handler]
+        logger.propagate = False
+        logger.setLevel(max(numeric_level, std_logging.WARNING))

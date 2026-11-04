@@ -24,7 +24,7 @@ x-service-health: &service-health
 
 services:
   postgres:
-    image: postgres:18.4-alpine
+    image: postgres:18.4-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
@@ -41,7 +41,7 @@ services:
       retries: 20
 
   rabbitmq:
-    image: rabbitmq:4.3.5-management
+    image: rabbitmq:4.3.5-management@sha256:57bddb6fbc3498b5d8b5a14dc6f4506073ebcf94c66ba2a7678c335faa8dd631
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
       - ./rabbitmq.conf:/etc/rabbitmq/conf.d/20-collector.conf:ro
@@ -57,7 +57,7 @@ services:
       start_period: 10s
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.8.0
+    image: quay.io/keycloak/keycloak:26.8.0@sha256:27b3230fbabb8c9ff3c66c864cf09dcd8a41aca82e5100679d109ef0eeb05741
     command: ["start", "--import-realm"]
     depends_on:
       postgres:

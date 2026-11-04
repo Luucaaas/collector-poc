@@ -11,6 +11,8 @@ Pile locale du POC, pour développer, lancer les tests d'acceptation et alimente
 
 ## Contenu
 
+Les images d'infrastructure sont épinglées par digest dans `compose.yaml` (`tag@sha256:…`, digest de l'index multi-architecture) : le tableau ne montre que le tag, lisible ; le digest fait foi.
+
 | Service | Image | Port publié (127.0.0.1) | Remarques |
 | --- | --- | --- | --- |
 | `postgres` | `postgres:18.4-alpine` | aucun | bases `catalog_db`, `notification_db`, `keycloak`, un propriétaire sans droit de superutilisateur par base, accès `PUBLIC` retiré (`postgres-init/10-roles.sh`, au premier démarrage d'un volume vide) |

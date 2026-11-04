@@ -1,0 +1,100 @@
+# CI backend de Collector. Contrat : docs/01-qualite/cicd.md (sections 1 à 3).
+# P5-01 : déclencheurs et jobs lint et test. Les jobs sonar, build-scan,
+# acceptance et publish sont ajoutés par P5-02 à P5-04.
+name: backend
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+# Une seule exécution par workflow et par ref : la plus récente annule l'ancienne.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Moindre privilège : lecture seule du dépôt. Les jobs qui ont besoin de plus
+# (publish : packages: write) l'élargiront eux-mêmes.
+permissions:
+  contents: read
+
+env:
+  UV_PYTHON: "3.12"
+
+jobs:
+  lint:
+    name: lint (${{ matrix.service }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [catalog-service, notification-service]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: services/${{ matrix.service }}/uv.lock
+      - name: Installer les dépendances
+        run: uv sync --frozen
+      - name: Ruff (analyse)
+        run: uv run ruff check .
+      - name: Ruff (format)
+        run: uv run ruff format --check .
+      - name: mypy (strict, code du service)
+        run: uv run mypy --strict src
+
+  test:
+    name: test (${{ matrix.service }})
+    needs: lint
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: catalog-service
+            package: catalog
+          - service: notification-service
+            package: notification
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: services/${{ matrix.service }}/uv.lock
+      - name: Installer les dépendances
+        run: uv sync --frozen
+      # Les testcontainers (PostgreSQL, RabbitMQ) utilisent le Docker de l'exécuteur.
+      - name: pytest (couverture minimale 80 %)
+        run: >-
+          uv run pytest
+          --cov=${{ matrix.package }}
+          --cov-fail-under=80
+          --cov-report=term
+          --junitxml=junit.xml
+          --cov-report=xml
+      - name: Publier coverage.xml
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.service }}
+          path: services/${{ matrix.service }}/coverage.xml
+          if-no-files-found: error
+      - name: Publier junit.xml
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: junit-${{ matrix.service }}
+          path: services/${{ matrix.service }}/junit.xml
+          if-no-files-found: error

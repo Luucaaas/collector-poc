@@ -55,6 +55,8 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# xunit1 : garde les propriétés (délai d'US-05 CA2) dans le rapport JUnit, comme tests/acceptance.
+junit_family = "xunit1"
 
 [tool.coverage.run]
 source = ["notification"]

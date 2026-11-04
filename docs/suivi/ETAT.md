@@ -32,13 +32,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-02 | Catégories et boutiques (US-01, US-02) | developpeur | `phase-4/categories-boutiques` | fusionnée |
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | fusionnée |
-| P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | en audit |
+| P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | en cours (corrections de l'audit n° 1) |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Recopier dans la fiche le rapport de l'auditeur sur P4-05 (branche `phase-4/acceptance`, commit bb87964), faire la contre-vérification de fin de phase (pile relancée, 17 tests rejoués), puis fusionner et clôturer la phase 4.
+Attendre les corrections du développeur sur P4-05 (aller-retour n° 1 : sonde Keycloak, tests d'US-05, contrat), puis audit n° 2, contre-vérification de fin de phase et fusion.
 
 ## Décisions en attente
 
@@ -50,4 +50,4 @@ Recopier dans la fiche le rapport de l'auditeur sur P4-05 (branche `phase-4/acce
 
 ## Dernière mise à jour
 
-04/11/2026 08:02 — P4-05 livrée (17 tests d'acceptation sur 17, deux exécutions ; CA2 d'US-05 en 15 ms), en audit.
+04/11/2026 08:14 — P4-05 : audit n° 1 non conforme (sonde Keycloak fausse positive à froid, preuves d'US-05), renvoyée au développeur.

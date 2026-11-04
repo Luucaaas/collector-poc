@@ -4,11 +4,9 @@
 
 ## Phase en cours
 
-**Phase 4 terminée le 04/11/2026** (5 tâches, toutes fusionnées après audit ; bilan fait à Lucas) : les 5 user stories fonctionnent en local avec `docker compose`, 17 tests d'acceptation sur 17. Prochaine phase : **phase 5** (pipeline CI/CD, contrat dans `docs/01-qualite/cicd.md`), à découper par le chef et à faire valider par Lucas.
+**Phase 5 en cours** (pipeline CI/CD, contrat `docs/01-qualite/cicd.md`), lancée le 04/11/2026 à la demande de Lucas. 5 tâches, faites l'une après l'autre car elles modifient toutes `backend.yml`. Les branches de la phase 5 sont poussées sur GitHub pour obtenir de vraies exécutions.
 
-Phase 3 terminée le 03/11/2026.
-
-Phase 3 terminée le 03/11/2026 (5 tâches fusionnées après audit).
+Phase 4 terminée le 04/11/2026 (5 tâches fusionnées après audit, 17/17 tests d'acceptation). Phase 3 terminée le 03/11/2026 (5 tâches fusionnées après audit).
 
 Phases précédentes : phase 0 (outillage, reste des actions de Lucas), phase 1 terminée et refondue pour le POC simplifié (ADR 0007), **phase 2 terminée le 31/10/2026** (7 tâches ci-dessous, toutes fusionnées après audit conforme).
 
@@ -35,21 +33,26 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P4-03 | Articles, prix et événements (US-03, US-04) | developpeur | `phase-4/articles-prix` | fusionnée |
 | P4-04 | notification-service (US-05) | developpeur | `phase-4/notification` | fusionnée |
 | P4-05 | Pile docker compose et 17 tests d'acceptation | developpeur | `phase-4/acceptance` | fusionnée |
+| P5-01 | Workflow backend : déclencheurs, `lint` et `test` | developpeur | `phase-5/ci-lint-test` | en cours |
+| P5-02 | Jobs `build-scan` et `acceptance`, épinglage des images | developpeur | `phase-5/ci-build-acceptance` | à faire |
+| P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | à faire |
+| P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | à faire (attend Lucas) |
+| P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre que Lucas demande la phase 5, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Points reportés à la phase 5 : épinglage des images par digest, identifiants factices des tests face à Trivy et SonarCloud, job `acceptance` avec `docker load`.
+P5-01 confiée au développeur (branche `phase-5/ci-lint-test`). À son retour : lancer l'auditeur sur la branche, puis fusionner si CONFORME et enchaîner P5-02, puis P5-03. Avant P5-04 : vérifier que Lucas a créé les deux projets SonarCloud et le secret `SONAR_TOKEN` (`gh secret list`), sinon passer P5-04 et revenir plus tard. Après la fusion de P5-03 sur `main` : vérifier la publication réelle sur GHCR.
 
 ## Décisions en attente
 
 | Sujet | Qui décide | Remarque |
 | --- | --- | --- |
 | Acceptation du cluster local k3d pour le critère 5 | Lucas (question à l'intervenant) | Sinon migration vers Oracle OKE Always Free |
-| Outillage restant de Lucas | Lucas | `mkcert -install` fait le 02/11/2026. Restent Node 22 (recommandé) et `check-tools.sh --cluster` |
-| Cache npm : `sudo chown -R 501:20 ~/.npm` | Lucas (mot de passe) | Non bloquant : contourné par `npm_config_cache` pour l'export des diagrammes |
+| SonarCloud : 2 projets (`Luucaaas_collector-poc_catalog-service`, `Luucaaas_collector-poc_notification-service`), analyse automatique désactivée, secret GitHub `SONAR_TOKEN` | Lucas (compte externe) | Demandé le 04/11/2026, bloque P5-04 seulement |
+| Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
 
-04/11/2026 08:31 — Phase 4 close : P4-05 fusionnée, contre-vérification du chef (17/17 deux fois après un démarrage à froid), `CLAUDE.md` mis à jour.
+04/11/2026 11:57 — Phase 5 découpée (P5-01 à P5-05), P5-01 confiée au développeur. Outillage de la phase 0 terminé (Node 22, `check-tools.sh --cluster`).

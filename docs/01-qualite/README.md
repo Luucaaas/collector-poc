@@ -5,6 +5,7 @@
 | [indicateurs.md](indicateurs.md) | Les 5 indicateurs qualité (ISO 25010) : définition, formule, seuil, outil de mesure, moment, action en cas de dépassement, effet sur la dette technique | 6 — Indicateurs qualité |
 | [devsecops.md](devsecops.md) | Cycle de vie DevSecOps : une ou plusieurs mesures de sécurité par étape, boucle de rétroaction vers le backlog, écarts entre le POC et la cible | 8 — Sécurité (bonnes pratiques) |
 | [cicd.md](cicd.md) | Schéma CI/CD détaillé : environnements, jobs (`lint` à `publish`), conditions de blocage, traçabilité par tag et digest, écarts entre le POC et la cible | 4 — CI/CD |
+| [conformite-pipeline.md](conformite-pipeline.md) | Conformité du pipeline réel au schéma : ligne de `backend.yml` et preuve (run) pour chaque élément du contrat, écarts traités, preuves de blocage, durées du run de référence | 4 — CI/CD |
 | [processus-test.md](processus-test.md) | Processus de test : pyramide, types de tests (outil, moment, sortie attendue, responsable), correspondance avec les jobs, RACI, gestion des anomalies | 7 — Tests |
 | [img/](img/) | Diagrammes exportés en SVG (cycle DevSecOps, pipeline CI/CD, pyramide des tests) | 4, 7, 8, 10 |
 

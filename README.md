@@ -1,5 +1,9 @@
 # Collector.shop — POC
 
+[![backend](https://github.com/Luucaaas/collector-poc/actions/workflows/backend.yml/badge.svg?branch=main)](https://github.com/Luucaaas/collector-poc/actions/workflows/backend.yml)
+
+Pipeline CI/CD : schéma et contrat dans [docs/01-qualite/cicd.md](docs/01-qualite/cicd.md), preuves de conformité et mesures dans [docs/01-qualite/conformite-pipeline.md](docs/01-qualite/conformite-pipeline.md). Le lien vers les projets SonarCloud sera ajouté avec la tâche P5-04.
+
 Prototype de la plateforme Collector.shop (vente d'objets de collection entre particuliers), réalisé dans le cadre du bloc CESI MAALSI « Superviser et assurer le développement des applications logicielles ».
 
 ## Fonctionnalité métier

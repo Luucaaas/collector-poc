@@ -4,7 +4,7 @@ Cinq indicateurs mesurent la qualité du POC. Chacun est rattaché à une caract
 
 Un indicateur n'est utile que s'il est mesuré à chaque modification, comparé à un seuil et suivi dans le temps. C'est ce suivi qui empêche l'accumulation de la dette technique : une dérive est visible dès le commit qui la crée, pas en fin de projet.
 
-Les valeurs réelles sont relevées en phase 8 (section « Relevés »). Ce document ne contient aucune valeur mesurée.
+Les valeurs réelles sont relevées dans la section « Relevés » : I1, I2 (Ruff et mypy), I4 et I5 depuis la phase 5 (CI), I2 (SonarCloud) après la tâche P5-04, I3 en phase 8. Les définitions et les seuils plus haut ne changent pas.
 
 ## Synthèse
 
@@ -106,8 +106,46 @@ Revue de fin de sprint : le Lead Developer relève les cinq valeurs, les compare
 
 ## Relevés
 
-Rempli en phase 8.
+### Mesures du 04/11/2026 (phase 5, CI)
+
+Source unique : le run de `main` [41825781085](https://github.com/Luucaaas/collector-poc/actions/runs/41825781085) (commit `49df273`, 9 jobs verts), dont les journaux et les artefacts ont été relus le 04/11/2026. Le déroulé complet du pipeline est dans [conformite-pipeline.md](conformite-pipeline.md).
+
+| Indicateur | Mesure | Seuil | Verdict | Source |
+| --- | --- | --- | --- | --- |
+| I1 couverture, `catalog-service` | **99,06 %** des lignes (843 sur 851), 270 tests passés | ≥ 80 % | Atteint | Journal du job `test (catalog-service)` : « Total coverage: 99.06% » ; artefact `coverage-catalog-service` (`lines-valid="851" lines-covered="843"`) |
+| I1 couverture, `notification-service` | **98,43 %** des lignes (690 sur 701), 186 tests passés | ≥ 80 % | Atteint | Journal du job `test (notification-service)` : « Total coverage: 98.43% » ; artefact `coverage-notification-service` |
+| I2 Ruff | **0 erreur** (`ruff check .`), formatage conforme (36 fichiers catalog, 31 notification, 9 pour `tests/acceptance`) | 0 erreur | Atteint | Journaux de `lint` et d'`acceptance` : « All checks passed! », « files already formatted » |
+| I2 mypy `--strict` | **0 erreur** sur 19 fichiers (catalog), 15 (notification) et 8 (`tests/acceptance`) | 0 erreur | Atteint | « Success: no issues found in N source files » |
+| I2 SonarCloud (note, dette, duplication, complexité) | Non mesuré | Note A, duplication < 3 %, complexité ≤ 15 | **À compléter par P5-04** | Job `sonar` pas encore dans le workflow |
+| I4 vulnérabilités CRITICAL et HIGH avec correctif | **0** dans chaque image : `debian 13.7` et 41 paquets Python analysés, 0 vulnérabilité | 0 | Atteint | Tableau « Report Summary » de Trivy 0.76.0 dans `build-scan` |
+| I4 secrets CRITICAL ou HIGH | **0** (colonne Secrets sans constat, code de sortie 0) | 0 | Atteint | Même journal |
+| I5 critères d'acceptation | **17 sur 17** (100 %), 0 échec, 0 ignoré, en 9,5 s ; 5 stories couvertes | 17 sur 17 | Atteint | Journal « 17 passed in 9.50s » ; artefact `junit-acceptance` |
+
+Le blocage de ces seuils est démontré par des runs rouges pour Ruff ([41818132153](https://github.com/Luucaaas/collector-poc/actions/runs/41818132153)) et Trivy ([41821035266](https://github.com/Luucaaas/collector-poc/actions/runs/41821035266)). Les seuils de couverture et d'acceptation sont vérifiés à chaque run mais n'ont pas été cassés volontairement.
+
+#### Limites de la mesure
+
+- **I1** : le taux est celui des lignes. Le rapport indique `branches-valid="0"` : la couverture des branches n'est pas activée, alors que la définition d'I1 parle de « lignes (et branches) ». Une couverture de 99 % des lignes peut cacher des branches `if` non exercées.
+- **I2** : Ruff et mypy ne couvrent ni la duplication ni la complexité cognitive. Ces deux seuils d'I2 ne sont vérifiés par aucun outil tant que SonarCloud n'est pas en place.
+- **I4** : `--ignore-unfixed` écarte les vulnérabilités sans correctif ; elles ne sont donc pas comptées par cette mesure. Seule l'image amd64 est scannée (l'arm64, construite au `publish`, ne l'est pas). Trivy 0.76.1 est sortie, le journal signale que la 0.76.0 n'est plus la dernière.
+- **I5** : les 17 tests tournent sur une pile `docker compose` (une seule instance de chaque brique), pas sur le cluster k3d ; ils prouvent l'adéquation fonctionnelle, pas la tenue en charge (I3).
+
+#### Axes d'amélioration contre la dette technique
+
+| Indicateur | Écart ou risque constaté | Action | Échéance |
+| --- | --- | --- | --- |
+| I1 | Branches non mesurées | Activer `--cov-branch` (ou `branch = true` dans la configuration de coverage) et fixer un seuil de départ égal à la valeur mesurée, pour qu'il ne baisse plus | Phase 8 |
+| I1 | 8 lignes non couvertes (catalog) et 11 (notification) | Lister les lignes (`--cov-report=term-missing`), tester celles qui portent une règle métier, justifier les autres | Phase 8 |
+| I1 | Le seuil de 80 % est très inférieur à la valeur mesurée (99 %) : il tolérerait une baisse de 19 points sans alerte | Faire porter le contrôle sur le code nouveau par la quality gate SonarCloud (P5-04), ou remonter le seuil à 95 % | P5-04 |
+| I2 | Duplication et complexité non vérifiées | Ajouter le job `sonar` (P5-04) ; en attendant, activer la règle Ruff `C901` avec un seuil de complexité à 15 pour approcher la complexité cognitive | P5-04 |
+| I2 | mypy strict ne couvre pas le code des tests des services | Étendre `mypy --strict` aux dossiers `tests/` des services, progressivement, ou documenter l'exclusion | Phase 8 |
+| I4 | Base de vulnérabilités de Trivy non épinglée ; Trivy 0.76.0 n'est plus la dernière version ; arm64 non scanné ; vulnérabilités sans correctif invisibles | Mise à jour volontaire de Trivy (version, somme SHA-256) à chaque revue ; rapport complet sans `--ignore-unfixed` consigné au plan de remédiation ; scan de l'arm64 au `publish` en cible | Phase 9 |
+| I5 | Les tests ne tournent pas sur le cluster | Rejouer les 17 critères contre le cluster k3d avant la démonstration (déjà prévu dans la définition d'I5) | Phase 6 |
+
+### Relevés de fin de sprint
+
+Rempli en phase 8 pour I3 ; les valeurs ci-dessus sont reprises et mises à jour à chaque revue.
 
 | Date | I1 | I2 | I3 | I4 | I5 | Commentaire |
 | --- | --- | --- | --- | --- | --- | --- |
-|  |  |  |  |  |  |  |
+| 04/11/2026 | 99,06 % (catalog), 98,43 % (notification) | Ruff 0, mypy 0 ; SonarCloud à compléter | Phase 8 | 0 CRITICAL ou HIGH, 0 secret | 17 sur 17 | Run 41825781085 (`main`, `49df273`) |

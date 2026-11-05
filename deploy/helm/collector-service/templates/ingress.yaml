@@ -1,0 +1,40 @@
+{{- if .Values.ingress.enabled }}
+# Retire le préfixe (ex. /catalog) avant d'appeler le service (contrats.md §1.1).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "collector-service.name" . }}-strip-prefix
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+spec:
+  stripPrefix:
+    prefixes:
+      - {{ required "ingress.prefix est obligatoire (ex. /catalog)" .Values.ingress.prefix }}
+---
+# Seul <prefix>/api/v1 est routé : /health/* et /metrics ne sont pas joignables par l'ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "collector-service.name" . }}
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "collector-service.name" . }}-strip-prefix@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.prefix }}{{ .Values.ingress.apiPath }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "collector-service.name" . }}
+                port:
+                  name: http
+{{- end }}

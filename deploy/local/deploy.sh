@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Déploiement sur le cluster k3d `collector`.
 #
-# Usage : deploy/local/deploy.sh infra
+# Usage : deploy/local/deploy.sh infra | services <tag> | all <tag>
 #   infra : génère les mots de passe manquants dans deploy/local/.env, crée ou met à jour les
 #           Secrets et ConfigMaps, applique les manifestes de deploy/infra (PostgreSQL, RabbitMQ,
 #           Keycloak + Ingress `auth.`) et attend que tout soit prêt. Relançable sans effet de bord.
+#   services <tag> : déploie catalog-service et notification-service depuis les images publiées par
+#           la CI (ghcr.io/luucaaas/<service>:<tag>, ex. sha-bec38ed) avec le chart Helm
+#           deploy/helm/collector-service. Refuse un tag absent de GHCR avant tout changement ;
+#           attend les pods, lance smoke.sh ; en cas d'échec, revient à la révision précédente
+#           (`helm rollback`) et sort en erreur.
+#   all <tag> : `infra` puis `services <tag>`.
 #
-# (Les étapes des services et de l'observabilité s'ajouteront ici : P6-03 et P6-04.)
+# (L'étape d'observabilité s'ajoutera ici : P6-04.)
 set -euo pipefail
 
 CLUSTER="collector"
@@ -18,6 +24,12 @@ INFRA_DIR="${REPO}/deploy/infra"
 COMPOSE_DIR="${REPO}/deploy/compose"
 ENV_FILE="${HERE}/.env"
 K="kubectl --context ${CTX} -n ${NS}"
+H="helm --kube-context ${CTX} -n ${NS}"
+CHART_DIR="${REPO}/deploy/helm/collector-service"
+VALUES_DIR="${REPO}/deploy/helm/values"
+REGISTRY="ghcr.io/luucaaas"
+SERVICES=(catalog-service notification-service)
+tmp=""   # dossier temporaire des fichiers contenant des mots de passe (créé par ensure_tmp)
 
 step() { printf '\n=== %s ===\n' "$*"; }
 
@@ -86,11 +98,19 @@ apply_secret() {
   $K annotate secret "$name" kubectl.kubernetes.io/last-applied-configuration- >/dev/null
 }
 
+# Crée (une seule fois par exécution) le dossier temporaire 700 des fichiers contenant des mots de
+# passe. Variable globale : le trap EXIT s'exécute après le retour des fonctions ; les fichiers
+# sont toujours supprimés à la sortie du script.
+ensure_tmp() {
+  [[ -z "$tmp" ]] || return 0
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+  chmod 700 "$tmp"
+}
+
 create_secrets() {
   step "Secrets et ConfigMaps"
-  tmp="$(mktemp -d)"   # variable globale : le trap EXIT s'exécute après le retour de la fonction
-  trap 'rm -rf "$tmp"' EXIT   # les fichiers rendus contiennent des mots de passe : toujours supprimés
-  chmod 700 "$tmp"
+  ensure_tmp
   # Realm Keycloak (sans client de test) et définitions RabbitMQ : rendus par le script de la pile compose.
   python3 "${COMPOSE_DIR}/render.py" "$ENV_FILE" "$tmp" --cluster
   local key
@@ -127,7 +147,7 @@ infra() {
   step "Contrôle HTTPS de Keycloak"
   # Le realm est importé avant que Keycloak soit prêt ; l'Ingress met quelques secondes à apparaître.
   for _ in $(seq 1 30); do
-    code=$(curl -s -o /dev/null -w '%{http_code}' "https://auth.127.0.0.1.sslip.io/realms/collector/.well-known/openid-configuration" || true)
+    code=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' "https://auth.127.0.0.1.sslip.io/realms/collector/.well-known/openid-configuration" || true)
     [[ "$code" == 200 ]] && break
     sleep 2
   done
@@ -136,7 +156,167 @@ infra() {
   $K get pods
 }
 
+# --- Services ------------------------------------------------------------------------------
+
+# Digest (sha256:...) de l'index multi-architecture d'une image GHCR. Code 1 si l'image n'existe
+# pas, code 2 si la vérification est impossible (Docker arrêté, GHCR injoignable) : les deux cas
+# ne doivent pas donner le même message.
+image_digest() {
+  local out
+  if ! out="$(docker buildx imagetools inspect "$1" 2>&1)"; then
+    if grep -qiE 'not found|manifest unknown' <<<"$out"; then
+      return 1
+    fi
+    echo "Vérification de $1 impossible : $(tail -n 1 <<<"$out")" >&2
+    return 2
+  fi
+  awk '/^Digest:/ {print $2; exit}' <<<"$out"
+}
+
+# Secrets propres aux services : URL de connexion à PostgreSQL et à RabbitMQ (elles contiennent le
+# mot de passe). Même méthode que create_secrets : fichiers 600 dans le dossier temporaire,
+# --from-file, application côté serveur ; rien en argument de commande, rien d'affiché.
+create_service_secrets() {
+  step "Secrets des services"
+  ensure_tmp
+  local key
+  for key in CATALOG_DB_PASSWORD NOTIFICATION_DB_PASSWORD RABBITMQ_CATALOG_PASSWORD RABBITMQ_NOTIFICATION_PASSWORD; do
+    write_value "$key"
+  done
+  # printf est une commande interne du shell : les mots de passe ne passent pas par un processus
+  # externe visible dans `ps`.
+  ( umask 077
+    printf 'postgresql+psycopg://catalog:%s@postgres:5432/catalog_db' "$(cat "${tmp}/CATALOG_DB_PASSWORD")" > "${tmp}/catalog-database-url"
+    printf 'amqp://catalog:%s@rabbitmq:5672/' "$(cat "${tmp}/RABBITMQ_CATALOG_PASSWORD")" > "${tmp}/catalog-rabbitmq-url"
+    printf 'postgresql+psycopg://notification:%s@postgres:5432/notification_db' "$(cat "${tmp}/NOTIFICATION_DB_PASSWORD")" > "${tmp}/notification-database-url"
+    printf 'amqp://notification:%s@rabbitmq:5672/' "$(cat "${tmp}/RABBITMQ_NOTIFICATION_PASSWORD")" > "${tmp}/notification-rabbitmq-url" )
+  apply_secret create secret generic catalog-service-secrets \
+    --from-file=DATABASE_URL="${tmp}/catalog-database-url" \
+    --from-file=RABBITMQ_URL="${tmp}/catalog-rabbitmq-url"
+  apply_secret create secret generic notification-service-secrets \
+    --from-file=DATABASE_URL="${tmp}/notification-database-url" \
+    --from-file=RABBITMQ_URL="${tmp}/notification-rabbitmq-url"
+  echo "catalog-service-secrets, notification-service-secrets : à jour."
+}
+
+# Attend (au plus 2 min) que le Deployment $1 ait au moins $2 pods Ready.
+wait_min_replicas() {
+  local ready="" _
+  for _ in $(seq 1 60); do
+    ready="$($K get deployment "$1" -o jsonpath='{.status.readyReplicas}')"
+    [[ "${ready:-0}" -ge "$2" ]] && return 0
+    sleep 2
+  done
+  echo "${1} : ${ready:-0} pod(s) Ready sur ${2} attendus." >&2
+  return 1
+}
+
+# Dernière révision Helm au statut « deployed » d'une release (vide si elle n'existe pas).
+deployed_revision() {
+  $H history "$1" -o json 2>/dev/null \
+    | python3 -c 'import json,sys
+rows=[r for r in json.load(sys.stdin) if r["status"]=="deployed"]
+print(rows[-1]["revision"] if rows else "")' 2>/dev/null || true
+}
+
+# Retour arrière : chaque release que ce lancement a commencé à mettre à jour (updated[i] = 1) et qui
+# avait une révision déployée avant y revient. Les autres ne sont pas touchées.
+# Le schéma de la base n'est pas rétabli (les migrations Alembic restent appliquées) : les
+# migrations doivent rester compatibles avec la version précédente (limite documentée).
+rollback_all() {
+  local svc rev i=-1
+  step "ÉCHEC : retour arrière"
+  for svc in "${SERVICES[@]}"; do
+    i=$((i + 1))
+    rev="${previous[$i]:-}"
+    if [[ "${updated[$i]:-0}" != 1 ]]; then
+      echo "${svc} : non modifié par ce lancement, laissé tel quel"
+    elif [[ -n "$rev" ]]; then
+      echo "${svc} : retour à la révision ${rev}"
+      $H rollback "$svc" "$rev" --wait --timeout 3m || echo "  (retour arrière de ${svc} en échec)" >&2
+    else
+      echo "${svc} : premier déploiement, pas de révision précédente (release laissée en l'état pour diagnostic)"
+    fi
+  done
+}
+
+services() {
+  local tag="${1:-}"
+  [[ "$tag" =~ ^sha-[0-9a-f]{7,40}$ ]] || { echo "Tag attendu : sha-<commit> (ex. sha-bec38ed), reçu « ${tag} »." >&2; exit 2; }
+  for tool in helm docker; do
+    command -v "$tool" >/dev/null || { echo "Outil manquant : $tool" >&2; exit 1; }
+  done
+  check_prerequisites
+
+  # 1. Le tag doit exister sur GHCR pour les deux services : avant tout changement du cluster.
+  step "Vérification des images ${tag} sur GHCR"
+  # Tableaux indexés parallèles à SERVICES (bash 3.2 de macOS : pas de tableaux associatifs).
+  local digest=() svc i=0 rc
+  for svc in "${SERVICES[@]}"; do
+    # `|| rc=$?` : sous `set -e`, l'échec de la commande ferait sortir le script avant le message.
+    rc=0
+    digest[i]="$(image_digest "${REGISTRY}/${svc}:${tag}")" || rc=$?
+    if [[ $rc -eq 2 ]]; then
+      echo "Rien n'a été modifié : relancer quand Docker et GHCR répondent." >&2
+      exit 1
+    fi
+    if [[ -z "${digest[i]}" ]]; then
+      echo "Image ${REGISTRY}/${svc}:${tag} introuvable sur GHCR : rien n'a été modifié." >&2
+      exit 1
+    fi
+    echo "${svc}:${tag} -> ${digest[i]}"
+    i=$((i + 1))
+  done
+
+  generate_env
+  create_service_secrets
+
+  # 2. Révisions Helm actuelles, pour pouvoir revenir en arrière.
+  previous=()   # globales : lues par rollback_all
+  updated=()
+  for svc in "${SERVICES[@]}"; do previous+=("$(deployed_revision "$svc")"); updated+=(0); done
+
+  # 3. Installation : migration (hook pre-install/pre-upgrade), puis Deployment. --wait attend que
+  #    les pods soient Ready ; l'image est épinglée par tag@digest.
+  local failed=0
+  i=0
+  for svc in "${SERVICES[@]}"; do
+    step "helm upgrade --install ${svc}"
+    updated[i]=1
+    $H upgrade --install "$svc" "$CHART_DIR" -f "${VALUES_DIR}/${svc}.yaml" \
+      --set image.tag="$tag" --set image.digest="${digest[i]}" \
+      --wait --timeout 5m || { failed=1; break; }
+    $K rollout status "deployment/${svc}" --timeout=180s || { failed=1; break; }
+    # Le chart ne fixe pas le nombre de réplicas (c'est l'HPA qui en décide) : à la première
+    # installation le Deployment démarre à 1 pod et l'HPA monte à son minimum (2) en quelques
+    # secondes. On attend ce minimum avant de tester.
+    wait_min_replicas "$svc" 2 || { failed=1; break; }
+    i=$((i + 1))
+  done
+
+  # 4. Contrôle de bout en bout par l'Ingress.
+  if [[ $failed -eq 0 ]]; then
+    step "Test de fumée"
+    "${HERE}/smoke.sh" || failed=1
+  fi
+
+  if [[ $failed -ne 0 ]]; then
+    rollback_all
+    exit 1
+  fi
+
+  # 5. Digest réellement exécuté par les pods (imageID), à comparer à celui publié par la CI.
+  step "Images en cours d'exécution (imageID)"
+  for svc in "${SERVICES[@]}"; do
+    $K get pods -l "app.kubernetes.io/name=${svc}" \
+      -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.status.containerStatuses[0].imageID}{"\n"}{end}'
+  done
+  $K get deploy,hpa,pods
+}
+
 case "${1:-}" in
   infra) infra ;;
-  *) echo "Usage : $0 infra" >&2; exit 2 ;;
+  services) services "${2:-}" ;;
+  all) infra; services "${2:-}" ;;
+  *) echo "Usage : $0 infra | services <tag> | all <tag>" >&2; exit 2 ;;
 esac

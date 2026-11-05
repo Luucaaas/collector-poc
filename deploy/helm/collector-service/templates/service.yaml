@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "collector-service.name" . }}
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "collector-service.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.containerPort }}
+      targetPort: http

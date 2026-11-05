@@ -1,0 +1,56 @@
+# Valeurs par défaut du chart générique. Chaque service les complète dans
+# deploy/helm/values/<service>.yaml ; `deploy.sh services <tag>` fournit image.tag et image.digest.
+
+# Nom des objets (Deployment, Service, ...) : par défaut le nom de la release.
+nameOverride: ""
+
+image:
+  repository: ""        # ex. ghcr.io/luucaaas/catalog-service
+  tag: ""               # ex. sha-bec38ed (obligatoire)
+  digest: ""            # sha256:... de l'index multi-architecture (obligatoire) ; épingle l'image (tag@digest)
+  pullPolicy: IfNotPresent
+
+# Utilisé seulement si l'HPA est désactivé ; sinon l'HPA (minReplicas) décide du nombre de réplicas.
+replicaCount: 2
+containerPort: 8000
+
+# Secret créé par deploy.sh (clés DATABASE_URL et RABBITMQ_URL) : jamais de mot de passe ici.
+secretName: ""
+
+# Variables non sensibles. Les valeurs par défaut du code sont celles du POC ; elles sont
+# explicites ici pour que la configuration du cluster se lise dans un seul endroit.
+config:
+  ISSUER: https://auth.127.0.0.1.sslip.io/realms/collector
+  JWKS_URL: http://keycloak.collector.svc.cluster.local:8080/realms/collector/protocol/openid-connect/certs
+  AUDIENCE: collector-api
+  CORS_ORIGIN: https://app.127.0.0.1.sslip.io
+  LOG_LEVEL: INFO
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: true
+  host: api.127.0.0.1.sslip.io
+  prefix: ""            # ex. /catalog : retiré par le Middleware StripPrefix avant d'appeler le service
+  apiPath: /api/v1      # seul ce chemin est routé : /health/* et /metrics restent hors de l'Ingress
+
+migration:
+  enabled: true
+  command: ["alembic", "upgrade", "head"]
+  activeDeadlineSeconds: 300
+
+terminationGracePeriodSeconds: 30
+
+# Emplacement réservé à P6-04 : ServiceMonitor (Prometheus Operator) sur /metrics, port `http`.

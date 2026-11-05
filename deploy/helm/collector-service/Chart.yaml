@@ -1,0 +1,7 @@
+apiVersion: v2
+name: collector-service
+description: Chart générique des services FastAPI de Collector (catalog-service, notification-service)
+type: application
+version: 0.1.0
+# Version applicative indicative : l'image réellement déployée est donnée par image.tag et image.digest.
+appVersion: "0.1.0"

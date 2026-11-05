@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "collector-service.name" . }}
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  # Avec l'HPA, le nombre de réplicas lui appartient : le fixer ici le réinitialiserait à chaque déploiement.
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  # Mise à jour sans perte de capacité : un pod neuf doit être prêt avant d'en retirer un ancien.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "collector-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "collector-service.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Un changement de configuration redémarre les pods (les variables ne sont lues qu'au démarrage).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      # Pas de jeton d'API Kubernetes dans le pod : le service n'appelle pas Kubernetes.
+      automountServiceAccountToken: false
+      # Pas de variables <SERVICE>_PORT injectées pour chaque Service du namespace.
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: app
+          image: {{ include "collector-service.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "collector-service.name" . }}-config
+            - secretRef:
+                name: {{ required "secretName est obligatoire" .Values.secretName }}
+          # Probes : liveness = le processus répond ; readiness = PostgreSQL joignable (jamais RabbitMQ).
+          startupProbe:
+            httpGet: {path: /health/live, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet: {path: /health/live, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          lifecycle:
+            preStop:
+              # Laisse le temps à Traefik et au Service de retirer le pod avant l'arrêt d'uvicorn.
+              exec:
+                command: ["sleep", "5"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- include "collector-service.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

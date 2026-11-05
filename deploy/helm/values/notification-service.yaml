@@ -1,0 +1,6 @@
+# Valeurs propres à notification-service (le reste vient de collector-service/values.yaml).
+image:
+  repository: ghcr.io/luucaaas/notification-service
+secretName: notification-service-secrets
+ingress:
+  prefix: /notification

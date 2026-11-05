@@ -1,0 +1,54 @@
+{{- if .Values.migration.enabled }}
+# Migration Alembic avant chaque installation ou mise à jour (hook Helm) : la base est à jour
+# avant que les nouveaux pods démarrent. Même image que le service. Le Job réussi est supprimé ;
+# un Job en échec est conservé (logs lisibles) jusqu'au prochain déploiement.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "collector-service.name" . }}-migrate
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        # Pas les étiquettes du Service : le pod de migration ne doit jamais recevoir de trafic.
+        app.kubernetes.io/instance: {{ .Release.Name }}-migrate
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: migrate
+          image: {{ include "collector-service.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.migration.command | nindent 12 }}
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "secretName est obligatoire" .Values.secretName }}
+                  key: DATABASE_URL
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            {{- include "collector-service.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+{{- end }}

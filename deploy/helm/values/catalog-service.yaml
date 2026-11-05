@@ -1,0 +1,6 @@
+# Valeurs propres à catalog-service (le reste vient de collector-service/values.yaml).
+image:
+  repository: ghcr.io/luucaaas/catalog-service
+secretName: catalog-service-secrets
+ingress:
+  prefix: /catalog

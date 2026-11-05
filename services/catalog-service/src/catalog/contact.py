@@ -20,11 +20,12 @@ from itertools import accumulate
 CONTACT_EMAIL = "CONTACT_EMAIL"
 CONTACT_PHONE = "CONTACT_PHONE"
 
-# Le lookbehind ancre le début à une frontière de la partie locale : sans lui, chaque position d'une
-# longue suite de caractères sans « @ » relançait un balayage jusqu'à la fin (coût quadratique,
-# règle Sonar python:S8786). La détection est la même : toute adresse trouvée à partir d'un
-# caractère du milieu l'est aussi depuis le début de la suite.
-_EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# Le motif part de l'« @ » : la partie locale n'a besoin que d'un caractère valide avant lui (un
+# lookbehind d'un seul caractère). Une partie locale répétée au début du motif relançait, à chaque
+# position d'une longue suite sans « @ », un balayage jusqu'à la fin (coût quadratique, règle Sonar
+# python:S8786). La détection est la même : une adresse existe si et seulement si un « @ » est
+# précédé d'un caractère de la partie locale et suivi d'un domaine à au moins un point.
+_EMAIL = re.compile(r"(?<=[\w.+-])@[\w-]+(?:\.[\w-]+)+")
 
 # Date jj.mm.aaaa (séparateur constant) : suivie d'une heure (« 05.11.2024 14h »), elle donnerait
 # 10 chiffres commençant par 0.

@@ -60,4 +60,5 @@ junit_family = "xunit1"
 
 [tool.coverage.run]
 source = ["notification"]
+branch = true
 concurrency = ["greenlet", "thread"]

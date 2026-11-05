@@ -1,0 +1,135 @@
+# Keycloak : image officielle, un Deployment d'un réplica, base PostgreSQL `keycloak`.
+# TLS terminé par Traefik : Keycloak écoute en HTTP dans le cluster, avec l'URL publique comme nom
+# d'hôte (KC_HOSTNAME complet : `iss` vaut toujours cette valeur) et les en-têtes X-Forwarded-*.
+# Secrets créés par deploy.sh : postgres-credentials, keycloak-admin (administrateur initial) et
+# keycloak-realm (realm rendu avec les mots de passe de démonstration, sans client de test).
+# URL interne pour les services (clés JWKS) : http://keycloak.collector.svc.cluster.local:8080
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: collector
+  labels: {app: keycloak}
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: collector
+  labels: {app: keycloak}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      # Bonne pratique : ne pas injecter dans le pod les variables d'environnement des Services
+      # du namespace (<SERVICE>_PORT=tcp://..., <SERVICE>_SERVICE_HOST) ; la résolution DNS suffit.
+      enableServiceLinks: false
+      securityContext:
+        # L'image Keycloak tourne sous l'utilisateur `keycloak` (uid 1000).
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 0
+        fsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.8.0@sha256:27b3230fbabb8c9ff3c66c864cf09dcd8a41aca82e5100679d109ef0eeb05741
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+          # Pas de readOnlyRootFilesystem : « start » sans --optimized reconstruit Keycloak à chaque
+          # démarrage. Essai avec emptyDir sur /tmp et /opt/keycloak/data/tmp : CrashLoopBackOff,
+          # « java.nio.file.FileSystemException: /opt/keycloak/lib/quarkus/transformed-bytecode.jar:
+          # Read-only file system » (limite L17). Une image pré-construite le permettrait (cible).
+          args: ["start", "--import-realm"]
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres.collector.svc.cluster.local:5432/keycloak
+            - name: KC_DB_USERNAME
+              value: keycloak
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-credentials, key: KEYCLOAK_DB_PASSWORD}
+            - name: KC_HOSTNAME
+              value: https://auth.127.0.0.1.sslip.io
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_PROXY_HEADERS
+              value: xforwarded
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: admin
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: keycloak-admin, key: password}
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9000
+          # Sondes HTTP sur le port de gestion 9000. Le démarrage (construction puis import du
+          # realm) dure plusieurs dizaines de secondes : sonde de démarrage large (7 min).
+          startupProbe:
+            httpGet: {path: /health/started, port: management}
+            periodSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: {path: /health/ready, port: management}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health/live, port: management}
+            periodSeconds: 20
+          volumeMounts:
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 700Mi
+            limits:
+              memory: 1200Mi
+      volumes:
+        - name: realm
+          secret:
+            secretName: keycloak-realm
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  namespace: collector
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - auth.127.0.0.1.sslip.io
+  rules:
+    - host: auth.127.0.0.1.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080

@@ -1,0 +1,116 @@
+# PostgreSQL : image officielle, un StatefulSet d'un réplica, volume local-path de k3s.
+# Une instance, trois bases logiques (catalog_db, notification_db, keycloak) et un rôle par base.
+# Les rôles sont créés au premier démarrage d'un volume vide par le script d'initialisation
+# deploy/compose/postgres-init/10-roles.sh (le même que pour la pile docker compose), fourni par
+# la ConfigMap `postgres-init` que crée deploy.sh. Le Secret `postgres-credentials` contient
+# POSTGRES_PASSWORD et les trois mots de passe de rôle.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: collector
+  labels: {app: postgres}
+spec:
+  selector:
+    app: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: collector
+  labels: {app: postgres}
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      # Bonne pratique : ne pas injecter dans le pod les variables d'environnement des Services
+      # du namespace (<SERVICE>_PORT=tcp://..., <SERVICE>_SERVICE_HOST) ; la résolution DNS suffit.
+      enableServiceLinks: false
+      securityContext:
+        # L'image alpine fait tourner PostgreSQL sous l'utilisateur `postgres` (uid/gid 70).
+        # fsGroup donne ce groupe au volume : le démarrage n'a plus besoin d'être root.
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: postgres
+          image: postgres:18.4-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-credentials, key: POSTGRES_PASSWORD}
+            - name: CATALOG_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-credentials, key: CATALOG_DB_PASSWORD}
+            - name: NOTIFICATION_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-credentials, key: NOTIFICATION_DB_PASSWORD}
+            - name: KEYCLOAK_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-credentials, key: KEYCLOAK_DB_PASSWORD}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "postgres"]
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "postgres"]
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql   # PostgreSQL 18 : PGDATA est un sous-dossier versionné
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            # Système de fichiers racine en lecture seule : seuls les chemins écrits sont montés.
+            - name: run
+              mountPath: /var/run/postgresql   # socket Unix et fichier PID
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi

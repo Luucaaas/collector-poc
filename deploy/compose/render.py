@@ -5,7 +5,9 @@
   remplacés, plus le client de test `collector-tests` (pile docker compose seulement) ;
 - `rabbitmq-definitions.json` : utilisateurs, vhost et permissions de RabbitMQ.
 
-Usage : render.py <fichier .env> <dossier de sortie>. Bibliothèque standard seule.
+Usage : render.py <fichier .env> <dossier de sortie> [--cluster]. Bibliothèque standard seule.
+Avec `--cluster` (deploy/local/deploy.sh), le client de test n'est pas ajouté : le realm du
+cluster n'a pas de Direct Access Grants.
 """
 
 import json
@@ -25,7 +27,13 @@ TEST_CLIENT = {
     "publicClient": True,
     "standardFlowEnabled": False,
     "directAccessGrantsEnabled": True,
-    "defaultClientScopes": ["web-origins", "acr", "roles", "basic", "collector-api-audience"],
+    "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "basic",
+        "collector-api-audience",
+    ],
 }
 
 
@@ -39,14 +47,15 @@ def read_env(path: Path) -> dict[str, str]:
     return values
 
 
-def render_realm(env: dict[str, str]) -> str:
+def render_realm(env: dict[str, str], with_test_client: bool = True) -> str:
     text = (REPO / "deploy/keycloak/collector-realm.json").read_text()
     for user in REALM_USERS:
         text = text.replace("${" + user + "_PASSWORD}", env[user + "_PASSWORD"])
     if re.search(r"\$\{[A-Z]+_PASSWORD\}", text):
         raise SystemExit("Marqueur de mot de passe non remplacé dans le realm")
     realm = json.loads(text)
-    realm["clients"].append(TEST_CLIENT)
+    if with_test_client:
+        realm["clients"].append(TEST_CLIENT)
     return json.dumps(realm, indent=2, ensure_ascii=False) + "\n"
 
 
@@ -58,7 +67,12 @@ def render_rabbitmq(env: dict[str, str]) -> str:
     queue = r"notification\.article-events"
     users = [
         ("admin", env["RABBITMQ_ADMIN_PASSWORD"], "administrator", (".*", ".*", ".*")),
-        ("catalog", env["RABBITMQ_CATALOG_PASSWORD"], "", (f"^{exchange}$", f"^{exchange}$", "^$")),
+        (
+            "catalog",
+            env["RABBITMQ_CATALOG_PASSWORD"],
+            "",
+            (f"^{exchange}$", f"^{exchange}$", "^$"),
+        ),
         (
             "notification",
             env["RABBITMQ_NOTIFICATION_PASSWORD"],
@@ -78,17 +92,21 @@ def render_rabbitmq(env: dict[str, str]) -> str:
 
 
 def main() -> None:
-    env = read_env(Path(sys.argv[1]))
-    out = Path(sys.argv[2])
+    args = [a for a in sys.argv[1:] if a != "--cluster"]
+    cluster = len(args) != len(sys.argv) - 1
+    env = read_env(Path(args[0]))
+    out = Path(args[1])
     out.mkdir(parents=True, exist_ok=True)
-    out.chmod(0o755)
+    # Pile compose : lisible par les utilisateurs non-root des conteneurs. Cluster : les fichiers
+    # contiennent des mots de passe et ne vont que dans des Secrets, donc dossier privé.
+    out.chmod(0o700 if cluster else 0o755)
     for name, content in (
-        ("collector-realm.json", render_realm(env)),
+        ("collector-realm.json", render_realm(env, with_test_client=not cluster)),
         ("rabbitmq-definitions.json", render_rabbitmq(env)),
     ):
         target = out / name
         target.write_text(content)
-        target.chmod(0o644)  # lisible par les utilisateurs non-root des conteneurs
+        target.chmod(0o600 if cluster else 0o644)
 
 
 if __name__ == "__main__":

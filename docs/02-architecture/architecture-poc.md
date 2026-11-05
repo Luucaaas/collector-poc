@@ -152,7 +152,7 @@ Le chart Helm donne à chaque service **2 réplicas minimum**, des **sondes** `l
 | S3 | Chaque service vérifie lui-même le JWT : signature RS256, `iss`, `aud`, `exp`. Aucune confiance implicite accordée au réseau interne | Usurpation d'identité, rejeu d'un jeton expiré | ENF-02 |
 | S4 | RBAC par rôle, puis contrôle de propriété de la ressource. Les routes `/me` dérivent l'utilisateur du jeton | Élévation de privilèges, accès aux données d'un autre utilisateur (IDOR) | ENF-03 |
 | S5 | Un utilisateur PostgreSQL par service, sans droit de connexion à la base de l'autre. Validation stricte des entrées (Pydantic) et requêtes paramétrées (ORM) | Lecture des données d'un autre service, injection SQL | ENF-07, ENF-21 |
-| S6 | `deploy.sh` génère les mots de passe manquants dans un `.env` local non versionné (modèle `.env.example`, versionné, à créer en phase 6), stables d'un déploiement à l'autre, puis crée les Secrets Kubernetes, injectés dans les pods par le chart | Fuite de secrets dans Git | ENF-04 |
+| S6 | `deploy.sh` génère les mots de passe manquants dans un `.env` local non versionné (modèle `deploy/local/.env.example`, versionné), stables d'un déploiement à l'autre, puis crée les Secrets Kubernetes, injectés dans les pods par le chart | Fuite de secrets dans Git | ENF-04 |
 | S7 | Images multi-stage `python:3.12-slim`, utilisateur non root, système de fichiers racine en lecture seule, toutes les capacités Linux retirées | Exploitation d'une vulnérabilité de l'image, évasion de conteneur | ENF-05 |
 | S8 | Pipeline : SonarCloud (analyse statique, quality gate) et Trivy (dépendances, image, secrets) bloquants avant la publication sur GHCR | Vulnérabilité connue ou secret embarqué dans une image livrée | ENF-04, ENF-05 |
 

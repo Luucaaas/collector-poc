@@ -1,0 +1,28 @@
+# Traefik est fourni par k3s. Deux réglages, repris de l'expérimentation 2 :
+#  - redirection HTTP -> HTTPS (301) au niveau du point d'entrée `web` ;
+#  - certificat par défaut : le Secret `mkcert-wildcard` (créé par cluster.sh à partir du
+#    certificat mkcert), servi pour tous les hôtes *.127.0.0.1.sslip.io.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      web:
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: TLSStore
+metadata:
+  name: default
+  namespace: kube-system
+spec:
+  defaultCertificate:
+    secretName: mkcert-wildcard

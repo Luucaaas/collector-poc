@@ -27,3 +27,6 @@ kubeconfig*
 .idea/
 .vscode/
 .DS_Store
+
+# Certificat mkcert du cluster local (clé privée)
+deploy/local/.certs/

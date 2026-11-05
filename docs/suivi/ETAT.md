@@ -37,8 +37,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | fusionnée |
 | P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | fusionnée |
 | P5-06 | Corriger les constats SonarCloud de `main` | developpeur | `phase-5/sonar-constats` | fusionnée |
-| P6-01 | Cluster k3d et HTTPS | developpeur | `phase-6/cluster-tls` | en cours |
-| P6-02 | Infrastructure : PostgreSQL, RabbitMQ, Keycloak | developpeur | `phase-6/infra` | à faire |
+| P6-01 | Cluster k3d et HTTPS | developpeur | `phase-6/cluster-tls` | fusionnée |
+| P6-02 | Infrastructure : PostgreSQL, RabbitMQ, Keycloak | developpeur | `phase-6/infra` | en cours |
 | P6-03 | Chart Helm des services et déploiement par tag | developpeur | `phase-6/chart` | à faire |
 | P6-04 | Observabilité : Prometheus, Grafana, tableau de bord | developpeur | `phase-6/observabilite` | à faire |
 | P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | à faire |
@@ -47,7 +47,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P6-01 confiée au développeur (branche locale `phase-6/cluster-tls`). À son retour : auditeur, fusion en squash si CONFORME (le chef revérifie `git branch --show-current` avant de commiter : dossier partagé), puis P6-02, P6-03, P6-04, P6-05 dans cet ordre. Le cluster `collector` peut rester en place d'une tâche à l'autre ; chaque tâche doit pourtant prouver qu'elle marche sur un cluster neuf.
+P6-02 confiée au développeur (branche locale `phase-6/infra`, cluster `collector` en place). À son retour : auditeur, fusion si CONFORME, puis P6-03, P6-04, P6-05. Le chef vérifie `git branch --show-current` avant de commiter (dossier partagé).
 
 ## Décisions en attente
 
@@ -58,4 +58,4 @@ P6-01 confiée au développeur (branche locale `phase-6/cluster-tls`). À son re
 
 ## Dernière mise à jour
 
-05/11/2026 22:24 — Phase 6 découpée (P6-01 à P6-05) et validée par Lucas, P6-01 confiée au développeur.
+05/11/2026 22:32 — P6-01 fusionnée (corrections du chef), P6-02 confiée au développeur.

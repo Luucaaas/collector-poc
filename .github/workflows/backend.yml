@@ -192,6 +192,9 @@ jobs:
 
   acceptance:
     needs: build-scan
+    # Même condition que build-scan : un ancêtre sauté (sonar sur une branche) ne doit pas
+    # sauter ce job, un ancêtre en échec le bloque.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     env:
       CATALOG_IMAGE: collector/catalog-service:ci

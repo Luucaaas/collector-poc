@@ -105,9 +105,12 @@ jobs:
           path: services/${{ matrix.service }}/junit.xml
           if-no-files-found: error
 
+  # Plan Free de SonarCloud : seules la branche principale et les pull requests sont
+  # analysées. Sur un push de branche de tâche, le job est sauté (voir build-scan).
   sonar:
     name: sonar (${{ matrix.service }})
     needs: test
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -137,6 +140,8 @@ jobs:
   build-scan:
     name: build-scan (${{ matrix.service }})
     needs: sonar
+    # Un sonar sauté (push de branche) ne bloque pas la suite ; un sonar en échec la bloque.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false

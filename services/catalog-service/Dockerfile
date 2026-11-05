@@ -1,5 +1,5 @@
 # Étape 1 : environnement virtuel construit par uv, aux versions figées par uv.lock
-FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30 AS builder
+FROM python:3.12-slim@sha256:e695ab189fa2d082b1c61c69a6b888a5adeca61ceeccad107b1ed2a125721a9e AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 /uv /usr/local/bin/uv
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
@@ -9,7 +9,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 # Étape 2 : image d'exécution, sans uv ni outils de développement, utilisateur non-root
-FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30
+FROM python:3.12-slim@sha256:e695ab189fa2d082b1c61c69a6b888a5adeca61ceeccad107b1ed2a125721a9e
 # Traçabilité (docs/01-qualite/cicd.md, section 4) : le commit et le dépôt sont lisibles par `docker inspect`.
 ARG GIT_SHA=unknown
 LABEL org.opencontainers.image.revision=$GIT_SHA \

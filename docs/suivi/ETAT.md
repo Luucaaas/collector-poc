@@ -4,11 +4,9 @@
 
 ## Phase en cours
 
-**Phase 5 en cours** (pipeline CI/CD, contrat `docs/01-qualite/cicd.md`), lancée le 04/11/2026 à la demande de Lucas. 5 tâches, faites l'une après l'autre car elles modifient toutes `backend.yml`. Les branches de la phase 5 sont poussées sur GitHub pour obtenir de vraies exécutions.
+**Phase 5 terminée le 05/11/2026** (6 tâches P5-01 à P5-06, toutes fusionnées après audit ; P5-04 et P5-06 livrées par pull request). Pipeline `backend.yml` conforme au contrat `docs/01-qualite/cicd.md`, vert de `lint` à `publish` sur `main` (run 42046581865), images amd64 et arm64 sur GHCR, SonarCloud à 0 constat. Prochaine phase : **phase 6** (cluster k3d, infrastructure, chart Helm, `deploy.sh`), à découper par le chef.
 
-Phase 4 terminée le 04/11/2026 (5 tâches fusionnées après audit, 17/17 tests d'acceptation). Phase 3 terminée le 03/11/2026 (5 tâches fusionnées après audit).
-
-Phases précédentes : phase 0 (outillage, reste des actions de Lucas), phase 1 terminée et refondue pour le POC simplifié (ADR 0007), **phase 2 terminée le 31/10/2026** (7 tâches ci-dessous, toutes fusionnées après audit conforme).
+Phase 4 terminée le 04/11/2026 (5 tâches, 17/17 tests d'acceptation). Phase 3 terminée le 03/11/2026 (5 tâches).
 
 ## Tâches
 
@@ -38,13 +36,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | fusionnée |
 | P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | fusionnée |
 | P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | fusionnée |
-| P5-06 | Corriger les constats SonarCloud de `main` | developpeur | `phase-5/sonar-constats` | en cours |
+| P5-06 | Corriger les constats SonarCloud de `main` | developpeur | `phase-5/sonar-constats` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P5-06 confiée au développeur (branche `phase-5/sonar-constats`, livrée par pull request). À son retour : auditeur, fusion de la PR en squash, relevé du run de `main` (quality gate, 0 code smell attendu), puis clôture de la phase 5 : contre-vérification, `CLAUDE.md` (avancement), cases du plan, bilan à Lucas. Attention : le développeur travaille dans le même dossier ; le chef ne commite pas sur `main` pendant qu'une branche de tâche y est extraite (vérifier `git branch --show-current` avant tout commit).
+Attendre que Lucas demande la phase 6, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Acquis pour la phase 6 : images `ghcr.io/luucaaas/<service>:sha-<7>` publiques (aucun `imagePullSecret`), déploiement par tag `sha-…` et digest. Rappel : le développeur et le chef partagent le même dossier ; vérifier `git branch --show-current` avant tout commit du chef.
 
 ## Décisions en attente
 
@@ -55,4 +53,4 @@ P5-06 confiée au développeur (branche `phase-5/sonar-constats`, livrée par pu
 
 ## Dernière mise à jour
 
-05/11/2026 15:04 — P5-04 fusionnée (PR n°1), pipeline complet vert sur `main` (run 42039814860, tentative 2). P5-06 ouverte pour les 3 constats SonarCloud de `main`.
+05/11/2026 15:43 — Phase 5 close : P5-06 fusionnée (PR n°2, corrections du chef), run de `main` 42046581865 vert (11 jobs), SonarCloud 0 code smell. `CLAUDE.md` mis à jour.

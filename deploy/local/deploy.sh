@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Déploiement sur le cluster k3d `collector`.
 #
-# Usage : deploy/local/deploy.sh infra | services <tag> | all <tag>
+# Usage : deploy/local/deploy.sh infra | monitoring | services <tag> | all <tag>
 #   infra : génère les mots de passe manquants dans deploy/local/.env, crée ou met à jour les
 #           Secrets et ConfigMaps, applique les manifestes de deploy/infra (PostgreSQL, RabbitMQ,
 #           Keycloak + Ingress `auth.`) et attend que tout soit prêt. Relançable sans effet de bord.
@@ -10,9 +10,12 @@
 #           deploy/helm/collector-service. Refuse un tag absent de GHCR avant tout changement ;
 #           attend les pods, lance smoke.sh ; en cas d'échec, revient à la révision précédente
 #           (`helm rollback`) et sort en erreur.
-#   all <tag> : `infra` puis `services <tag>`.
-#
-# (L'étape d'observabilité s'ajoutera ici : P6-04.)
+#   monitoring : installe kube-prometheus-stack allégé (Prometheus, opérateur, Grafana,
+#           kube-state-metrics) dans le namespace `collector`, charge le tableau de bord, expose
+#           Grafana en HTTPS (https://grafana.127.0.0.1.sslip.io). Mot de passe administrateur
+#           généré dans .env. Active le ServiceMonitor des services déjà déployés. Relançable.
+#   all <tag> : `infra`, `monitoring` puis `services <tag>` (le CRD ServiceMonitor existe ainsi
+#           avant que le chart des services en crée un).
 set -euo pipefail
 
 CLUSTER="collector"
@@ -29,6 +32,11 @@ CHART_DIR="${REPO}/deploy/helm/collector-service"
 VALUES_DIR="${REPO}/deploy/helm/values"
 REGISTRY="ghcr.io/luucaaas"
 SERVICES=(catalog-service notification-service)
+# Pile d'observabilité : version du chart fixée (expérimentation 3), valeurs dans deploy/infra/monitoring.
+STACK_CHART="oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack"
+STACK_VERSION="91.9.0"
+MON_DIR="${INFRA_DIR}/monitoring"
+digest=()   # digests des images (rempli par check_images)
 tmp=""   # dossier temporaire des fichiers contenant des mots de passe (créé par ensure_tmp)
 
 step() { printf '\n=== %s ===\n' "$*"; }
@@ -156,6 +164,81 @@ infra() {
   $K get pods
 }
 
+# --- Observabilité --------------------------------------------------------------------------
+
+# Attend (au plus 5 min) qu'une ressource existe : le pod Prometheus est créé par l'opérateur
+# après l'installation du chart, il n'existe pas encore quand `helm --wait` rend la main.
+wait_exists() {
+  local _
+  for _ in $(seq 1 150); do
+    $K get "$@" >/dev/null 2>&1 && return 0
+    sleep 2
+  done
+  echo "Ressource introuvable : $*" >&2
+  return 1
+}
+
+monitoring() {
+  for tool in helm; do
+    command -v "$tool" >/dev/null || { echo "Outil manquant : $tool" >&2; exit 1; }
+  done
+  check_prerequisites
+  generate_env
+
+  step "Secret du mot de passe de Grafana"
+  ensure_tmp
+  write_value GRAFANA_ADMIN_PASSWORD
+  ( umask 077 && printf 'admin' > "${tmp}/admin-user" )
+  apply_secret create secret generic grafana-admin \
+    --from-file=admin-user="${tmp}/admin-user" \
+    --from-file=admin-password="${tmp}/GRAFANA_ADMIN_PASSWORD"
+  echo "grafana-admin : à jour."
+
+  step "kube-prometheus-stack ${STACK_VERSION}"
+  # Les CRD (dont ServiceMonitor) sont installés par le chart lui-même (premier install).
+  $H upgrade --install kps "$STACK_CHART" --version "$STACK_VERSION" \
+    -f "${MON_DIR}/kube-prometheus-stack.yaml" --wait --timeout 10m
+  wait_exists pod prometheus-kps-prometheus-0
+  $K wait --for=condition=Ready pod/prometheus-kps-prometheus-0 --timeout=300s
+  $K get crd servicemonitors.monitoring.coreos.com >/dev/null
+
+  step "Tableau de bord Grafana"
+  # Le sidecar de Grafana charge toute ConfigMap portant le label grafana_dashboard=1.
+  apply_generated create configmap collector-dashboards --from-file=collector-service.json="${MON_DIR}/dashboards/collector-service.json"
+  $K label configmap collector-dashboards grafana_dashboard=1 --overwrite >/dev/null
+  echo "ConfigMap collector-dashboards : à jour."
+
+  # Services déjà déployés avant la pile : on ajoute leur ServiceMonitor sans rejouer la migration
+  # (--no-hooks) ni toucher aux pods ni au nombre de réplicas (--reuse-values).
+  # Risque de --reuse-values : il reprend les valeurs de la DERNIÈRE révision, même en échec (image
+  # ou digest d'un déploiement raté). On refuse donc si la dernière révision n'est pas « deployed ».
+  local svc status
+  for svc in "${SERVICES[@]}"; do
+    status="$(last_status "$svc")"
+    if [[ -n "$status" && "$status" != deployed ]]; then
+      echo "${svc} : dernière révision Helm au statut « ${status} » : ServiceMonitor non ajouté (relancer 'deploy.sh services <tag>' d'abord)." >&2
+      exit 1
+    fi
+    if [[ -n "$status" ]] && ! $K get servicemonitor "$svc" >/dev/null 2>&1; then
+      step "ServiceMonitor de ${svc}"
+      $H upgrade "$svc" "$CHART_DIR" --reuse-values --set serviceMonitor.enabled=true --no-hooks --wait --timeout 3m
+    fi
+  done
+
+  step "Contrôle HTTPS de Grafana"
+  local code="" anon=""
+  for _ in $(seq 1 60); do
+    code=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' "https://grafana.127.0.0.1.sslip.io/api/health" || true)
+    [[ "$code" == 200 ]] && break
+    sleep 2
+  done
+  # Sans identifiants, l'API doit refuser (accès anonyme désactivé).
+  anon=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' "https://grafana.127.0.0.1.sslip.io/api/search" || true)
+  echo "https://grafana.127.0.0.1.sslip.io/api/health : HTTP ${code} ; /api/search sans identifiants : HTTP ${anon}"
+  [[ "$code" == 200 && "$anon" == 401 ]] || exit 1
+  $K get pods | grep -E 'kps|prometheus|grafana' || true
+}
+
 # --- Services ------------------------------------------------------------------------------
 
 # Digest (sha256:...) de l'index multi-architecture d'une image GHCR. Code 1 si l'image n'existe
@@ -219,6 +302,14 @@ rows=[r for r in json.load(sys.stdin) if r["status"]=="deployed"]
 print(rows[-1]["revision"] if rows else "")' 2>/dev/null || true
 }
 
+# Statut de la dernière révision Helm d'une release (vide si elle n'existe pas).
+last_status() {
+  $H history "$1" -o json 2>/dev/null \
+    | python3 -c 'import json,sys
+rows=json.load(sys.stdin)
+print(rows[-1]["status"] if rows else "")' 2>/dev/null || true
+}
+
 # Retour arrière : chaque release que ce lancement a commencé à mettre à jour (updated[i] = 1) et qui
 # avait une révision déployée avant y revient. Les autres ne sont pas touchées.
 # Le schéma de la base n'est pas rétabli (les migrations Alembic restent appliquées) : les
@@ -240,18 +331,18 @@ rollback_all() {
   done
 }
 
-services() {
-  local tag="${1:-}"
+# Valide le tag et vérifie sur GHCR que les images des deux services existent. Ne modifie rien.
+# Remplit le tableau global `digest` (un digest par service, dans l'ordre de SERVICES).
+check_images() {
+  local tag="$1" svc i=0 rc
   [[ "$tag" =~ ^sha-[0-9a-f]{7,40}$ ]] || { echo "Tag attendu : sha-<commit> (ex. sha-bec38ed), reçu « ${tag} »." >&2; exit 2; }
   for tool in helm docker; do
     command -v "$tool" >/dev/null || { echo "Outil manquant : $tool" >&2; exit 1; }
   done
   check_prerequisites
-
-  # 1. Le tag doit exister sur GHCR pour les deux services : avant tout changement du cluster.
   step "Vérification des images ${tag} sur GHCR"
   # Tableaux indexés parallèles à SERVICES (bash 3.2 de macOS : pas de tableaux associatifs).
-  local digest=() svc i=0 rc
+  digest=()
   for svc in "${SERVICES[@]}"; do
     # `|| rc=$?` : sous `set -e`, l'échec de la commande ferait sortir le script avant le message.
     rc=0
@@ -267,9 +358,23 @@ services() {
     echo "${svc}:${tag} -> ${digest[i]}"
     i=$((i + 1))
   done
+}
+
+services() {
+  local tag="${1:-}" svc i=0
+  # 1. Le tag doit exister sur GHCR pour les deux services : avant tout changement du cluster.
+  check_images "$tag"
 
   generate_env
   create_service_secrets
+
+  # ServiceMonitor : créé seulement si le CRD de Prometheus Operator existe (étape `monitoring`).
+  local sm_args=()
+  if $K get crd servicemonitors.monitoring.coreos.com >/dev/null 2>&1; then
+    sm_args=(--set serviceMonitor.enabled=true)
+  else
+    echo "CRD ServiceMonitor absent : services déployés sans supervision (lancer 'deploy.sh monitoring')."
+  fi
 
   # 2. Révisions Helm actuelles, pour pouvoir revenir en arrière.
   previous=()   # globales : lues par rollback_all
@@ -284,7 +389,7 @@ services() {
     step "helm upgrade --install ${svc}"
     updated[i]=1
     $H upgrade --install "$svc" "$CHART_DIR" -f "${VALUES_DIR}/${svc}.yaml" \
-      --set image.tag="$tag" --set image.digest="${digest[i]}" \
+      --set image.tag="$tag" --set image.digest="${digest[i]}" ${sm_args[@]+"${sm_args[@]}"} \
       --wait --timeout 5m || { failed=1; break; }
     $K rollout status "deployment/${svc}" --timeout=180s || { failed=1; break; }
     # Le chart ne fixe pas le nombre de réplicas (c'est l'HPA qui en décide) : à la première
@@ -317,6 +422,7 @@ services() {
 case "${1:-}" in
   infra) infra ;;
   services) services "${2:-}" ;;
-  all) infra; services "${2:-}" ;;
-  *) echo "Usage : $0 infra | services <tag> | all <tag>" >&2; exit 2 ;;
+  monitoring) monitoring ;;
+  all) check_images "${2:-}"; infra; monitoring; services "${2:-}" ;;
+  *) echo "Usage : $0 infra | monitoring | services <tag> | all <tag>" >&2; exit 2 ;;
 esac

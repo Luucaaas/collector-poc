@@ -53,4 +53,8 @@ migration:
 
 terminationGracePeriodSeconds: 30
 
-# Emplacement réservé à P6-04 : ServiceMonitor (Prometheus Operator) sur /metrics, port `http`.
+# ServiceMonitor (Prometheus Operator) sur /metrics, port `http`. Désactivé par défaut : le CRD vient
+# de kube-prometheus-stack ; deploy.sh l'active (--set) quand le CRD existe.
+serviceMonitor:
+  enabled: false
+  interval: 15s

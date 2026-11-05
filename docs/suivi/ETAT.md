@@ -40,14 +40,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P6-01 | Cluster k3d et HTTPS | developpeur | `phase-6/cluster-tls` | fusionnée |
 | P6-02 | Infrastructure : PostgreSQL, RabbitMQ, Keycloak | developpeur | `phase-6/infra` | fusionnée |
 | P6-03 | Chart Helm des services et déploiement par tag | developpeur | `phase-6/chart` | fusionnée |
-| P6-04 | Observabilité : Prometheus, Grafana, tableau de bord | developpeur | `phase-6/observabilite` | en cours |
-| P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | à faire |
+| P6-04 | Observabilité : Prometheus, Grafana, tableau de bord | developpeur | `phase-6/observabilite` | fusionnée |
+| P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P6-04 confiée au développeur (branche locale `phase-6/observabilite`, cluster `collector` avec infrastructure et services `sha-bec38ed`). À son retour : auditeur, fusion si CONFORME, puis P6-05 (brief complété : script d'événement de test, L17 et migrations). Le chef vérifie `git branch --show-current` avant de commiter.
+P6-05 confiée au développeur (branche locale `phase-6/preuves`, cluster complet en place : infra, monitoring, services `sha-bec38ed`). À son retour : auditeur, fusion si CONFORME, puis clôture de la phase 6 (contre-vérification du chef par `cluster.sh delete`, `create`, `deploy.sh all`, `CLAUDE.md`, plan de réalisation, bilan à Lucas). Capture du tableau de bord Grafana reportée en phase 8 (Lucas, dans le navigateur).
 
 ## Décisions en attente
 
@@ -58,4 +58,4 @@ P6-04 confiée au développeur (branche locale `phase-6/observabilite`, cluster 
 
 ## Dernière mise à jour
 
-05/11/2026 23:26 — P6-03 fusionnée (deux audits, corrections du chef), P6-04 confiée au développeur.
+05/11/2026 23:55 — P6-04 fusionnée (audit n° 2 CONFORME), P6-05 confiée au développeur.

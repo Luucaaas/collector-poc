@@ -1,0 +1,49 @@
+# check-monitoring.sh sur cluster neuf (cluster.sh delete, create, deploy.sh infra, services sha-bec38ed, puis monitoring). En-tête : début du contrôle 05/11/2026 23:48, fin 05/11/2026 23:50.
+
+=== 1. Cibles Prometheus (port-forward 19090) ===
+catalog-service        catalog-service-f7885fd67-jfqds            up
+catalog-service        catalog-service-f7885fd67-vmh7g            up
+notification-service   notification-service-54dfc84dff-ks4zf      up
+notification-service   notification-service-54dfc84dff-lxcs8      up
+4 cibles up sur 4 (attendu : 4 sur 4)
+
+=== 2. Trafic (600 requêtes) ===
+Fait. Attente de deux cycles de collecte (35 s) pour que rate() ait deux points.
+
+=== 3. Requêtes du tableau de bord via l'API de Grafana ===
+-- catalog-service
+   Débit (requêtes par seconde)   | total                            | 1 série(s), dernière valeur : 8.234
+   Débit (requêtes par seconde)   | {{status}}                       | 1 série(s), dernière valeur : 8.234
+   Taux d'erreur (réponses 5xx)   | part des 5xx                     | 1 série(s), dernière valeur : 0
+   Latence p95                    | p95 toutes routes                | 1 série(s), dernière valeur : 0.0475
+   Latence p95                    | p95 {{method}} {{handler}}       | 2 série(s), dernière valeur : 0.0475, 0.0475
+   Réplicas                       | réplicas prêts (Deployment)      | 1 série(s), dernière valeur : 2
+   Réplicas                       | réplicas souhaités (HPA)         | 1 série(s), dernière valeur : 2
+   Réplicas                       | cibles Prometheus en up          | 1 série(s), dernière valeur : 2
+   CPU par pod (cœurs)            | {{pod}}                          | 2 série(s), dernière valeur : 0.01661, 0.015
+-- notification-service
+   Débit (requêtes par seconde)   | total                            | 1 série(s), dernière valeur : 3.755
+   Débit (requêtes par seconde)   | {{status}}                       | 1 série(s), dernière valeur : 3.158
+   Taux d'erreur (réponses 5xx)   | part des 5xx                     | 1 série(s), dernière valeur : 0
+   Latence p95                    | p95 toutes routes                | 1 série(s), dernière valeur : 0.0475
+   Latence p95                    | p95 {{method}} {{handler}}       | 1 série(s), dernière valeur : 0.0475
+   Réplicas                       | réplicas prêts (Deployment)      | 1 série(s), dernière valeur : 2
+   Réplicas                       | réplicas souhaités (HPA)         | 1 série(s), dernière valeur : 2
+   Réplicas                       | cibles Prometheus en up          | 1 série(s), dernière valeur : 2
+   CPU par pod (cœurs)            | {{pod}}                          | 2 série(s), dernière valeur : 0.004649, 0.006043
+Note p95 : 0,0475 s est l'interpolation dans le premier intervalle de l'histogramme (0 à 50 ms) :
+toutes les requêtes durent moins de 50 ms, ce n'est pas une latence mesurée finement.
+
+=== 4. Mémoire et CPU des pods (metrics-server) ===
+catalog-service-f7885fd67-jfqds           18m    77Mi    
+catalog-service-f7885fd67-vmh7g           13m    77Mi    
+keycloak-584495f855-g9fzr                 13m    594Mi   
+kps-grafana-7bf87d7848-c9vsn              16m    481Mi   
+kps-kube-state-metrics-6bbcdf4f85-kk46j   1m     24Mi    
+kps-operator-75dd7fffc9-tlffm             4m     19Mi    
+notification-service-54dfc84dff-ks4zf     5m     73Mi    
+notification-service-54dfc84dff-lxcs8     6m     73Mi    
+postgres-0                                8m     71Mi    
+prometheus-kps-prometheus-0               13m    237Mi   
+rabbitmq-0                                137m   145Mi   
+TOTAL pile d observabilité : 761 Mi, 34 m CPU

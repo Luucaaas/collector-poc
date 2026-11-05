@@ -1,0 +1,122 @@
+# Valeurs de kube-prometheus-stack 91.9.0 pour le cluster k3d `collector` (expérimentation 3, ADR 0008).
+# Seules les clés qui diffèrent des valeurs par défaut du chart sont listées.
+# Installé dans le namespace `collector` par `deploy/local/deploy.sh monitoring` (release `kps`).
+# Aucun secret ici : le mot de passe de Grafana vient du Secret `grafana-admin`.
+
+# Noms courts et prévisibles : services kps-prometheus et kps-grafana.
+fullnameOverride: kps
+
+# --- Composants retirés (le POC ne supervise que l'application) -------------------------------
+alertmanager:
+  enabled: false            # pas d'alertes dans le POC
+defaultRules:
+  create: false             # règles d'alerte et d'enregistrement du chart : inutiles sans Alertmanager
+nodeExporter:
+  enabled: false            # métriques de la machine : non demandées
+kubeStateMetrics:
+  enabled: true             # réplicas des Deployments et de l'HPA (démo de montée en charge, critère 5)
+kubelet:
+  enabled: true             # collecte du kubelet dont cAdvisor : CPU et mémoire par conteneur
+kubeApiServer:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+coreDns:
+  enabled: false
+
+# --- Images épinglées par tag@sha256 (digest de l'index multi-architecture, relevé le 05/11/2026
+# par `docker buildx imagetools inspect <image>`). Le champ `sha` ne porte que les 64 caractères
+# hexadécimaux : le chart ajoute « @sha256: » (exception : kube-state-metrics, dont le sous-chart
+# ajoute seulement « @ », d'où le préfixe « sha256: » dans sa valeur). Pour monter de version : changer le tag ET le digest.
+kube-state-metrics:
+  image:
+    tag: v2.20.0
+    sha: sha256:42cfe3723a5f058171c627537fb57a3ea0f26e4380fa18555a95cb1a1b4cfc5b
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 128Mi}
+
+# --- Opérateur Prometheus ---------------------------------------------------------------
+prometheusOperator:
+  image:
+    tag: v0.94.1
+    sha: 7c88d4e7bae63bd8d0f8da986054337c23b4472fa8d3c6817f5bc4b8407a2d6a
+  prometheusConfigReloader:
+    image:
+      tag: v0.94.1
+      sha: 06b52bd4dbe3ed6dd5905aadaf8b9987d9da4c31d37bb86deaadae68cee2d26b
+  tls:
+    enabled: false          # sans webhooks, pas de Secret de certificat à créer (sinon le pod reste en ContainerCreating)
+  admissionWebhooks:
+    enabled: false          # évite le Job « certgen » et une image de plus
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+
+# --- Prometheus : non exposé (accès par `kubectl port-forward svc/kps-prometheus 9090`) ------------
+prometheus:
+  prometheusSpec:
+    image:
+      tag: v3.15.0-distroless
+      sha: b2a413d5a03ea6a76782a508d1c7947440bba3b973931a25676e278431891b01
+    retention: 2h           # pas de stockage persistant (limite L20) : 2 h suffisent aux démonstrations
+    # Sélectionne les ServiceMonitor de tous les namespaces, sans exiger le label « release: kps ».
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {memory: 768Mi}
+
+# --- Grafana : HTTPS par Traefik, pas d'accès anonyme ---------------------------------------
+grafana:
+  image:
+    tag: 13.2.3-distroless
+    sha: 202e5d5b3f8499e70ccac7991eea6d7da72d2790eb2e0597e7987acf724e7180
+  defaultDashboardsEnabled: false   # seuls les tableaux de bord versionnés dans le dépôt
+  admin:
+    existingSecret: grafana-admin   # créé par deploy.sh (clés admin-user et admin-password)
+    userKey: admin-user
+    passwordKey: admin-password
+  grafana.ini:
+    server:
+      domain: grafana.127.0.0.1.sslip.io
+      root_url: https://grafana.127.0.0.1.sslip.io
+    auth.anonymous:
+      enabled: false
+    users:
+      allow_sign_up: false
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    hosts:
+      - grafana.127.0.0.1.sslip.io
+    path: /
+    tls:
+      - hosts:
+          - grafana.127.0.0.1.sslip.io   # certificat par défaut de Traefik : le joker mkcert
+  sidecar:
+    image:
+      tag: 2.11.2
+      sha: 2912be006f62f9ea080194cf6d3afcd90daead8d101d0ba686a137a849f6a4f6
+    datasources:
+      alertmanager:
+        enabled: false          # Alertmanager est désactivé : pas de source de données orpheline
+    dashboards:
+      enabled: true
+      label: grafana_dashboard      # le sidecar charge toute ConfigMap portant ce label
+      labelValue: "1"
+      searchNamespace: ALL
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {memory: 128Mi}
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 384Mi}

@@ -1,0 +1,19 @@
+{{- if .Values.serviceMonitor.enabled }}
+# Demande à Prometheus (Prometheus Operator) de scruter /metrics de chaque pod du Service. Le label
+# `job` des séries prend le nom du Service (ex. job="catalog-service"). Le CRD ServiceMonitor est
+# installé par kube-prometheus-stack : deploy.sh n'active cette option que s'il existe.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "collector-service.name" . }}
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "collector-service.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval | default "15s" }}
+{{- end }}

@@ -15,6 +15,7 @@ Limite : un numéro collé à d'autres chiffres sans séparateur (« 106 12 34 5
 """
 
 import re
+from itertools import accumulate
 
 CONTACT_EMAIL = "CONTACT_EMAIL"
 CONTACT_PHONE = "CONTACT_PHONE"
@@ -28,23 +29,20 @@ _EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 # Date jj.mm.aaaa (séparateur constant) : suivie d'une heure (« 05.11.2024 14h »), elle donnerait
 # 10 chiffres commençant par 0.
 _DATE = re.compile(r"(?<!\d)\d{1,2}([./-])\d{1,2}\1(?:19|20)\d{2}(?!\d)")
+_NATIONAL_START = re.compile(r"0(?=[1-9])")
 _CANDIDATE = re.compile(r"\+?\(?\d[\d\s.\-/()]*\d")
 
 
 def _is_national(groups: list[str]) -> bool:
     # Équivalent linéaire de « à partir de chaque groupe, accumuler des groupes jusqu'à au moins
-    # 10 chiffres, et tester si on en a exactement 10 commençant par 0 puis 1 à 9 ».
+    # 10 chiffres, et tester si on en a exactement 10 commençant par 0 puis 1 à 9 » : un numéro
+    # commence à une frontière de groupe où l'on trouve « 0 » puis 1 à 9, et finit à une frontière.
     digits = "".join(groups)
-    boundaries = set()
-    offset = 0
-    for group in groups:
-        boundaries.add(offset)
-        offset += len(group)
-    boundaries.add(offset)
+    ends = set(accumulate(map(len, groups)))
+    boundaries = ends | {0}
     return any(
-        digits[start] == "0" and digits[start + 1] != "0" and start + 10 in boundaries
-        for start in boundaries
-        if start + 10 <= len(digits)
+        match.start() in boundaries and match.start() + 10 in ends
+        for match in _NATIONAL_START.finditer(digits)
     )
 
 

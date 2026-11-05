@@ -15,6 +15,7 @@ WORST_CASES = {
     "zeros-espaces": "0 " * 50_000,
     "chiffres-espaces": "1 " * 50_000 + "x",
     "plus-parentheses": "+(" * 50_000,
+    "zero-un-espaces": "0 1 " * 25_000,
 }
 
 

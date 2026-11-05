@@ -4,9 +4,9 @@
 
 ## Phase en cours
 
-**Phase 5 terminée le 05/11/2026** (6 tâches P5-01 à P5-06, toutes fusionnées après audit ; P5-04 et P5-06 livrées par pull request). Pipeline `backend.yml` conforme au contrat `docs/01-qualite/cicd.md`, vert de `lint` à `publish` sur `main` (run 42046581865), images amd64 et arm64 sur GHCR, SonarCloud à 0 constat. Prochaine phase : **phase 6** (cluster k3d, infrastructure, chart Helm, `deploy.sh`), à découper par le chef.
+**Phase 6 en cours** (déploiement sur le cluster k3d local, critère 5), lancée le 05/11/2026 à la demande de Lucas. 5 tâches, faites l'une après l'autre (chacune s'appuie sur le cluster de la précédente). Branches locales : la phase ne touche pas la CI.
 
-Phase 4 terminée le 04/11/2026 (5 tâches, 17/17 tests d'acceptation). Phase 3 terminée le 03/11/2026 (5 tâches).
+Phase 5 terminée le 05/11/2026 (6 tâches, pipeline complet vert sur `main`). Phase 4 terminée le 04/11/2026. Phase 3 terminée le 03/11/2026.
 
 ## Tâches
 
@@ -37,12 +37,17 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | fusionnée |
 | P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | fusionnée |
 | P5-06 | Corriger les constats SonarCloud de `main` | developpeur | `phase-5/sonar-constats` | fusionnée |
+| P6-01 | Cluster k3d et HTTPS | developpeur | `phase-6/cluster-tls` | en cours |
+| P6-02 | Infrastructure : PostgreSQL, RabbitMQ, Keycloak | developpeur | `phase-6/infra` | à faire |
+| P6-03 | Chart Helm des services et déploiement par tag | developpeur | `phase-6/chart` | à faire |
+| P6-04 | Observabilité : Prometheus, Grafana, tableau de bord | developpeur | `phase-6/observabilite` | à faire |
+| P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre que Lucas demande la phase 6, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Acquis pour la phase 6 : images `ghcr.io/luucaaas/<service>:sha-<7>` publiques (aucun `imagePullSecret`), déploiement par tag `sha-…` et digest. Rappel : le développeur et le chef partagent le même dossier ; vérifier `git branch --show-current` avant tout commit du chef.
+P6-01 confiée au développeur (branche locale `phase-6/cluster-tls`). À son retour : auditeur, fusion en squash si CONFORME (le chef revérifie `git branch --show-current` avant de commiter : dossier partagé), puis P6-02, P6-03, P6-04, P6-05 dans cet ordre. Le cluster `collector` peut rester en place d'une tâche à l'autre ; chaque tâche doit pourtant prouver qu'elle marche sur un cluster neuf.
 
 ## Décisions en attente
 
@@ -53,4 +58,4 @@ Attendre que Lucas demande la phase 6, puis présenter son découpage en tâches
 
 ## Dernière mise à jour
 
-05/11/2026 15:43 — Phase 5 close : P5-06 fusionnée (PR n°2, corrections du chef), run de `main` 42046581865 vert (11 jobs), SonarCloud 0 code smell. `CLAUDE.md` mis à jour.
+05/11/2026 22:24 — Phase 6 découpée (P6-01 à P6-05) et validée par Lucas, P6-01 confiée au développeur.

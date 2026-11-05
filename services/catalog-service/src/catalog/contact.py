@@ -15,28 +15,38 @@ Limite : un numéro collé à d'autres chiffres sans séparateur (« 106 12 34 5
 """
 
 import re
+from itertools import accumulate
 
 CONTACT_EMAIL = "CONTACT_EMAIL"
 CONTACT_PHONE = "CONTACT_PHONE"
 
-_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# Le motif part de l'« @ » : la partie locale n'a besoin que d'un caractère valide avant lui (un
+# lookbehind d'un seul caractère). Une partie locale répétée au début du motif relançait, à chaque
+# position d'une longue suite sans « @ », un balayage jusqu'à la fin (coût quadratique, règle Sonar
+# python:S8786). La détection est la même : une adresse existe si et seulement si un « @ » est
+# précédé d'un caractère de la partie locale et suivi d'un domaine à au moins un point.
+_EMAIL = re.compile(r"(?<=[\w.+-])@[\w-]+(?:\.[\w-]+)+")
 
 # Date jj.mm.aaaa (séparateur constant) : suivie d'une heure (« 05.11.2024 14h »), elle donnerait
 # 10 chiffres commençant par 0.
 _DATE = re.compile(r"(?<!\d)\d{1,2}([./-])\d{1,2}\1(?:19|20)\d{2}(?!\d)")
+# Second chiffre différent de 0, tout chiffre Unicode compris (comme `\d` dans _CANDIDATE) : un
+# numéro écrit en chiffres arabes-indiens (« 0٦12345678 ») reste détecté.
+_NATIONAL_START = re.compile(r"0(?=(?!0)\d)")
 _CANDIDATE = re.compile(r"\+?\(?\d[\d\s.\-/()]*\d")
 
 
 def _is_national(groups: list[str]) -> bool:
-    for start in range(len(groups)):
-        digits = ""
-        for group in groups[start:]:
-            digits += group
-            if len(digits) >= 10:
-                break
-        if len(digits) == 10 and digits[0] == "0" and digits[1] != "0":
-            return True
-    return False
+    # Équivalent linéaire de « à partir de chaque groupe, accumuler des groupes jusqu'à au moins
+    # 10 chiffres, et tester si on en a exactement 10 commençant par 0 puis 1 à 9 » : un numéro
+    # commence à une frontière de groupe où l'on trouve « 0 » puis 1 à 9, et finit à une frontière.
+    digits = "".join(groups)
+    ends = set(accumulate(map(len, groups)))
+    boundaries = ends | {0}
+    return any(
+        match.start() in boundaries and match.start() + 10 in ends
+        for match in _NATIONAL_START.finditer(digits)
+    )
 
 
 def _is_phone(candidate: str) -> bool:

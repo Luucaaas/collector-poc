@@ -93,6 +93,11 @@ def test_email_et_telephone_donnent_les_deux_motifs_dans_l_ordre() -> None:
     assert contact_reasons("06 12 34 56 78 ou a@b.fr") == [CONTACT_EMAIL, CONTACT_PHONE]
 
 
+def test_telephone_en_chiffres_unicode_detecte() -> None:
+    # Le second chiffre peut être un chiffre non ASCII reconnu par \d (ici ٦, six arabe-indien).
+    assert contact_reasons("Appelez le 0٦12345678") == [CONTACT_PHONE]
+
+
 def test_plusieurs_textes_et_valeurs_absentes() -> None:
     assert contact_reasons("Titre propre", None, "mon@mail.fr") == [CONTACT_EMAIL]
     assert contact_reasons(None) == []

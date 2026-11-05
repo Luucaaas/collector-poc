@@ -4,8 +4,8 @@ Ce document prouve que le pipeline réel ([`backend.yml`](../../.github/workflow
 
 - **Dépôt** : https://github.com/Luucaaas/collector-poc
 - **Run de référence** (`main`, commit `49df273`, avec publication) : https://github.com/Luucaaas/collector-poc/actions/runs/41825781085. Toutes les durées et mesures ci-dessous en sont tirées (API `gh run view --json jobs`, journaux `gh run view --log`, artefacts `gh run download`), relevées le 04/11/2026.
-- **Les références `backend.yml:<ligne>`** désignent le fichier tel qu'il est sur `main` au commit `154eb6d`. Elles sont à revérifier (`grep -n`) si le workflow change, par exemple quand P5-04 ajoute le job `sonar`.
-- **État** : le job `sonar` est dans le workflow (tâche P5-04). Les références `backend.yml:<ligne>` des lignes `sonar` et `build-scan` sont celles de la branche `phase-5/ci-sonar` ; celles des lignes `acceptance` et `publish` ci-dessous datent du commit `154eb6d` et se décalent d'environ 35 lignes après la fusion (à revérifier avec `grep -n`).
+- **Les références `backend.yml:<ligne>`** désignent le fichier tel qu'il est après la fusion de P5-04 (branche `phase-5/ci-sonar`, job `sonar` compris). Elles sont à revérifier (`grep -n`) si le workflow change.
+- **État** : le pipeline complet du contrat est en place, `sonar` compris (P5-04). Le run de référence ci-dessous date d'avant `sonar` ; les preuves propres à `sonar` viennent des runs de la pull request n°1, et le run de `main` qui suit la fusion de P5-04 est relevé en section 1.
 - **Runs de la pull request n°1** (branche `phase-5/ci-sonar`) : **PR-V** = [42037655092](https://github.com/Luucaaas/collector-poc/actions/runs/42037655092) (pull_request, 10 jobs dont `sonar` verts, `publish` sauté), **PR-ROUGE** = [42037061364](https://github.com/Luucaaas/collector-poc/actions/runs/42037061364) (quality gate en échec), **TRIVY-OS** = [42034598196](https://github.com/Luucaaas/collector-poc/actions/runs/42034598196) (apt, CVE-2026-109518).
 
 ## 1. Déroulé du run de référence
@@ -44,10 +44,10 @@ Légende des preuves : **R** = run de référence 41825781085 ; **ROUGE-LINT** =
 | Élément du contrat (`cicd.md`) | Implémentation | Preuve |
 | --- | --- | --- |
 | Déclencheur `push` sur les branches | `backend.yml:7-8` (`branches: ["**"]`) | Runs sur toutes les branches de tâche (BR, ROUGE-LINT) |
-| Déclencheur `pull_request` vers `main` | `backend.yml:9-10` | **Déclaré, jamais exécuté** : aucune pull request n'a été ouverte (le flux de branches fusionne en local), donc aucune preuve par un run. Voir écart E12 |
+| Déclencheur `pull_request` vers `main` | `backend.yml:9-10` | PR-V : run déclenché par l'événement `pull_request` de la pull request n°1 (https://github.com/Luucaaas/collector-poc/pull/1). Écart E12 clos |
 | Une exécution à la fois par ref | `backend.yml:15-17` (`concurrency`, annulation sauf sur `main`) | Run 41824633761, branche `phase-5/ci-publish`, conclusion `cancelled` : annulé par le run 41824958780 du push suivant sur la même branche (commit f745828) |
-| Moindre privilège | `backend.yml:21-22` (`contents: read`), `backend.yml:225-227` (`packages: write` dans `publish` seulement) | Lecture du fichier |
-| Environnement figé | `ubuntu-24.04` (`backend.yml:34, 62, 111, 161, 220`), `UV_PYTHON` (`:25`), actions épinglées par SHA (18 lignes `uses:`) | `grep -n "uses:"` : aucun tag flottant |
+| Moindre privilège | `backend.yml:21-22` (`contents: read`), `backend.yml:262-264` (`packages: write` dans `publish` seulement) | Lecture du fichier |
+| Environnement figé | `ubuntu-24.04` (`backend.yml:34, 62, 114, 145, 198, 257`), `UV_PYTHON` (`:25`), actions épinglées par SHA (18 lignes `uses:`) | `grep -n "uses:"` : aucun tag flottant |
 | **`lint`** : matrice sur les 2 services | `backend.yml:32-38` | R : `lint (catalog-service)` 14 s, `lint (notification-service)` 19 s |
 | `lint` : `ruff check`, `ruff format --check`, `mypy --strict src` | `backend.yml:52-57` | R : « All checks passed! », « 36 files already formatted » (catalog) et « 31 » (notification), « Success: no issues found in 19 source files » et « 15 » |
 | `lint` : bloque si une erreur | Code de sortie de chaque étape | ROUGE-LINT : `import os` inutilisé (F401) placé avant d'autres imports, d'où `Found 5 errors` (1 F401 et 4 E402), `lint (catalog-service)` en échec, les 2 `test` sautés |
@@ -55,37 +55,37 @@ Légende des preuves : **R** = run de référence 41825781085 ; **ROUGE-LINT** =
 | `test` : pytest, couverture ≥ 80 %, JUnit, `coverage.xml` | `backend.yml:85-92` | R : « Required test coverage of 80% reached. Total coverage: 99.06% » (270 passed) et « 98.43% » (186 passed) |
 | `test` : artefacts `coverage.xml` et `junit.xml` obligatoires | `backend.yml:93-106` (`if: always()`, `if-no-files-found: error`) | R : artefacts `coverage-*` et `junit-*` présents pour les 2 services |
 | `test` : bloque si test KO ou couverture < 80 % | `--cov-fail-under=80` (`backend.yml:89`) | **Non démontré par un run rouge** : seul le blocage du `lint` l'est (ROUGE-LINT). Le seuil est une option de pytest-cov, documentée et exécutée à chaque run (« Required test coverage … reached ») |
-| **`sonar`** : `needs: test`, matrice, `fetch-depth: 0` | `backend.yml:110-139` | PR-V : `sonar` démarré après les `test`, 2 projets SonarCloud (une clé par service) |
-| `sonar` : `coverage.xml` du job `test`, `SONAR_TOKEN` depuis les secrets, `sonar.qualitygate.wait=true` | `backend.yml:124-138` ; `services/<service>/sonar-project.properties` | PR-V : « QUALITY GATE STATUS: PASSED » pour chaque service ; couverture SonarCloud 98,5 % et 97,6 % contre 98 % pour pytest-cov |
+| **`sonar`** : `needs: test`, matrice, `fetch-depth: 0` | `backend.yml:110-138` | PR-V : `sonar` démarré après les `test`, 2 projets SonarCloud (une clé par service) |
+| `sonar` : `coverage.xml` du job `test`, `SONAR_TOKEN` depuis les secrets, `sonar.qualitygate.wait=true` | `backend.yml:125-138` ; `services/<service>/sonar-project.properties` | PR-V : « QUALITY GATE STATUS: PASSED » pour chaque service ; couverture SonarCloud 98,5 % et 97,6 % contre 98 % pour pytest-cov |
 | `sonar` : exécuté sur `main` et les pull requests seulement. Écart E14 | `backend.yml:113` | Push de branche [42037647157](https://github.com/Luucaaas/collector-poc/actions/runs/42037647157) : `sonar` sauté, suite verte ; PR [42037655092](https://github.com/Luucaaas/collector-poc/actions/runs/42037655092) : `sonar` exécuté |
 | `sonar` : bloque si le quality gate échoue | Code de sortie du scanner (`sonar.qualitygate.wait=true`) | PR-ROUGE : [42037061364](https://github.com/Luucaaas/collector-poc/actions/runs/42037061364), voir section 4 |
-| **`build-scan`** : `needs: sonar`, matrice, `if: !failure() && !cancelled()` | `backend.yml:140-148` | PR-V : démarré après la fin de `sonar` ; push de branche (`sonar` sauté) : exécuté ; PR-ROUGE : sauté parce que `sonar` échoue |
-| `build-scan` : image amd64 non root, `GIT_SHA` | `backend.yml:123-128` (`docker build`) ; Dockerfile `ARG GIT_SHA`, `LABEL`, `USER 10001` | R : journal « Afficher les labels OCI » ; image publiée : utilisateur 10001 |
-| `build-scan` : Trivy `vuln,secret`, `CRITICAL,HIGH`, `--ignore-unfixed`, `--exit-code 1` | `backend.yml:141-148` | R : « Report Summary » : `debian 13.7` 0 vulnérabilité et 41 cibles `python-pkg` à 0, colonne Secrets sans constat, pour chaque service |
-| Trivy : version et intégrité | `backend.yml:28-29, 131-140` (0.76.0, SHA-256 vérifié, `sha256sum --check --strict`) | R : `trivy_0.76.0_Linux-64bit.tar.gz: OK`. Écart E6 |
+| **`build-scan`** : `needs: sonar`, matrice, `if: !failure() && !cancelled()` | `backend.yml:140-151` | PR-V : démarré après la fin de `sonar` ; push de branche (`sonar` sauté) : exécuté ; PR-ROUGE : sauté parce que `sonar` échoue |
+| `build-scan` : image amd64 non root, `GIT_SHA` | `backend.yml:157-162` (`docker build`) ; Dockerfile `ARG GIT_SHA`, `LABEL`, `USER 10001` | R : journal « Afficher les labels OCI » ; image publiée : utilisateur 10001 |
+| `build-scan` : Trivy `vuln,secret`, `CRITICAL,HIGH`, `--ignore-unfixed`, `--exit-code 1` | `backend.yml:175-182` | R : « Report Summary » : `debian 13.7` 0 vulnérabilité et 41 cibles `python-pkg` à 0, colonne Secrets sans constat, pour chaque service |
+| Trivy : version et intégrité | `backend.yml:28-29, 165-174` (0.76.0, SHA-256 vérifié, `sha256sum --check --strict`) | R : `trivy_0.76.0_Linux-64bit.tar.gz: OK`. Écart E6 |
 | `build-scan` : bloque si CRITICAL ou HIGH corrigeable | Code de sortie 1 de Trivy | ROUGE-TRIVY : `h11` 0.14.0 forcée, `CVE-2025-43859` CRITICAL, corrigée en 0.16.0, `Total: 1 (HIGH: 0, CRITICAL: 1)`, `build-scan (notification-service)` en échec, `acceptance` sauté |
-| `build-scan` : artefact image tar | `backend.yml:149-157` (`docker save`, `upload-artifact`, `retention-days: 7`) | R : `image-catalog-service` et `image-notification-service`, 72 Mo chacun |
-| **`acceptance`** : `needs: build-scan` des 2 services | `backend.yml:160` | R : démarré à 12:04:27, après la fin des `build-scan` (12:04:24) |
-| `acceptance` : récupération et `docker load` des images construites | `backend.yml:173-181` | R : journal « Récupérer les images » (2 artefacts), « Charger les images » |
-| `acceptance` : lint de `tests/acceptance` | `backend.yml:185-193` | R : « All checks passed! », « 9 files already formatted », « Success: no issues found in 8 source files ». Écart E8 |
-| `acceptance` : pile `docker compose`, attente des sondes | `backend.yml:194-195` (`up.sh --no-build`) | R : étape verte (le script échoue si une sonde ne répond pas dans le délai) |
-| `acceptance` : `pytest tests/acceptance` (17 critères) | `backend.yml:196-198` | R : « 17 passed in 9.50s » ; `junit-acceptance` : 17 tests, 0 échec, 0 erreur, 0 ignoré, 5 stories |
-| `acceptance` : artefact JUnit | `backend.yml:199-205` | R : `junit-acceptance` (artefact zippé de 818 octets, `junit.xml` de 2 897 octets) |
-| `acceptance` : journaux des conteneurs si échec, arrêt de la pile | `backend.yml:206-212` | R : étape « Arrêter la pile » exécutée (`if: always()`) |
+| `build-scan` : artefact image tar | `backend.yml:183-191` (`docker save`, `upload-artifact`, `retention-days: 7`) | R : `image-catalog-service` et `image-notification-service`, 72 Mo chacun |
+| **`acceptance`** : `needs: build-scan` des 2 services | `backend.yml:194` (et `if: !failure() && !cancelled()`, `:197`) | R : démarré à 12:04:27, après la fin des `build-scan` (12:04:24) |
+| `acceptance` : récupération et `docker load` des images construites | `backend.yml:210-218` | R : journal « Récupérer les images » (2 artefacts), « Charger les images » |
+| `acceptance` : lint de `tests/acceptance` | `backend.yml:222-230` | R : « All checks passed! », « 9 files already formatted », « Success: no issues found in 8 source files ». Écart E8 |
+| `acceptance` : pile `docker compose`, attente des sondes | `backend.yml:231-232` (`up.sh --no-build`) | R : étape verte (le script échoue si une sonde ne répond pas dans le délai) |
+| `acceptance` : `pytest tests/acceptance` (17 critères) | `backend.yml:233-235` | R : « 17 passed in 9.50s » ; `junit-acceptance` : 17 tests, 0 échec, 0 erreur, 0 ignoré, 5 stories |
+| `acceptance` : artefact JUnit | `backend.yml:236-242` | R : `junit-acceptance` (artefact zippé de 818 octets, `junit.xml` de 2 897 octets) |
+| `acceptance` : journaux des conteneurs si échec, arrêt de la pile | `backend.yml:243-249` | R : étape « Arrêter la pile » exécutée (`if: always()`) |
 | `acceptance` : bloque si un critère échoue | Code de sortie de pytest | **Non démontré par un run rouge** (aucun critère n'a été volontairement cassé) |
-| **`publish`** : `needs: acceptance`, matrice | `backend.yml:218, 221-224` | R : démarré à 12:05:54, après la fin d'`acceptance` (12:05:51) |
-| `publish` : condition `main` | `backend.yml:219` (`github.ref == 'refs/heads/main' && github.event_name == 'push'`). Écart E9 | R : exécuté sur `main` ; BR : `publish` sauté sur une branche |
-| `publish` : Buildx + QEMU, amd64 + arm64, cache | `backend.yml:235-236, 251-262` (`platforms: linux/amd64,linux/arm64`, cache `gha`) | R : `imagetools inspect` : `linux/amd64` et `linux/arm64` pour les 2 images (section 1) |
-| `publish` : connexion à GHCR sans secret personnel | `backend.yml:237-242` (`GITHUB_TOKEN`) | R : push réussi ; aucun secret ajouté au dépôt pour GHCR |
-| `publish` : tags `sha-<7>` et `main` | `backend.yml:243-250` (`docker/metadata-action`) | `imagetools inspect` sur `:sha-49df273` et `:main` : même digest juste après ce run (le tag `main` est ensuite déplacé par chaque publication, voir section 1) |
-| `publish` : digest dans le résumé du job | `backend.yml:263-279` (`GITHUB_STEP_SUMMARY`) | R : digests de la section 1 (le journal du build affiche le même `containerimage.digest`) |
-| Labels OCI `revision` et `source` | Dockerfile (`ARG GIT_SHA`, `LABEL`) et `backend.yml:258-260` (`build-args`, `labels`) | Image publiée : `revision` = SHA complet du commit, `source` = URL du dépôt |
+| **`publish`** : `needs: acceptance`, matrice | `backend.yml:255, 258-261` | R : démarré à 12:05:54, après la fin d'`acceptance` (12:05:51) |
+| `publish` : condition `main` | `backend.yml:256` (`github.ref == 'refs/heads/main' && github.event_name == 'push'`). Écart E9 | R : exécuté sur `main` ; BR : `publish` sauté sur une branche |
+| `publish` : Buildx + QEMU, amd64 + arm64, cache | `backend.yml:272-273, 288-299` (`platforms: linux/amd64,linux/arm64`, cache `gha`) | R : `imagetools inspect` : `linux/amd64` et `linux/arm64` pour les 2 images (section 1) |
+| `publish` : connexion à GHCR sans secret personnel | `backend.yml:274-279` (`GITHUB_TOKEN`) | R : push réussi ; aucun secret ajouté au dépôt pour GHCR |
+| `publish` : tags `sha-<7>` et `main` | `backend.yml:280-287` (`docker/metadata-action`) | `imagetools inspect` sur `:sha-49df273` et `:main` : même digest juste après ce run (le tag `main` est ensuite déplacé par chaque publication, voir section 1) |
+| `publish` : digest dans le résumé du job | `backend.yml:300-316` (`GITHUB_STEP_SUMMARY`) | R : digests de la section 1 (le journal du build affiche le même `containerimage.digest`) |
+| Labels OCI `revision` et `source` | Dockerfile (`ARG GIT_SHA`, `LABEL`) et `backend.yml:295-297` (`build-args`, `labels`) | Image publiée : `revision` = SHA complet du commit, `source` = URL du dépôt |
 | Paquets GHCR lisibles sans secret | Visibilité des paquets réglée sur « public » | Lecture anonyme du manifeste : HTTP 200 pour les 2 paquets (relevé du chef, fiche P5-03) |
 | `frontend` (phase 7), déploiement manuel (phase 6), charge (phase 8), audit (phase 9) | Hors de cette tâche | — |
 
 ## 3. Écarts trouvés et traitement
 
-Les écarts E1 à E11 ont été tranchés par le chef et ramenés à un état conforme ; E12 et E13 restent ouverts. Sens de la correction : **contrat** = `cicd.md` mis à jour pour refléter le workflow ; **workflow** = `backend.yml` corrigé.
+Les écarts E1 à E14 ont été tranchés par le chef et ramenés à un état conforme (E12 et E13 clos par P5-04). Sens de la correction : **contrat** = `cicd.md` mis à jour pour refléter le workflow ; **workflow** = `backend.yml` corrigé.
 
 | # | Écart | Sens | Pourquoi |
 | --- | --- | --- | --- |
@@ -121,5 +121,7 @@ Les commits temporaires des runs rouges ont été annulés par `git revert` sur 
 
 ## 5. Questions ouvertes
 
-1. Ouvrir une pull request vers `main` (même éphémère) pour prouver le déclencheur `pull_request` (E12), ou accepter de le laisser déclaré sans preuve.
-2. Faut-il provoquer un run rouge de `test` (couverture) et d'`acceptance` pour compléter les preuves de blocage ? Coût : deux commits temporaires et deux runs.
+Les deux questions ouvertes par P5-05 sont tranchées (journal des décisions) :
+
+1. Déclencheur `pull_request` : prouvé par la pull request n°1 (E12 clos).
+2. Runs rouges de `test` et d'`acceptance` : non provoqués. Un test en échec ou une couverture sous 80 % rend pytest non nul, donc le job rouge ; `failure()` est vrai dès qu'un job ancêtre échoue (documentation de GitHub Actions), ce qui saute `sonar`, `build-scan`, `acceptance` et `publish`. Le même mécanisme est démontré par les runs rouges de `lint`, Trivy et du quality gate. Le blocage peut être montré en direct à la soutenance.

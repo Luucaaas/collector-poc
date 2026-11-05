@@ -1,6 +1,6 @@
 # CI backend de Collector. Contrat : docs/01-qualite/cicd.md (sections 1 à 3).
 # P5-01 : déclencheurs et jobs lint et test. P5-02 : build-scan et acceptance.
-# P5-03 : publish. Le job sonar est ajouté par P5-04.
+# P5-03 : publish. P5-04 : sonar.
 name: backend
 
 on:
@@ -105,9 +105,43 @@ jobs:
           path: services/${{ matrix.service }}/junit.xml
           if-no-files-found: error
 
+  # Plan Free de SonarCloud : seules la branche principale et les pull requests sont
+  # analysées. Sur un push de branche de tâche, le job est sauté (voir build-scan).
+  sonar:
+    name: sonar (${{ matrix.service }})
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [catalog-service, notification-service]
+    steps:
+      # Historique complet : SonarCloud en a besoin pour le code nouveau et le blame.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Récupérer coverage.xml
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-${{ matrix.service }}
+          path: services/${{ matrix.service }}
+      - name: Rapport reçu
+        run: ls -l services/${{ matrix.service }}/coverage.xml
+      # Le quality gate bloque : sonar.qualitygate.wait=true dans sonar-project.properties.
+      - name: Analyse SonarCloud
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: services/${{ matrix.service }}
+
   build-scan:
     name: build-scan (${{ matrix.service }})
-    needs: test
+    needs: sonar
+    # Un sonar sauté (push de branche) ne bloque pas la suite ; un sonar en échec la bloque.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -158,6 +192,9 @@ jobs:
 
   acceptance:
     needs: build-scan
+    # Même condition que build-scan : un ancêtre sauté (sonar sur une branche) ne doit pas
+    # sauter ce job, un ancêtre en échec le bloque.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     env:
       CATALOG_IMAGE: collector/catalog-service:ci

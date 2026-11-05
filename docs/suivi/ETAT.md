@@ -36,14 +36,15 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P5-01 | Workflow backend : déclencheurs, `lint` et `test` | developpeur | `phase-5/ci-lint-test` | fusionnée |
 | P5-02 | Jobs `build-scan` et `acceptance`, épinglage des images | developpeur | `phase-5/ci-build-acceptance` | fusionnée |
 | P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | fusionnée |
-| P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | en cours |
+| P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | fusionnée |
 | P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | fusionnée |
+| P5-06 | Corriger les constats SonarCloud de `main` | developpeur | `phase-5/sonar-constats` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P5-04 confiée au développeur (branche `phase-5/ci-sonar`, livrée par pull request vers `main`). Prérequis vérifiés le 05/11/2026 14:13 : projets SonarCloud `Luucaaas_collector-poc_catalog-service` et `Luucaaas_collector-poc_notification-service` créés par Lucas (ancien projet `Luucaaas_collector-poc` supprimé), secret `SONAR_TOKEN` présent. À son retour : auditeur, fusion de la PR, relevé du run de `main` (ligne `sonar` et mesure SonarCloud d'I2), puis clôture de la phase 5 (contre-vérification, `CLAUDE.md`, bilan à Lucas).
+P5-06 confiée au développeur (branche `phase-5/sonar-constats`, livrée par pull request). À son retour : auditeur, fusion de la PR en squash, relevé du run de `main` (quality gate, 0 code smell attendu), puis clôture de la phase 5 : contre-vérification, `CLAUDE.md` (avancement), cases du plan, bilan à Lucas. Attention : le développeur travaille dans le même dossier ; le chef ne commite pas sur `main` pendant qu'une branche de tâche y est extraite (vérifier `git branch --show-current` avant tout commit).
 
 ## Décisions en attente
 
@@ -54,4 +55,4 @@ P5-04 confiée au développeur (branche `phase-5/ci-sonar`, livrée par pull req
 
 ## Dernière mise à jour
 
-05/11/2026 14:13 — SonarCloud prêt (Lucas), P5-04 confiée au développeur.
+05/11/2026 15:04 — P5-04 fusionnée (PR n°1), pipeline complet vert sur `main` (run 42039814860, tentative 2). P5-06 ouverte pour les 3 constats SonarCloud de `main`.

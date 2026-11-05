@@ -68,9 +68,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         retry_seconds=settings.amqp_retry_seconds,
     )
     # Le dernier middleware ajouté est le plus externe : CORS en dernier (Sonar python:S8414), pour
-    # que les en-têtes CORS figurent sur toutes les réponses, y compris celles que la corrélation
-    # ou les gestionnaires d'erreurs produisent. La corrélation est juste en dessous : elle
-    # enveloppe les routes et les erreurs, donc X-Request-ID est posé avant le passage de CORS.
+    # que les en-têtes CORS figurent sur les réponses des routes et des gestionnaires d'erreurs
+    # (401, 403, 404, 422). La corrélation est juste en dessous : elle enveloppe les routes et les
+    # erreurs, donc X-Request-ID est posé avant le passage de CORS. Exception : une erreur 500 non
+    # gérée est produite par ServerErrorMiddleware de Starlette, placé au-dessus de tout, donc sans
+    # en-têtes CORS ; une requête préliminaire OPTIONS reçoit sa réponse de CORS, sans X-Request-ID.
     app.add_middleware(CorrelationMiddleware)
     app.add_middleware(
         CORSMiddleware,

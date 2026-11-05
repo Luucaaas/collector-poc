@@ -30,7 +30,9 @@ _EMAIL = re.compile(r"(?<=[\w.+-])@[\w-]+(?:\.[\w-]+)+")
 # Date jj.mm.aaaa (séparateur constant) : suivie d'une heure (« 05.11.2024 14h »), elle donnerait
 # 10 chiffres commençant par 0.
 _DATE = re.compile(r"(?<!\d)\d{1,2}([./-])\d{1,2}\1(?:19|20)\d{2}(?!\d)")
-_NATIONAL_START = re.compile(r"0(?=[1-9])")
+# Second chiffre différent de 0, tout chiffre Unicode compris (comme `\d` dans _CANDIDATE) : un
+# numéro écrit en chiffres arabes-indiens (« 0٦12345678 ») reste détecté.
+_NATIONAL_START = re.compile(r"0(?=(?!0)\d)")
 _CANDIDATE = re.compile(r"\+?\(?\d[\d\s.\-/()]*\d")
 
 

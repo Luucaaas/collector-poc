@@ -513,3 +513,78 @@ def test_delai_minimal_de_rechargement_de_1_seconde_est_accepte() -> None:
         jwks_min_refetch_seconds=1,
     )
     assert settings.jwks_min_refetch_seconds == 1
+
+
+FRONT = "https://app.test.invalid"
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "kwargs", "status"),
+    [
+        ("GET", "/health/live", {}, 200),
+        ("GET", ME, {}, 401),
+        ("GET", "/api/v1/inconnue", {}, 404),
+        ("POST", "/api/v1/_probe/body", {"json": {"name": "ok", "intrus": "x"}}, 422),
+    ],
+)
+async def test_cors_et_request_id_sur_les_reponses_normales_et_d_erreur(
+    client: httpx.AsyncClient,
+    method: str,
+    path: str,
+    kwargs: dict[str, Any],
+    status: int,
+) -> None:
+    response = await client.request(method, path, headers={"Origin": FRONT}, **kwargs)
+    assert response.status_code == status
+    assert response.headers["access-control-allow-origin"] == FRONT
+    assert response.headers["x-request-id"]
+    exposed = response.headers["access-control-expose-headers"].lower()
+    assert "x-request-id" in exposed
+
+
+async def test_cors_403_porte_les_en_tetes_cors_et_x_request_id(
+    client: httpx.AsyncClient, make_token: TokenFactory
+) -> None:
+    response = await client.get(
+        "/api/v1/_probe/admin", headers={**bearer(make_token()), "Origin": FRONT}
+    )
+    assert response.status_code == 403
+    assert response.headers["access-control-allow-origin"] == FRONT
+    assert response.headers["x-request-id"]
+    assert "x-request-id" in response.headers["access-control-expose-headers"].lower()
+
+
+async def test_cors_x_request_id_valide_est_repris_sur_une_erreur(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.get(
+        "/api/v1/inconnue", headers={"Origin": FRONT, "X-Request-ID": "req-123.abc_9"}
+    )
+    assert response.status_code == 404
+    assert response.headers["x-request-id"] == "req-123.abc_9"
+    assert response.json()["correlation_id"] == "req-123.abc_9"
+
+
+async def test_cors_requete_preliminaire_options_acceptee(client: httpx.AsyncClient) -> None:
+    response = await client.options(
+        ME,
+        headers={
+            "Origin": FRONT,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "Authorization, X-Request-ID",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == FRONT
+    allowed = response.headers["access-control-allow-headers"].lower()
+    assert "authorization" in allowed
+    assert "x-request-id" in allowed
+
+
+async def test_cors_origine_refusee_sans_en_tete_cors_mais_avec_x_request_id(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.get(ME, headers={"Origin": "https://evil.test.invalid"})
+    assert response.status_code == 401
+    assert "access-control-allow-origin" not in response.headers
+    assert response.headers["x-request-id"]

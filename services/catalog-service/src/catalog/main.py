@@ -67,7 +67,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(shops_router)
     app.include_router(articles_router)
     setup_metrics(app)
-    # Le dernier middleware ajouté est le plus externe : la corrélation enveloppe tout.
+    # Le dernier middleware ajouté est le plus externe : CORS en dernier (Sonar python:S8414), pour
+    # que les en-têtes CORS figurent sur toutes les réponses, y compris celles que la corrélation
+    # ou les gestionnaires d'erreurs produisent. La corrélation est juste en dessous : elle
+    # enveloppe les routes et les erreurs, donc X-Request-ID est posé avant le passage de CORS.
+    app.add_middleware(CorrelationMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.cors_origin],
@@ -75,5 +79,4 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Authorization", "Content-Type", REQUEST_ID_HEADER],
         expose_headers=[REQUEST_ID_HEADER],
     )
-    app.add_middleware(CorrelationMiddleware)
     return app

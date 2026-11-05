@@ -19,7 +19,11 @@ import re
 CONTACT_EMAIL = "CONTACT_EMAIL"
 CONTACT_PHONE = "CONTACT_PHONE"
 
-_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# Le lookbehind ancre le début à une frontière de la partie locale : sans lui, chaque position d'une
+# longue suite de caractères sans « @ » relançait un balayage jusqu'à la fin (coût quadratique,
+# règle Sonar python:S8786). La détection est la même : toute adresse trouvée à partir d'un
+# caractère du milieu l'est aussi depuis le début de la suite.
+_EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
 # Date jj.mm.aaaa (séparateur constant) : suivie d'une heure (« 05.11.2024 14h »), elle donnerait
 # 10 chiffres commençant par 0.
@@ -28,15 +32,20 @@ _CANDIDATE = re.compile(r"\+?\(?\d[\d\s.\-/()]*\d")
 
 
 def _is_national(groups: list[str]) -> bool:
-    for start in range(len(groups)):
-        digits = ""
-        for group in groups[start:]:
-            digits += group
-            if len(digits) >= 10:
-                break
-        if len(digits) == 10 and digits[0] == "0" and digits[1] != "0":
-            return True
-    return False
+    # Équivalent linéaire de « à partir de chaque groupe, accumuler des groupes jusqu'à au moins
+    # 10 chiffres, et tester si on en a exactement 10 commençant par 0 puis 1 à 9 ».
+    digits = "".join(groups)
+    boundaries = set()
+    offset = 0
+    for group in groups:
+        boundaries.add(offset)
+        offset += len(group)
+    boundaries.add(offset)
+    return any(
+        digits[start] == "0" and digits[start + 1] != "0" and start + 10 in boundaries
+        for start in boundaries
+        if start + 10 <= len(digits)
+    )
 
 
 def _is_phone(candidate: str) -> bool:

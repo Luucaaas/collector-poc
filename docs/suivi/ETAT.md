@@ -36,23 +36,22 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P5-01 | Workflow backend : déclencheurs, `lint` et `test` | developpeur | `phase-5/ci-lint-test` | fusionnée |
 | P5-02 | Jobs `build-scan` et `acceptance`, épinglage des images | developpeur | `phase-5/ci-build-acceptance` | fusionnée |
 | P5-03 | Job `publish` : images multi-architecture sur GHCR | developpeur | `phase-5/ci-publish` | fusionnée |
-| P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | à faire (attend Lucas) |
+| P5-04 | Job `sonar` : SonarCloud, un projet par service | developpeur | `phase-5/ci-sonar` | en cours |
 | P5-05 | Conformité pipeline / schéma, preuves et mesures | developpeur | `phase-5/conformite` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Seule P5-04 reste, bloquée par Lucas : vérifier les deux projets SonarCloud (`Luucaaas_collector-poc_catalog-service`, `Luucaaas_collector-poc_notification-service`, API publique `search_projects?organization=luucaaas`) et le secret `SONAR_TOKEN` (`gh secret list`). Dès qu'ils existent : confier P5-04 au développeur (branche `phase-5/ci-sonar` depuis `main`, livrée par pull request), audit, fusion de la PR, relevé du run de `main`, puis clôture de la phase 5 (contre-vérification, `CLAUDE.md`, bilan à Lucas).
+P5-04 confiée au développeur (branche `phase-5/ci-sonar`, livrée par pull request vers `main`). Prérequis vérifiés le 05/11/2026 14:13 : projets SonarCloud `Luucaaas_collector-poc_catalog-service` et `Luucaaas_collector-poc_notification-service` créés par Lucas (ancien projet `Luucaaas_collector-poc` supprimé), secret `SONAR_TOKEN` présent. À son retour : auditeur, fusion de la PR, relevé du run de `main` (ligne `sonar` et mesure SonarCloud d'I2), puis clôture de la phase 5 (contre-vérification, `CLAUDE.md`, bilan à Lucas).
 
 ## Décisions en attente
 
 | Sujet | Qui décide | Remarque |
 | --- | --- | --- |
 | Acceptation du cluster local k3d pour le critère 5 | Lucas (question à l'intervenant) | Sinon migration vers Oracle OKE Always Free |
-| SonarCloud : 2 projets (`Luucaaas_collector-poc_catalog-service`, `Luucaaas_collector-poc_notification-service`), analyse automatique désactivée, secret GitHub `SONAR_TOKEN` | Lucas (compte externe) | Demandé le 04/11/2026, bloque P5-04 seulement |
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
 
-04/11/2026 13:21 — P5-05 fusionnée (corrections du chef). P5-04 attend les projets SonarCloud et le secret `SONAR_TOKEN` de Lucas.
+05/11/2026 14:13 — SonarCloud prêt (Lucas), P5-04 confiée au développeur.

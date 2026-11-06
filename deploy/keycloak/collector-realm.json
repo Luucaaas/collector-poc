@@ -5,6 +5,9 @@
   "registrationAllowed": false,
   "bruteForceProtected": true,
   "accessTokenLifespan": 300,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr"],
+  "defaultLocale": "fr",
   "roles": {
     "realm": [
       {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test de fumée des services déployés, par l'Ingress (HTTPS sans -k : la CA mkcert est installée
+# Test de fumée des services et du front déployés, par l'Ingress (HTTPS sans -k : la CA mkcert est installée
 # dans le Mac). Aucun jeton : le cluster n'a pas de client Keycloak de test (les 17 tests
 # d'acceptation tournent dans la CI).
 #
@@ -7,6 +7,7 @@
 set -euo pipefail
 
 API="https://api.127.0.0.1.sslip.io"
+APP="https://app.127.0.0.1.sslip.io"
 fail=0
 
 # Attend (jusqu'à 60 s) qu'une URL réponde avec le code attendu : l'Ingress met quelques secondes
@@ -44,6 +45,38 @@ if grep -qi '^x-request-id: .' <<< "$headers"; then
   printf 'OK    %-55s\n' "catalogue : en-tête X-Request-ID présent"
 else
   printf 'ECHEC %-55s\n' "catalogue : en-tête X-Request-ID absent" >&2
+  fail=1
+fi
+
+# Front (nginx) : page d'accueil, en-têtes de sécurité, configuration d'exécution, fallback SPA.
+check "front : page d'accueil" 200 "${APP}/"
+check "front : route de l'application (fallback SPA)" 200 "${APP}/vendre"
+check "front : /config.json" 200 "${APP}/config.json"
+check "front : fichier caché refusé (/.git/config)" 404 "${APP}/.git/config"
+
+headers="$(curl -s --max-time 10 -D - -o /dev/null "${APP}/" || true)"
+for name in Content-Security-Policy X-Content-Type-Options Strict-Transport-Security X-Frame-Options; do
+  if grep -qi "^${name}: ." <<< "$headers"; then
+    printf 'OK    %-55s\n' "front : en-tête ${name} présent"
+  else
+    printf 'ECHEC %-55s\n' "front : en-tête ${name} absent" >&2
+    fail=1
+  fi
+done
+# La CSP autorise les origines du cluster (API et Keycloak) : sans elles, le navigateur bloquerait les appels.
+csp="$(grep -i '^Content-Security-Policy:' <<< "$headers" || true)"
+if grep -q 'https://api.127.0.0.1.sslip.io' <<< "$csp" && grep -q 'https://auth.127.0.0.1.sslip.io' <<< "$csp"; then
+  printf 'OK    %-55s\n' "front : CSP avec les origines de l'API et de Keycloak"
+else
+  printf 'ECHEC %-55s\n' "front : CSP sans les origines du cluster" >&2
+  fail=1
+fi
+# config.json : client OIDC du cluster (lu dans une variable, pas de tube vers grep -q).
+config="$(curl -s --max-time 10 "${APP}/config.json" || true)"
+if grep -q 'collector-web' <<< "$config"; then
+  printf 'OK    %-55s\n' "front : config.json contient collector-web"
+else
+  printf 'ECHEC %-55s\n' "front : config.json sans collector-web" >&2
   fail=1
 fi
 

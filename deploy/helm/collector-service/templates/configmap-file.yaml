@@ -1,0 +1,12 @@
+{{- if .Values.configFile.enabled }}
+# Fichier de configuration monté dans le conteneur (ex. config.json du front).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "collector-service.name" . }}-file
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+data:
+  {{ required "configFile.name est obligatoire" .Values.configFile.name }}: |
+    {{- required "configFile.content est obligatoire" .Values.configFile.content | trim | nindent 4 }}
+{{- end }}

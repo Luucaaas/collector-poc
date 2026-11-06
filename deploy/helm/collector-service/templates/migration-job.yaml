@@ -26,7 +26,7 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        fsGroup: 10001
+        fsGroup: {{ .Values.podSecurity.fsGroup }}
       containers:
         - name: migrate
           image: {{ include "collector-service.image" . | quote }}

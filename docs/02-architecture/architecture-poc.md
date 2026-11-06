@@ -2,7 +2,7 @@
 
 Le POC réalise une tranche verticale de l'[architecture cible](architecture-cible.md) : **publication d'un article, contrôle automatique, événement, notification des acheteurs intéressés.** Il retient la solution la plus simple qui démontre chaque point évalué : découpage en services, communication asynchrone, sécurité, orchestration, disponibilité et montée en charge. Les éléments retirés sont listés, avec leur risque, en [section 8](#8-limites-assumées-du-poc), et justifiés dans l'ADR [0007](adr/0007-simplification-perimetre-poc.md).
 
-Tout tourne sur le Mac de développement, dans un cluster Kubernetes k3d de trois nœuds, déployé par le script `deploy/local/deploy.sh` (chart Helm générique pour les deux services, manifestes pour l'infrastructure). Les contrats d'API, d'événements et de données sont dans [contrats.md](contrats.md). L'infrastructure (PostgreSQL, RabbitMQ, Keycloak) est installée à partir des **images officielles par des manifestes simples, sans opérateur ni cert-manager** ; seule la pile d'observabilité passe par un chart Helm ([ADR 0008](adr/0008-infrastructure-images-officielles.md)).
+Tout tourne sur le Mac de développement, dans un cluster Kubernetes k3d de trois nœuds, déployé par le script `deploy/local/deploy.sh` (chart Helm générique pour les deux services et le front, manifestes pour l'infrastructure). Les contrats d'API, d'événements et de données sont dans [contrats.md](contrats.md). L'infrastructure (PostgreSQL, RabbitMQ, Keycloak) est installée à partir des **images officielles par des manifestes simples, sans opérateur ni cert-manager** ; seule la pile d'observabilité passe par un chart Helm ([ADR 0008](adr/0008-infrastructure-images-officielles.md)).
 
 ![Vue logique du POC](img/architecture-poc.svg)
 
@@ -121,7 +121,7 @@ flowchart TB
 | Identité | Keycloak, realm `collector` importé depuis un JSON | Jetons OIDC, rôles `buyer`, `seller`, `admin`, comptes de démo | 0004 |
 | Orchestration | k3d (k3s dans Docker), 1 server + 2 agents | Cluster Kubernetes multi-nœuds local | 0006 |
 | Exposition et TLS | Traefik (fourni par k3s), certificat mkcert chargé comme Secret TLS | Routage par hôte et par chemin, HTTPS | 0006 |
-| Déploiement | Un chart Helm générique pour les 2 services, script `deploy/local/deploy.sh` | 2 réplicas, sondes, HPA, ressources, secrets | 0006 |
+| Déploiement | Un chart Helm générique pour les 2 services et le front, script `deploy/local/deploy.sh` | 2 réplicas, sondes, HPA, ressources, secrets | 0006 |
 | Infrastructure | Images officielles `postgres`, `rabbitmq` et Keycloak, manifestes simples dans `deploy/infra`, Secrets générés par script | Installation sans opérateur ni cert-manager | 0008 |
 | Observabilité | kube-prometheus-stack allégé (sans Alertmanager), structlog | Un tableau de bord Grafana : débit, latence p95, taux d'erreur. Logs JSON corrélés | 0008 |
 | CI/CD | GitHub Actions, GHCR | Ruff + mypy → pytest + couverture → SonarCloud → build Docker multi-arch → Trivy → push GHCR | — |

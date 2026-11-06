@@ -1,4 +1,7 @@
 {{- if .Values.ingress.enabled }}
+{{- if not (has .Values.ingress.mode (list "api" "root")) }}{{ fail (printf "ingress.mode doit valoir api ou root (reçu : %s)" .Values.ingress.mode) }}{{- end }}
+{{- $root := eq .Values.ingress.mode "root" }}
+{{- if not $root }}
 # Retire le préfixe (ex. /catalog) avant d'appeler le service (contrats.md §1.1).
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
@@ -12,6 +15,9 @@ spec:
       - {{ required "ingress.prefix est obligatoire (ex. /catalog)" .Values.ingress.prefix }}
 ---
 # Seul <prefix>/api/v1 est routé : /health/* et /metrics ne sont pas joignables par l'ingress.
+{{- else }}
+# Mode « racine » (front) : tout le chemin / de l'hôte est routé vers le Service, sans Middleware.
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -20,7 +26,9 @@ metadata:
     {{- include "collector-service.labels" . | nindent 4 }}
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    {{- if not $root }}
     traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "collector-service.name" . }}-strip-prefix@kubernetescrd
+    {{- end }}
 spec:
   ingressClassName: traefik
   tls:
@@ -30,7 +38,11 @@ spec:
     - host: {{ .Values.ingress.host }}
       http:
         paths:
+          {{- if $root }}
+          - path: /
+          {{- else }}
           - path: {{ .Values.ingress.prefix }}{{ .Values.ingress.apiPath }}
+          {{- end }}
             pathType: Prefix
             backend:
               service:

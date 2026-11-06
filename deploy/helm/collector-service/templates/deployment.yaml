@@ -25,6 +25,10 @@ spec:
       annotations:
         # Un changement de configuration redémarre les pods (les variables ne sont lues qu'au démarrage).
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.configFile.enabled }}
+        # Idem pour le fichier de configuration monté (ex. config.json du front, lu au démarrage de la page).
+        checksum/config-file: {{ include (print $.Template.BasePath "/configmap-file.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       # Pas de jeton d'API Kubernetes dans le pod : le service n'appelle pas Kubernetes.
       automountServiceAccountToken: false
@@ -32,7 +36,7 @@ spec:
       enableServiceLinks: false
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       securityContext:
-        fsGroup: 10001
+        fsGroup: {{ .Values.podSecurity.fsGroup }}
       containers:
         - name: app
           image: {{ include "collector-service.image" . | quote }}
@@ -43,20 +47,24 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "collector-service.name" . }}-config
+            {{- if .Values.secretName }}
             - secretRef:
-                name: {{ required "secretName est obligatoire" .Values.secretName }}
-          # Probes : liveness = le processus répond ; readiness = PostgreSQL joignable (jamais RabbitMQ).
+                name: {{ .Values.secretName }}
+            {{- end }}
+          # Probes (chemins dans probes.*) : liveness = le processus répond ; readiness = prêt à servir
+          # (services : PostgreSQL joignable, jamais RabbitMQ ; front : nginx répond sur /healthz).
+          {{- /* Chemins configurables (le front nginx n'a qu'une sonde /healthz). */}}
           startupProbe:
-            httpGet: {path: /health/live, port: http}
+            httpGet: {path: {{ .Values.probes.livePath }}, port: http}
             periodSeconds: 2
             failureThreshold: 30
           livenessProbe:
-            httpGet: {path: /health/live, port: http}
+            httpGet: {path: {{ .Values.probes.livePath }}, port: http}
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           readinessProbe:
-            httpGet: {path: /health/ready, port: http}
+            httpGet: {path: {{ .Values.probes.readyPath }}, port: http}
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 2
@@ -72,7 +80,27 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            {{- range .Values.extraEmptyDirs }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- if .Values.configFile.enabled }}
+            - name: config-file
+              mountPath: {{ required "configFile.mountPath est obligatoire" .Values.configFile.mountPath }}
+              subPath: {{ .Values.configFile.name }}
+              readOnly: true
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir:
             sizeLimit: 64Mi
+        {{- range .Values.extraEmptyDirs }}
+        - name: {{ .name }}
+          emptyDir:
+            sizeLimit: {{ .sizeLimit | default "16Mi" }}
+        {{- end }}
+        {{- if .Values.configFile.enabled }}
+        - name: config-file
+          configMap:
+            name: {{ include "collector-service.name" . }}-file
+        {{- end }}

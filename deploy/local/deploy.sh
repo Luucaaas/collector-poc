@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # Déploiement sur le cluster k3d `collector`.
 #
-# Usage : deploy/local/deploy.sh infra | monitoring | services <tag> | all <tag>
+# Usage : deploy/local/deploy.sh infra | realm | monitoring | services <tag> | all <tag>
 #   infra : génère les mots de passe manquants dans deploy/local/.env, crée ou met à jour les
 #           Secrets et ConfigMaps, applique les manifestes de deploy/infra (PostgreSQL, RabbitMQ,
 #           Keycloak + Ingress `auth.`) et attend que tout soit prêt. Relançable sans effet de bord.
-#   services <tag> : déploie catalog-service et notification-service depuis les images publiées par
-#           la CI (ghcr.io/luucaaas/<service>:<tag>, ex. sha-bec38ed) avec le chart Helm
-#           deploy/helm/collector-service. Refuse un tag absent de GHCR avant tout changement ;
-#           attend les pods, lance smoke.sh ; en cas d'échec, revient à la révision précédente
-#           (`helm rollback`) et sort en erreur.
+#   realm : applique le realm Keycloak (deploy/keycloak/collector-realm.json) à un cluster existant.
+#           `start --import-realm` ignore un realm déjà présent : la commande arrête Keycloak,
+#           recrée sa base PostgreSQL (tout ce qu'elle contient revient au JSON et au Secret keycloak-admin :
+#           sessions, et toute modification faite à la main dans la console), le redémarre et attend
+#           la configuration OpenID. Jamais lancée par `infra` ni `all`. Voir deploy/README.md.
+#   services <tag> : déploie catalog-service, notification-service et le front (frontend) depuis
+#           les images publiées par la CI (ghcr.io/luucaaas/<composant>:<tag>, ex. sha-bec38ed)
+#           avec le chart Helm deploy/helm/collector-service. Refuse un tag absent de GHCR pour
+#           l'un des trois avant tout changement ; attend les pods, lance smoke.sh ; en cas
+#           d'échec, revient à la révision précédente (`helm rollback`) et sort en erreur.
 #   monitoring : installe kube-prometheus-stack allégé (Prometheus, opérateur, Grafana,
 #           kube-state-metrics) dans le namespace `collector`, charge le tableau de bord, expose
 #           Grafana en HTTPS (https://grafana.127.0.0.1.sslip.io). Mot de passe administrateur
@@ -18,7 +23,7 @@
 #           avant que le chart des services en crée un).
 #
 # Variable facultative : DEPLOY_VALUES=<fichier de values Helm> est ajouté (`-f`) après les values
-# de chaque service, pour `services` et `all`. Sert à déployer une configuration volontairement
+# de chaque composant (services et front), pour `services` et `all`. Sert à déployer une configuration volontairement
 # défaillante et à démontrer le retour arrière (ex. limite de mémoire trop basse), sans modifier le script.
 set -euo pipefail
 
@@ -35,7 +40,9 @@ H="helm --kube-context ${CTX} -n ${NS}"
 CHART_DIR="${REPO}/deploy/helm/collector-service"
 VALUES_DIR="${REPO}/deploy/helm/values"
 REGISTRY="ghcr.io/luucaaas"
+# Services FastAPI (Secrets, ServiceMonitor) et composants déployés par le chart (services + front).
 SERVICES=(catalog-service notification-service)
+COMPONENTS=(catalog-service notification-service frontend)
 # Pile d'observabilité : version du chart fixée (expérimentation 3), valeurs dans deploy/infra/monitoring.
 STACK_CHART="oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack"
 STACK_VERSION="91.9.0"
@@ -156,6 +163,13 @@ infra() {
   $K apply -f "${INFRA_DIR}/keycloak.yaml"
   $K rollout status statefulset/rabbitmq --timeout=300s
   $K rollout status deployment/keycloak --timeout=600s
+  wait_openid
+  $K get pods
+}
+
+# Attend (au plus 60 s) la configuration OpenID du realm par l'Ingress HTTPS ; sort en erreur sinon.
+wait_openid() {
+  local code="" _
   step "Contrôle HTTPS de Keycloak"
   # Le realm est importé avant que Keycloak soit prêt ; l'Ingress met quelques secondes à apparaître.
   for _ in $(seq 1 30); do
@@ -165,7 +179,46 @@ infra() {
   done
   echo "https://auth.127.0.0.1.sslip.io/realms/collector/.well-known/openid-configuration : HTTP ${code}"
   [[ "$code" == 200 ]] || exit 1
-  $K get pods
+}
+
+# Applique le realm JSON à un cluster existant. Keycloak (`start --import-realm`) saute l'import
+# d'un realm déjà présent en base, et la commande `import` exige un serveur arrêté : on repart donc
+# d'une base `keycloak` vide, que le démarrage suivant remplit depuis le JSON (source de vérité).
+# Toute la base est recréée : realm `collector` (comptes, rôles, clients) repris du JSON, realm
+# `master` et compte d'administration recréés depuis le Secret keycloak-admin. Sont perdus : les
+# sessions et toute modification faite à la main dans la console d'administration.
+# Commande explicite : jamais appelée par `infra` ni `all`. Relançable.
+realm() {
+  check_prerequisites
+  generate_env
+  ensure_tmp
+  step "Secret keycloak-realm"
+  python3 "${COMPOSE_DIR}/render.py" "$ENV_FILE" "$tmp" --cluster
+  apply_secret create secret generic keycloak-realm \
+    --from-file=collector-realm.json="${tmp}/collector-realm.json"
+  step "Arrêt de Keycloak"
+  $K scale deployment/keycloak --replicas=0
+  # Si une étape suivante échoue, Keycloak ne doit pas rester arrêté : il est relancé à la sortie
+  # (la base peut alors être absente ou vide : relancer `deploy.sh realm`).
+  trap 'rm -rf "$tmp"; echo "deploy.sh realm interrompu : Keycloak relancé ; relancer deploy.sh realm." >&2; $K scale deployment/keycloak --replicas=1 >/dev/null 2>&1 || true' EXIT
+  $K wait --for=delete pod -l app=keycloak --timeout=120s
+  step "Base keycloak recréée"
+  # Superutilisateur par le socket local du pod (aucun mot de passe en argument). Un -c par ordre :
+  # DROP/CREATE DATABASE ne tolèrent pas un bloc de transaction. L'accès est retiré à PUBLIC comme
+  # dans postgres-init/10-roles.sh.
+  $K exec postgres-0 -- psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+    -c 'DROP DATABASE IF EXISTS keycloak WITH (FORCE)' \
+    -c 'CREATE DATABASE keycloak OWNER keycloak' \
+    -c 'REVOKE ALL ON DATABASE keycloak FROM PUBLIC'
+  step "Redémarrage de Keycloak"
+  $K scale deployment/keycloak --replicas=1
+  trap 'rm -rf "$tmp"' EXIT
+  $K rollout status deployment/keycloak --timeout=600s
+  wait_openid
+  local scopes
+  scopes="$(curl -s --max-time 10 "https://auth.127.0.0.1.sslip.io/realms/collector/.well-known/openid-configuration" \
+    | python3 -c 'import json,sys; print(" ".join(json.load(sys.stdin)["scopes_supported"]))')"
+  echo "scopes_supported : ${scopes}"
 }
 
 # --- Observabilité --------------------------------------------------------------------------
@@ -321,7 +374,7 @@ print(rows[-1]["status"] if rows else "")' 2>/dev/null || true
 rollback_all() {
   local svc rev i=-1
   step "ÉCHEC : retour arrière"
-  for svc in "${SERVICES[@]}"; do
+  for svc in "${COMPONENTS[@]}"; do
     i=$((i + 1))
     rev="${previous[$i]:-}"
     if [[ "${updated[$i]:-0}" != 1 ]]; then
@@ -335,8 +388,8 @@ rollback_all() {
   done
 }
 
-# Valide le tag et vérifie sur GHCR que les images des deux services existent. Ne modifie rien.
-# Remplit le tableau global `digest` (un digest par service, dans l'ordre de SERVICES).
+# Valide le tag et vérifie sur GHCR que les images des trois composants existent. Ne modifie rien.
+# Remplit le tableau global `digest` (un digest par composant, dans l'ordre de COMPONENTS).
 check_images() {
   local tag="$1" svc i=0 rc
   [[ "$tag" =~ ^sha-[0-9a-f]{7,40}$ ]] || { echo "Tag attendu : sha-<commit> (ex. sha-bec38ed), reçu « ${tag} »." >&2; exit 2; }
@@ -345,9 +398,9 @@ check_images() {
   done
   check_prerequisites
   step "Vérification des images ${tag} sur GHCR"
-  # Tableaux indexés parallèles à SERVICES (bash 3.2 de macOS : pas de tableaux associatifs).
+  # Tableaux indexés parallèles à COMPONENTS (bash 3.2 de macOS : pas de tableaux associatifs).
   digest=()
-  for svc in "${SERVICES[@]}"; do
+  for svc in "${COMPONENTS[@]}"; do
     # `|| rc=$?` : sous `set -e`, l'échec de la commande ferait sortir le script avant le message.
     rc=0
     digest[i]="$(image_digest "${REGISTRY}/${svc}:${tag}")" || rc=$?
@@ -366,16 +419,17 @@ check_images() {
 
 services() {
   local tag="${1:-}" svc i=0
-  # 1. Le tag doit exister sur GHCR pour les deux services : avant tout changement du cluster.
+  # 1. Le tag doit exister sur GHCR pour les trois composants : avant tout changement du cluster.
   check_images "$tag"
 
   generate_env
   create_service_secrets
 
-  # ServiceMonitor : créé seulement si le CRD de Prometheus Operator existe (étape `monitoring`).
-  local sm_args=()
+  # ServiceMonitor : créé seulement si le CRD de Prometheus Operator existe (étape `monitoring`),
+  # et seulement pour les services FastAPI (nginx n'expose pas /metrics, limite acceptée).
+  local has_crd=0 sm_args=()
   if $K get crd servicemonitors.monitoring.coreos.com >/dev/null 2>&1; then
-    sm_args=(--set serviceMonitor.enabled=true)
+    has_crd=1
   else
     echo "CRD ServiceMonitor absent : services déployés sans supervision (lancer 'deploy.sh monitoring')."
   fi
@@ -391,15 +445,17 @@ services() {
   # 2. Révisions Helm actuelles, pour pouvoir revenir en arrière.
   previous=()   # globales : lues par rollback_all
   updated=()
-  for svc in "${SERVICES[@]}"; do previous+=("$(deployed_revision "$svc")"); updated+=(0); done
+  for svc in "${COMPONENTS[@]}"; do previous+=("$(deployed_revision "$svc")"); updated+=(0); done
 
   # 3. Installation : migration (hook pre-install/pre-upgrade), puis Deployment. --wait attend que
   #    les pods soient Ready ; l'image est épinglée par tag@digest.
   local failed=0
   i=0
-  for svc in "${SERVICES[@]}"; do
+  for svc in "${COMPONENTS[@]}"; do
     step "helm upgrade --install ${svc}"
     updated[i]=1
+    sm_args=()
+    if [[ $has_crd -eq 1 && "$svc" != frontend ]]; then sm_args=(--set serviceMonitor.enabled=true); fi
     $H upgrade --install "$svc" "$CHART_DIR" -f "${VALUES_DIR}/${svc}.yaml" ${extra_args[@]+"${extra_args[@]}"} \
       --set image.tag="$tag" --set image.digest="${digest[i]}" ${sm_args[@]+"${sm_args[@]}"} \
       --wait --timeout 5m || { failed=1; break; }
@@ -424,7 +480,7 @@ services() {
 
   # 5. Digest réellement exécuté par les pods (imageID), à comparer à celui publié par la CI.
   step "Images en cours d'exécution (imageID)"
-  for svc in "${SERVICES[@]}"; do
+  for svc in "${COMPONENTS[@]}"; do
     $K get pods -l "app.kubernetes.io/name=${svc}" \
       -o jsonpath='{range .items[*]}{.metadata.name}{"  "}{.status.containerStatuses[0].imageID}{"\n"}{end}'
   done
@@ -433,8 +489,9 @@ services() {
 
 case "${1:-}" in
   infra) infra ;;
+  realm) realm ;;
   services) services "${2:-}" ;;
   monitoring) monitoring ;;
   all) check_images "${2:-}"; infra; monitoring; services "${2:-}" ;;
-  *) echo "Usage : $0 infra | monitoring | services <tag> | all <tag>" >&2; exit 2 ;;
+  *) echo "Usage : $0 infra | realm | monitoring | services <tag> | all <tag>" >&2; exit 2 ;;
 esac

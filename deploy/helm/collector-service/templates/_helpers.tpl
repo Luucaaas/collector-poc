@@ -27,8 +27,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 allowPrivilegeEscalation: false
 readOnlyRootFilesystem: true
 runAsNonRoot: true
-runAsUser: 10001
-runAsGroup: 10001
+runAsUser: {{ .Values.podSecurity.uid }}
+runAsGroup: {{ .Values.podSecurity.gid }}
 capabilities:
   drop: ["ALL"]
 seccompProfile:

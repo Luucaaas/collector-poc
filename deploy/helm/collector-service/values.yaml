@@ -15,7 +15,32 @@ replicaCount: 2
 containerPort: 8000
 
 # Secret créé par deploy.sh (clés DATABASE_URL et RABBITMQ_URL) : jamais de mot de passe ici.
+# Facultatif : le front nginx n'a pas de Secret (obligatoire seulement si la migration est activée).
 secretName: ""
+
+# Identité du processus du conteneur et propriétaire des volumes (fsGroup). 10001 pour les images
+# Python ; le front (nginx-unprivileged) tourne sous l'uid 101.
+podSecurity:
+  uid: 10001
+  gid: 10001
+  fsGroup: 10001
+
+# Chemins des sondes HTTP (sur le port `http`). Le front n'a que /healthz.
+probes:
+  livePath: /health/live
+  readyPath: /health/ready
+
+# emptyDir supplémentaires (en plus de /tmp), pour garder un système de fichiers racine en lecture
+# seule. Liste de {name, mountPath, sizeLimit}. Ex. front : sortie des modèles nginx (/etc/nginx/conf.d).
+extraEmptyDirs: []
+
+# Fichier de configuration monté depuis un ConfigMap, en lecture seule (subPath). Un changement de
+# `content` redémarre les pods (annotation de somme de contrôle). Ex. front : config.json.
+configFile:
+  enabled: false
+  name: ""              # nom du fichier dans le ConfigMap (clé)
+  mountPath: ""         # chemin complet dans le conteneur
+  content: ""           # texte du fichier
 
 # Variables non sensibles. Les valeurs par défaut du code sont celles du POC ; elles sont
 # explicites ici pour que la configuration du cluster se lise dans un seul endroit.
@@ -42,6 +67,7 @@ autoscaling:
 
 ingress:
   enabled: true
+  mode: api             # api : <prefix><apiPath> avec Middleware StripPrefix ; root : chemin / sans Middleware (front)
   host: api.127.0.0.1.sslip.io
   prefix: ""            # ex. /catalog : retiré par le Middleware StripPrefix avant d'appeler le service
   apiPath: /api/v1      # seul ce chemin est routé : /health/* et /metrics restent hors de l'Ingress

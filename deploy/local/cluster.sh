@@ -18,7 +18,7 @@ K3S_IMAGE="rancher/k3s:v1.35.8-k3s1@sha256:59fe491fd3b73204e499e40b325240d85c42c
 CLUSTER="collector"
 CTX="k3d-${CLUSTER}"
 HOST_SUFFIX="127.0.0.1.sslip.io"
-MIN_FREE_MB=7000   # seuil retenu en phase 3 (README des expérimentations)
+MIN_FREE_MB=10000   # le déploiement complet consomme 6,4 Go (protocole 4) + marge du kubelet (évictions sous ~3,1 Go libres)
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 K8S_DIR="$(cd "${HERE}/../k8s" && pwd)"
@@ -51,7 +51,7 @@ check_prerequisites() {
   echo "Outils présents, Docker répond, CA mkcert présente."
 }
 
-# Ports 80 et 443 du Mac libres, et 7 Go libres dans la VM Docker : seulement avant la création.
+# Ports 80 et 443 du Mac libres, et 10 Go libres dans la VM Docker : seulement avant la création.
 check_resources() {
   for port in 80 443; do
     if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then

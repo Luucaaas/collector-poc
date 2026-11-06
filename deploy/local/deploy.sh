@@ -16,6 +16,10 @@
 #           généré dans .env. Active le ServiceMonitor des services déjà déployés. Relançable.
 #   all <tag> : `infra`, `monitoring` puis `services <tag>` (le CRD ServiceMonitor existe ainsi
 #           avant que le chart des services en crée un).
+#
+# Variable facultative : DEPLOY_VALUES=<fichier de values Helm> est ajouté (`-f`) après les values
+# de chaque service, pour `services` et `all`. Sert à déployer une configuration volontairement
+# défaillante et à démontrer le retour arrière (ex. limite de mémoire trop basse), sans modifier le script.
 set -euo pipefail
 
 CLUSTER="collector"
@@ -376,6 +380,14 @@ services() {
     echo "CRD ServiceMonitor absent : services déployés sans supervision (lancer 'deploy.sh monitoring')."
   fi
 
+  # Values supplémentaires facultatives (voir l'en-tête). Le fichier doit exister.
+  local extra_args=()
+  if [[ -n "${DEPLOY_VALUES:-}" ]]; then
+    [[ -f "$DEPLOY_VALUES" ]] || { echo "DEPLOY_VALUES : fichier introuvable : ${DEPLOY_VALUES}" >&2; exit 1; }
+    extra_args=(-f "$DEPLOY_VALUES")
+    echo "Values supplémentaires : $(basename "$DEPLOY_VALUES")"
+  fi
+
   # 2. Révisions Helm actuelles, pour pouvoir revenir en arrière.
   previous=()   # globales : lues par rollback_all
   updated=()
@@ -388,7 +400,7 @@ services() {
   for svc in "${SERVICES[@]}"; do
     step "helm upgrade --install ${svc}"
     updated[i]=1
-    $H upgrade --install "$svc" "$CHART_DIR" -f "${VALUES_DIR}/${svc}.yaml" \
+    $H upgrade --install "$svc" "$CHART_DIR" -f "${VALUES_DIR}/${svc}.yaml" ${extra_args[@]+"${extra_args[@]}"} \
       --set image.tag="$tag" --set image.digest="${digest[i]}" ${sm_args[@]+"${sm_args[@]}"} \
       --wait --timeout 5m || { failed=1; break; }
     $K rollout status "deployment/${svc}" --timeout=180s || { failed=1; break; }

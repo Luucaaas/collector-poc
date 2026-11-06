@@ -3,7 +3,7 @@
 | Document | Contenu |
 | --- | --- |
 | [architecture-cible.md](architecture-cible.md) | Toute la plateforme Collector.shop : services par domaine, bus d'événements, intégrations externes, hébergement cible |
-| [architecture-poc.md](architecture-poc.md) | Le POC simplifié sur k3d : vue logique, vue physique, disponibilité et montée en charge, points de sécurité, diagrammes de séquence (publication d'un article, authentification OIDC), limites assumées (L1 à L22) |
+| [architecture-poc.md](architecture-poc.md) | Le POC simplifié sur k3d : vue logique, vue physique, disponibilité et montée en charge, points de sécurité, diagrammes de séquence (publication d'un article, authentification OIDC), limites assumées (L1 à L23) |
 | [contrats.md](contrats.md) | Endpoints REST des 2 services, schémas JSON des 2 événements, topologie RabbitMQ, modèle de données |
 | [adr/](adr/README.md) | Les décisions d'architecture (format MADR) |
 | [img/](img/) | Diagrammes exportés en SVG pour les slides |

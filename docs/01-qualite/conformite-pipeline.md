@@ -82,7 +82,9 @@ Légende des preuves : **R** = run de référence 41825781085 ; **ROUGE-LINT** =
 | `publish` : digest dans le résumé du job | `backend.yml:300-316` (`GITHUB_STEP_SUMMARY`) | R : digests de la section 1 (le journal du build affiche le même `containerimage.digest`) |
 | Labels OCI `revision` et `source` | Dockerfile (`ARG GIT_SHA`, `LABEL`) et `backend.yml:295-297` (`build-args`, `labels`) | Image publiée : `revision` = SHA complet du commit, `source` = URL du dépôt |
 | Paquets GHCR lisibles sans secret | Visibilité des paquets réglée sur « public » | Lecture anonyme du manifeste : HTTP 200 pour les 2 paquets (relevé du chef, fiche P5-03) |
-| `frontend` (phase 7), déploiement manuel (phase 6), charge (phase 8), audit (phase 9) | Hors de cette tâche | — |
+| **Déploiement** (manuel) : `deploy.sh <tag sha>` (`helm upgrade --install --wait`), puis `rollout status` et sondes ; échec : `helm rollback` | `deploy/local/deploy.sh` (fonctions `check_images`, `services`, `rollback_all`) ; image déployée par `tag@digest` | [Protocole 4](../04-experimentations/04-deploiement/protocole.md), exécution du 06/11/2026 : déploiement à froid en 199 s, `smoke.sh` 8/8 ; version défaillante (`DEPLOY_VALUES`, limite mémoire de 24 Mi) : `UPGRADE FAILED`, code de sortie 1, `helm history` `failed` puis `Rollback to 1`, 2 113 requêtes sur 2 113 servies pendant l'opération. [Journal](../04-experimentations/04-deploiement/resultats/run-20261106-0039.log) |
+| Traçabilité (`cicd.md` §4) : pod → `imageID` → tag `sha-…` → commit → run | `kubectl get pod -o jsonpath`, `docker buildx imagetools inspect`, `git rev-parse`, `gh run list --commit` | Protocole 4, section « Traçabilité » : `imageID` = digest du tag `sha-bec38ed` sur GHCR (`sha256:81a09f74…`), label OCI `revision` = `bec38edd…`, run 42046581865 `success` |
+| `frontend` (phase 7), charge (phase 8), audit (phase 9) | Hors de cette tâche | — |
 
 ## 3. Écarts trouvés et traitement
 

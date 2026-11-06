@@ -1,0 +1,273 @@
+# README racine suivi tel quel depuis un cluster supprimé. Début : 06/11/2026 00:50:48
+$ deploy/local/cluster.sh delete
+
+=== Suppression du cluster collector ===
+INFO[0000] Deleting cluster 'collector'                 
+INFO[0002] Deleting cluster network 'k3d-collector'     
+INFO[0002] Deleting 1 attached volumes...               
+INFO[0002] Removing cluster details from default kubeconfig... 
+INFO[0002] Removing standalone kubeconfig file (if there is one)... 
+INFO[0002] Successfully deleted cluster collector!      
+Certificat conservé dans deploy/local/.certs/ (réutilisé par le prochain create).
+$ deploy/local/check-tools.sh
+OUTIL        VERSION      STATUT
+-----        -------      ------
+brew         7.0.12       OK
+git          2.39.1       OK
+kubectl      1.34.1       OK
+helm         4.3.1        OK
+k3d          5.9.0        OK
+uv           0.13.6       OK
+node         22.23.4      OK
+mkcert       1.4.4        OK
+python3.12   3.12.16      OK
+docker       28.5.1       OK
+
+Tous les outils sont présents.
+$ deploy/local/cluster.sh create
+
+=== Pré-requis ===
+Outils présents, Docker répond, CA mkcert présente.
+
+=== Cluster k3d ===
+Ports 80 et 443 du Mac : libres.
+Espace libre de la VM Docker : 50726 Mo (minimum 10000 Mo).
+INFO[0000] portmapping '80:80' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+INFO[0000] portmapping '443:443' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+INFO[0000] Prep: Network                                
+INFO[0000] Created network 'k3d-collector'              
+INFO[0000] Created image volume k3d-collector-images    
+INFO[0000] Starting new tools node...                   
+INFO[0000] Starting node 'k3d-collector-tools'          
+INFO[0001] Creating node 'k3d-collector-server-0'       
+INFO[0001] Creating node 'k3d-collector-agent-0'        
+INFO[0001] Creating node 'k3d-collector-agent-1'        
+INFO[0001] Creating LoadBalancer 'k3d-collector-serverlb' 
+INFO[0001] Using the k3d-tools node to gather environment information 
+INFO[0001] Starting new tools node...                   
+INFO[0001] Starting node 'k3d-collector-tools'          
+INFO[0002] Starting cluster 'collector'                 
+INFO[0002] Starting servers...                          
+INFO[0002] Starting node 'k3d-collector-server-0'       
+INFO[0007] Starting agents...                           
+INFO[0007] Starting node 'k3d-collector-agent-1'        
+INFO[0007] Starting node 'k3d-collector-agent-0'        
+INFO[0020] Starting helpers...                          
+INFO[0020] Starting node 'k3d-collector-serverlb'       
+INFO[0026] Injecting records for hostAliases (incl. host.k3d.internal) and for 5 network members into CoreDNS configmap... 
+INFO[0028] Cluster 'collector' created successfully!    
+INFO[0028] You can now use it like this:                
+kubectl cluster-info
+node/k3d-collector-agent-0 condition met
+node/k3d-collector-agent-1 condition met
+node/k3d-collector-server-0 condition met
+NAME                     STATUS   ROLES           AGE   VERSION
+k3d-collector-agent-0    Ready    <none>          11s   v1.35.8+k3s1
+k3d-collector-agent-1    Ready    <none>          9s    v1.35.8+k3s1
+k3d-collector-server-0   Ready    control-plane   22s   v1.35.8+k3s1
+
+=== Certificat mkcert ===
+Certificat existant conservé.
+
+=== Namespace et certificat par défaut de Traefik ===
+namespace/collector created
+helmchartconfig.helm.cattle.io/traefik created
+tlsstore.traefik.io/default created
+Error from server (NotFound): deployments.apps "traefik" not found
+Error from server (NotFound): deployments.apps "traefik" not found
+Error from server (NotFound): deployments.apps "traefik" not found
+Error from server (NotFound): deployments.apps "traefik" not found
+Error from server (NotFound): deployments.apps "traefik" not found
+Waiting for deployment "traefik" rollout to finish: 0 of 1 updated replicas are available...
+deployment "traefik" successfully rolled out
+Cluster collector prêt : 3 nœuds, Traefik en HTTPS avec redirection.
+$ deploy/local/deploy.sh all sha-bec38ed
+
+=== Vérification des images sha-bec38ed sur GHCR ===
+catalog-service:sha-bec38ed -> sha256:81a09f741d93f70db11261b767c0ed46208554653a83506b74b1fc4bcdfd50f8
+notification-service:sha-bec38ed -> sha256:90050dc03f2541a59e11ad8c4c7958e4622dee6d41f987994729b8cbc6dd6a31
+
+=== Mots de passe (deploy/local/.env) ===
+Tous présents : mots de passe inchangés.
+
+=== Secrets et ConfigMaps ===
+postgres-credentials, postgres-init, rabbitmq-config, rabbitmq-definitions, keycloak-admin, keycloak-realm : à jour.
+
+=== Manifestes de l'infrastructure ===
+service/postgres created
+statefulset.apps/postgres created
+service/rabbitmq created
+service/rabbitmq-headless created
+statefulset.apps/rabbitmq created
+Waiting for statefulset spec update to be observed...
+Waiting for 1 pods to be ready...
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 1 new pods have been updated...
+service/keycloak created
+deployment.apps/keycloak created
+ingress.networking.k8s.io/keycloak created
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 1 new pods have been updated...
+Waiting for deployment "keycloak" rollout to finish: 0 of 1 updated replicas are available...
+deployment "keycloak" successfully rolled out
+
+=== Contrôle HTTPS de Keycloak ===
+https://auth.127.0.0.1.sslip.io/realms/collector/.well-known/openid-configuration : HTTP 200
+NAME                        READY   STATUS    RESTARTS   AGE
+keycloak-584495f855-zfwkb   1/1     Running   0          26s
+postgres-0                  1/1     Running   0          41s
+rabbitmq-0                  1/1     Running   0          41s
+
+=== Mots de passe (deploy/local/.env) ===
+Tous présents : mots de passe inchangés.
+
+=== Secret du mot de passe de Grafana ===
+grafana-admin : à jour.
+
+=== kube-prometheus-stack 91.9.0 ===
+Release "kps" does not exist. Installing it now.
+Pulled: ghcr.io/prometheus-community/charts/kube-prometheus-stack:91.9.0
+Digest: sha256:04047e500c803dc8d2bc284ecb43e9229bb32b5c36bd13fc89592c8a2f3cdc72
+NAME: kps
+LAST DEPLOYED: Fri Nov  6 00:52:28 2026
+NAMESPACE: collector
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+NOTES:
+kube-prometheus-stack has been installed. Check its status by running:
+  kubectl --namespace collector get pods -l "release=kps"
+
+Get Grafana 'admin' user password by running:
+
+  kubectl --namespace collector get secrets kps-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+
+Access Grafana local instance:
+
+  export POD_NAME=$(kubectl --namespace collector get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=kps" -oname)
+  kubectl --namespace collector port-forward $POD_NAME 3000
+
+Get your grafana admin user password by running:
+
+  kubectl get secret --namespace collector -l app.kubernetes.io/component=admin-secret -o jsonpath="{.items[0].data.admin-password}" | base64 --decode ; echo
+
+
+Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
+pod/prometheus-kps-prometheus-0 condition met
+
+=== Tableau de bord Grafana ===
+ConfigMap collector-dashboards : à jour.
+
+=== Contrôle HTTPS de Grafana ===
+https://grafana.127.0.0.1.sslip.io/api/health : HTTP 200 ; /api/search sans identifiants : HTTP 401
+kps-grafana-7bf87d7848-bs6sn              3/3     Running   0          28s
+kps-kube-state-metrics-6bbcdf4f85-tt99m   1/1     Running   0          28s
+kps-operator-75dd7fffc9-txrcw             1/1     Running   0          28s
+prometheus-kps-prometheus-0               2/2     Running   0          22s
+
+=== Vérification des images sha-bec38ed sur GHCR ===
+catalog-service:sha-bec38ed -> sha256:81a09f741d93f70db11261b767c0ed46208554653a83506b74b1fc4bcdfd50f8
+notification-service:sha-bec38ed -> sha256:90050dc03f2541a59e11ad8c4c7958e4622dee6d41f987994729b8cbc6dd6a31
+
+=== Mots de passe (deploy/local/.env) ===
+Tous présents : mots de passe inchangés.
+
+=== Secrets des services ===
+catalog-service-secrets, notification-service-secrets : à jour.
+
+=== helm upgrade --install catalog-service ===
+Release "catalog-service" does not exist. Installing it now.
+NAME: catalog-service
+LAST DEPLOYED: Fri Nov  6 00:53:00 2026
+NAMESPACE: collector
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+deployment "catalog-service" successfully rolled out
+
+=== helm upgrade --install notification-service ===
+Release "notification-service" does not exist. Installing it now.
+NAME: notification-service
+LAST DEPLOYED: Fri Nov  6 00:53:34 2026
+NAMESPACE: collector
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+deployment "notification-service" successfully rolled out
+
+=== Test de fumée ===
+OK    catalogue : liste des catégories (public)              HTTP 200
+OK    catalogue : liste des articles (public)                 HTTP 200
+OK    notification : route protégée sans jeton              HTTP 401
+OK    catalogue : /health/ready hors de l'Ingress             HTTP 404
+OK    catalogue : /metrics hors de l'Ingress                  HTTP 404
+OK    notification : /health/ready hors de l'Ingress          HTTP 404
+OK    notification : /metrics hors de l'Ingress               HTTP 404
+OK    catalogue : en-tête X-Request-ID présent             
+
+=== Images en cours d'exécution (imageID) ===
+catalog-service-f7885fd67-gnklk  ghcr.io/luucaaas/catalog-service@sha256:81a09f741d93f70db11261b767c0ed46208554653a83506b74b1fc4bcdfd50f8
+catalog-service-f7885fd67-k4crr  ghcr.io/luucaaas/catalog-service@sha256:81a09f741d93f70db11261b767c0ed46208554653a83506b74b1fc4bcdfd50f8
+notification-service-54dfc84dff-6c9gg  ghcr.io/luucaaas/notification-service@sha256:90050dc03f2541a59e11ad8c4c7958e4622dee6d41f987994729b8cbc6dd6a31
+notification-service-54dfc84dff-chqwf  ghcr.io/luucaaas/notification-service@sha256:90050dc03f2541a59e11ad8c4c7958e4622dee6d41f987994729b8cbc6dd6a31
+NAME                                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/catalog-service          2/2     2            2           57s
+deployment.apps/keycloak                 1/1     1            1           2m8s
+deployment.apps/kps-grafana              1/1     1            1           99s
+deployment.apps/kps-kube-state-metrics   1/1     1            1           99s
+deployment.apps/kps-operator             1/1     1            1           99s
+deployment.apps/notification-service     2/2     2            2           23s
+
+NAME                                                       REFERENCE                         TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/catalog-service        Deployment/catalog-service        cpu: 3%/70%          2         5         2          57s
+horizontalpodautoscaler.autoscaling/notification-service   Deployment/notification-service   cpu: <unknown>/70%   2         5         1          23s
+
+NAME                                          READY   STATUS    RESTARTS   AGE
+pod/catalog-service-f7885fd67-gnklk           1/1     Running   0          57s
+pod/catalog-service-f7885fd67-k4crr           1/1     Running   0          42s
+pod/keycloak-584495f855-zfwkb                 1/1     Running   0          2m8s
+pod/kps-grafana-7bf87d7848-bs6sn              3/3     Running   0          98s
+pod/kps-kube-state-metrics-6bbcdf4f85-tt99m   1/1     Running   0          98s
+pod/kps-operator-75dd7fffc9-txrcw             1/1     Running   0          98s
+pod/notification-service-54dfc84dff-6c9gg     1/1     Running   0          8s
+pod/notification-service-54dfc84dff-chqwf     1/1     Running   0          23s
+pod/postgres-0                                1/1     Running   0          2m23s
+pod/prometheus-kps-prometheus-0               2/2     Running   0          92s
+pod/rabbitmq-0                                1/1     Running   0          2m23s
+$ curl -s https://api.127.0.0.1.sslip.io/catalog/api/v1/categories
+{"items":[],"total":0}
+$ deploy/local/smoke.sh
+OK    catalogue : liste des catégories (public)              HTTP 200
+OK    catalogue : liste des articles (public)                 HTTP 200
+OK    notification : route protégée sans jeton              HTTP 401
+OK    catalogue : /health/ready hors de l'Ingress             HTTP 404
+OK    catalogue : /metrics hors de l'Ingress                  HTTP 404
+OK    notification : /health/ready hors de l'Ingress          HTTP 404
+OK    notification : /metrics hors de l'Ingress               HTTP 404
+OK    catalogue : en-tête X-Request-ID présent             
+$ deploy/local/publish-test-event.sh
+Événements traités avant : 0
+Publié : 94057aa6-2f03-426b-841c-23bad40960b2 (correlation_id test-event-20261106005407)
+Événements traités après : 1
+OK : l'événement a été consommé par notification-service (+1).
+$ kubectl get pods -o wide
+NAME                                      READY   STATUS    RESTARTS   AGE     IP           NODE                     NOMINATED NODE   READINESS GATES
+catalog-service-f7885fd67-gnklk           1/1     Running   0          60s     10.42.0.12   k3d-collector-server-0   <none>           <none>
+catalog-service-f7885fd67-k4crr           1/1     Running   0          45s     10.42.1.7    k3d-collector-agent-0    <none>           <none>
+keycloak-584495f855-zfwkb                 1/1     Running   0          2m11s   10.42.2.6    k3d-collector-agent-1    <none>           <none>
+kps-grafana-7bf87d7848-bs6sn              3/3     Running   0          101s    10.42.0.10   k3d-collector-server-0   <none>           <none>
+kps-kube-state-metrics-6bbcdf4f85-tt99m   1/1     Running   0          101s    10.42.0.9    k3d-collector-server-0   <none>           <none>
+kps-operator-75dd7fffc9-txrcw             1/1     Running   0          101s    10.42.0.8    k3d-collector-server-0   <none>           <none>
+notification-service-54dfc84dff-6c9gg     1/1     Running   0          11s     10.42.2.7    k3d-collector-agent-1    <none>           <none>
+notification-service-54dfc84dff-chqwf     1/1     Running   0          26s     10.42.0.14   k3d-collector-server-0   <none>           <none>
+postgres-0                                1/1     Running   0          2m26s   10.42.2.5    k3d-collector-agent-1    <none>           <none>
+prometheus-kps-prometheus-0               2/2     Running   0          95s     10.42.1.6    k3d-collector-agent-0    <none>           <none>
+rabbitmq-0                                1/1     Running   0          2m26s   10.42.1.5    k3d-collector-agent-0    <none>           <none>
+$ helm history catalog-service
+REVISION	UPDATED                 	STATUS  	CHART                  	APP VERSION	DESCRIPTION     
+1       	Fri Nov  6 00:53:00 2026	deployed	collector-service-0.1.0	0.1.0      	Install complete
+DUREES delete+check+create=53s deploy=146s total=199s
+Fin : 06/11/2026 00:54:11
+README-OK

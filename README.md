@@ -18,7 +18,7 @@ Un vendeur publie un article ou modifie son prix → contrôle automatique → u
 | Front | React, TypeScript, Vite, MUI |
 | Données et messaging | PostgreSQL, RabbitMQ |
 | Sécurité | Keycloak (OIDC + PKCE), TLS par Traefik (certificat mkcert), SonarCloud, Trivy |
-| Plateforme | Docker, Kubernetes local (k3d), Traefik, Helm (déploiement par script) |
+| Plateforme | Docker, Kubernetes local (k3d), Traefik, Helm (déploiement par script `deploy/local/deploy.sh`) |
 | CI/CD et qualité | GitHub Actions, GHCR, SonarCloud |
 | Observabilité | Prometheus, Grafana |
 
@@ -35,7 +35,7 @@ deploy/      Cluster local, infrastructure Helm, chart générique des services,
 
 ## Lancer le POC en local
 
-Pile `docker compose` : PostgreSQL, RabbitMQ, Keycloak (realm `collector`) et les deux services. Elle sert aux tests d'acceptation et à la CI ; le déploiement sur le cluster k3d (phase 6) viendra s'y ajouter.
+Pile `docker compose` : PostgreSQL, RabbitMQ, Keycloak (realm `collector`) et les deux services. Elle sert aux tests d'acceptation et à la CI. Le déploiement sur Kubernetes est décrit plus bas, dans « Déployer sur le cluster local ».
 
 **Prérequis** : Docker Desktop démarré, [uv](https://docs.astral.sh/uv/) et Python 3. Ports libres sur `127.0.0.1` : 5672, 8001, 8002, 8080, 15672.
 
@@ -69,3 +69,44 @@ curl -s -X POST http://localhost:8001/api/v1/shops \
 ```
 
 Détails : [`deploy/compose/README.md`](deploy/compose/README.md) (pile) et [`tests/acceptance/README.md`](tests/acceptance/README.md) (tests).
+
+## Déployer sur le cluster local
+
+Cluster Kubernetes **k3d** (1 server + 2 agents) sur le Mac, avec Traefik, HTTPS par un certificat mkcert, PostgreSQL, RabbitMQ, Keycloak, Prometheus et Grafana, puis les deux services du POC (2 réplicas chacun, HPA de 2 à 5). Tout se fait par scripts de `deploy/local/` ; la preuve chronométrée est dans [le compte rendu du déploiement](docs/04-experimentations/04-deploiement/protocole.md).
+
+**Prérequis** (macOS). Les outils sont vérifiés par `deploy/local/check-tools.sh` ; la mémoire et les CPU de Docker Desktop sont des réglages à faire soi-même ; le disque libre et les ports 80 et 443 sont contrôlés par `deploy/local/cluster.sh create` :
+
+- Docker Desktop démarré, avec 10 CPU et 8 Go de mémoire (configuration mesurée) et au moins 10 Go de disque libres dans la machine virtuelle de Docker (`cluster.sh create` s'arrête sinon) ;
+- ports 80 et 443 du Mac libres ;
+- Homebrew, git, k3d, kubectl, helm, mkcert, uv avec Python 3.12, Node 22 (`brew install k3d kubectl helm mkcert uv node@22` ; `uv python install 3.12`) ;
+- **déjà fait, une seule fois** : `mkcert -install` (installe l'autorité de certification dans le Mac, demande votre mot de passe : à faire vous-même, aucun script ne le lance).
+
+Toutes les commandes se lancent **depuis la racine du dépôt**.
+
+```bash
+deploy/local/check-tools.sh                  # vérifie les outils et leurs versions
+deploy/local/cluster.sh create               # cluster k3d + certificat + HTTPS (environ 1 min)
+deploy/local/deploy.sh all sha-bec38ed       # infrastructure, supervision, services, puis test de fumée (environ 2 min 30)
+```
+
+`sha-bec38ed` est le tag d'une image publiée par la CI (le tag `sha-<7 premiers caractères du commit>` d'un run `publish` réussi de GitHub Actions). `deploy.sh` vérifie que l'image existe sur GHCR avant de modifier quoi que ce soit, génère les mots de passe manquants dans `deploy/local/.env` (ignoré par Git, jamais affiché), déploie par `helm upgrade --install`, lance `smoke.sh` et revient en arrière (`helm rollback`) si une étape échoue. Il est relançable sans erreur.
+
+| Quoi | Où |
+| --- | --- |
+| API du catalogue | https://api.127.0.0.1.sslip.io/catalog/api/v1/categories |
+| API des notifications | https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications (jeton requis : 401 sans) |
+| Keycloak | https://auth.127.0.0.1.sslip.io/realms/collector |
+| Grafana | https://grafana.127.0.0.1.sslip.io (utilisateur `admin`, mot de passe `GRAFANA_ADMIN_PASSWORD` dans `deploy/local/.env`) |
+
+L'application web (React) arrive en phase 7 ; d'ici là l'API se teste par ces URL (le realm du cluster ne contient pas le client de test de la pile `docker compose`).
+
+```bash
+curl -s https://api.127.0.0.1.sslip.io/catalog/api/v1/categories     # 200, liste (vide au départ)
+deploy/local/smoke.sh                                                 # 8 contrôles par l'Ingress, HTTPS vérifié sans -k
+deploy/local/publish-test-event.sh                                    # publie un événement sur RabbitMQ et vérifie qu'il est consommé
+kubectl --context k3d-collector -n collector get pods -o wide         # placement des pods sur les 3 nœuds
+helm --kube-context k3d-collector -n collector history catalog-service # révisions Helm (retour arrière possible)
+deploy/local/cluster.sh delete                                        # supprime le cluster (garde le certificat et le .env)
+```
+
+Détails, mesures et limites : [`deploy/README.md`](deploy/README.md) (scripts, chart, retour arrière, observabilité) et [`docs/04-experimentations/04-deploiement/protocole.md`](docs/04-experimentations/04-deploiement/protocole.md) (déroulé chronométré, mémoire, auto-réparation, retour arrière, traçabilité).

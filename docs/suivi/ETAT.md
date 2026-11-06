@@ -46,7 +46,7 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | fusionnée |
 | P7-01 | Socle du front et connexion | developpeur | `phase-7/socle-front` | fusionnée |
 | P7-02 | Pages métier, tests Vitest et parcours Playwright | developpeur | `phase-7/pages` | fusionnée |
-| P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | en cours |
+| P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | fusionnée |
 | P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | à faire |
 | P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | à faire |
 
@@ -54,7 +54,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P7-03 confiée au développeur (brief dans `docs/suivi/taches/P7-03.md`, branche `phase-7/ci-front` poussée sur origin pour la CI). À son retour : auditeur, fusion, puis vérifier la publication de `ghcr.io/luucaaas/frontend:sha-<7>` sur le run de `main` (amd64 et arm64, paquet public : sinon, Lucas doit le rendre public dans GitHub). À inclure dans le brief de P7-04 : réimporter le realm du cluster (scope `profile`, `post.logout.redirect.uris`), page de connexion de Keycloak en français, `emptyDir` imposés par le modèle nginx avec `readOnlyRootFilesystem`. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
+Vérifier la première publication du front sur le run de `main` (job `publish` de `frontend.yml` : push par digest, scans amd64 et arm64, tags, garde-fou ; `docker buildx imagetools inspect ghcr.io/luucaaas/frontend:sha-<7>` ; lecture anonyme du paquet, sinon Lucas le rend public dans GitHub), relever les lignes « À relever » de `conformite-pipeline.md` §6 et le doute D1 (version Alpine affichée par Trivy). Puis écrire le brief de P7-04 : réimport du realm du cluster (scope `profile`, `post.logout.redirect.uris`), page de connexion de Keycloak en français, chart générique pour le front (`emptyDir` `/tmp` et `/etc/nginx/conf.d`, `fsGroup: 101`, variable `CSP_CONNECT_SRC`, ConfigMap `config.json`, sondes `/healthz`, port 8080, Ingress `app.` à la racine), `deploy.sh` et `smoke.sh`. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
 
 ## Décisions en attente
 
@@ -65,4 +65,4 @@ P7-03 confiée au développeur (brief dans `docs/suivi/taches/P7-03.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 09:00 — P7-02 fusionnée (`200ae27`) après un aller-retour et la contre-vérification du chef (6 parcours Playwright sur 6) ; brief de P7-03 écrit.
+06/11/2026 09:25 — P7-03 fusionnée (`1702354`) après un aller-retour, un changement de conception du `publish` du front et un garde-fou du chef.

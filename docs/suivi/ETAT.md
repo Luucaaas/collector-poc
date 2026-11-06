@@ -4,9 +4,9 @@
 
 ## Phase en cours
 
-**Phase 6 en cours** (déploiement sur le cluster k3d local, critère 5), lancée le 05/11/2026 à la demande de Lucas. 5 tâches, faites l'une après l'autre (chacune s'appuie sur le cluster de la précédente). Branches locales : la phase ne touche pas la CI.
+**Phase 6 terminée le 06/11/2026** (5 tâches P6-01 à P6-05, toutes fusionnées après audit ; contre-vérification du chef depuis un cluster neuf). Le POC tourne sur le cluster k3d local en HTTPS, déployé par `deploy/local/deploy.sh all <tag>`. Prochaine phase : **phase 7** (front React), à découper par le chef et à faire valider par Lucas.
 
-Phase 5 terminée le 05/11/2026 (6 tâches, pipeline complet vert sur `main`). Phase 4 terminée le 04/11/2026. Phase 3 terminée le 03/11/2026.
+Phase 5 terminée le 05/11/2026. Phase 4 terminée le 04/11/2026. Phase 3 terminée le 03/11/2026.
 
 ## Tâches
 
@@ -41,13 +41,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P6-02 | Infrastructure : PostgreSQL, RabbitMQ, Keycloak | developpeur | `phase-6/infra` | fusionnée |
 | P6-03 | Chart Helm des services et déploiement par tag | developpeur | `phase-6/chart` | fusionnée |
 | P6-04 | Observabilité : Prometheus, Grafana, tableau de bord | developpeur | `phase-6/observabilite` | fusionnée |
-| P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | en cours |
+| P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P6-05 confiée au développeur (branche locale `phase-6/preuves`, cluster complet en place : infra, monitoring, services `sha-bec38ed`). À son retour : auditeur, fusion si CONFORME, puis clôture de la phase 6 (contre-vérification du chef par `cluster.sh delete`, `create`, `deploy.sh all`, `CLAUDE.md`, plan de réalisation, bilan à Lucas). Capture du tableau de bord Grafana reportée en phase 8 (Lucas, dans le navigateur).
+Attendre que Lucas demande la phase 7, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Acquis : cluster `collector` en place (`deploy.sh all sha-bec38ed`), client public `collector-web` du realm avec redirection `https://app.127.0.0.1.sslip.io/*`, routes `https://api.127.0.0.1.sslip.io/catalog` et `/notification`, CORS des services sur `https://app.`. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
 
 ## Décisions en attente
 
@@ -58,4 +58,4 @@ P6-05 confiée au développeur (branche locale `phase-6/preuves`, cluster comple
 
 ## Dernière mise à jour
 
-05/11/2026 23:55 — P6-04 fusionnée (audit n° 2 CONFORME), P6-05 confiée au développeur.
+06/11/2026 01:07 — Phase 6 close : P6-05 fusionnée, mots de passe du cluster régénérés, contre-vérification depuis rien (212 s, `smoke.sh` 8/8, événement 0 → 1, 4 cibles `up`). `CLAUDE.md` mis à jour.

@@ -113,4 +113,17 @@ helm --kube-context k3d-collector -n collector history catalog-service # révisi
 deploy/local/cluster.sh delete                                        # supprime le cluster (garde le certificat et le .env)
 ```
 
+### Utiliser l'application
+
+Ouvrir https://app.127.0.0.1.sslip.io (le certificat mkcert est reconnu après `mkcert -install`). Le catalogue est public ; « Connexion » redirige vers Keycloak (`https://auth.127.0.0.1.sslip.io`, page en français).
+
+| Compte | Rôles | Pages utiles |
+| --- | --- | --- |
+| `admin` | `admin` | Catégories |
+| `alice` | `seller`, `buyer` | Vendre, Mes centres d'intérêt |
+| `bob` | `seller` | Vendre |
+| `chloe` | `buyer` | Mes centres d'intérêt et notifications |
+
+Les mots de passe sont dans `deploy/local/.env` (jamais versionné), aux clés `ADMIN_PASSWORD`, `ALICE_PASSWORD`, `BOB_PASSWORD` et `CHLOE_PASSWORD`. Preuve que le parcours complet fonctionne sur le cluster (navigateur réel, HTTPS vérifié) : [journal d'exécution Playwright](frontend/e2e/resultats/journal-cluster.txt) et [captures d'écran](frontend/e2e/resultats/captures/). Pour le rejouer : `frontend/e2e/run-cluster.sh` (voir [`frontend/README.md`](frontend/README.md)).
+
 Détails, mesures et limites : [`deploy/README.md`](deploy/README.md) (scripts, chart, retour arrière, observabilité) et [`docs/04-experimentations/04-deploiement/protocole.md`](docs/04-experimentations/04-deploiement/protocole.md) (déroulé chronométré, mémoire, auto-réparation, retour arrière, traçabilité).

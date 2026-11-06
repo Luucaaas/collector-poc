@@ -10,7 +10,11 @@ cd "$(dirname "$0")/.."
 ENV_FILE="../deploy/compose/.env"
 [[ -f "$ENV_FILE" ]] || { echo "deploy/compose/.env introuvable : lancer deploy/compose/up.sh d'abord." >&2; exit 1; }
 
-read_var() { grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2-; }
+# Valeur d'une clé du .env, jamais affichée ; clé absente : message explicite et arrêt.
+read_var() {
+  grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | grep . \
+    || { echo "Clé $1 absente ou vide dans deploy/compose/.env." >&2; return 1; }
+}
 
 E2E_ADMIN_PASSWORD="$(read_var ADMIN_PASSWORD)"
 E2E_ALICE_PASSWORD="$(read_var ALICE_PASSWORD)"

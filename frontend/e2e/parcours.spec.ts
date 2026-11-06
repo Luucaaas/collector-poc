@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { goTo, login, RUN } from "./helpers";
+import { expect, goTo, login, RUN, test } from "./helpers";
 
 // Les parcours s'enchaînent (la catégorie créée en 1 sert en 2 et 3, les articles de 3 en 4).
 test.describe.configure({ mode: "serial" });
@@ -26,6 +25,7 @@ test("2. chloe choisit cette catégorie comme centre d'intérêt", async ({ page
   const ours = group.getByRole("checkbox", { name: CATEGORY, exact: true });
   await expect(ours).toBeVisible();
   // On ne garde que la catégorie de cet essai : les exécutions précédentes ne doivent pas s'accumuler (maximum 20).
+  await page.waitForLoadState("networkidle"); // les centres d'intérêt déjà enregistrés arrivent après la liste des catégories
   for (const box of await group.getByRole("checkbox").all()) {
     if (await box.isChecked()) await box.uncheck();
   }

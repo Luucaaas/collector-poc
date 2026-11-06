@@ -1,0 +1,27 @@
+Exécution des parcours Playwright sur le cluster k3d (run-cluster.sh), 06/11/2026 10:00
+Application : https://app.127.0.0.1.sslip.io, Keycloak : https://auth.127.0.0.1.sslip.io, certificat mkcert vérifié (pas d'ignoreHTTPSErrors)
+Tag déployé : sha-cd5751f ; digests lus sur les pods (imageID) :
+  catalog-service sha256:dcd8ae4a09fd61755ea9ed5d8a484377f3476783934ebbf9fdffd01101c60baf
+  frontend sha256:cf281c7c86c1b7a935ad71d10abb8e865fb5c83b374ef45781d1b989ff12736c
+  notification-service sha256:ae6fe351ce427ceb36588f9d98337f1bbe2a6ae1fd65fde4d3056344df7087ff
+Contrôles actifs : aucune violation CSP, aucune erreur sur les appels /api/v1/, page de connexion en français servie par auth.
+
+--- Exécution 1 sur 2 (code de sortie 0, 5 s au total) ---
+Running 6 tests using 1 worker
+  ✓  1 [chromium] › e2e/parcours.spec.ts:12:1 › 1. admin crée une catégorie (588ms)
+  ✓  2 [chromium] › e2e/parcours.spec.ts:21:1 › 2. chloe choisit cette catégorie comme centre d'intérêt (1.4s)
+  ✓  3 [chromium] › e2e/parcours.spec.ts:39:1 › 3. alice crée une boutique, publie, voit un rejet, change le prix (902ms)
+  ✓  4 [chromium] › e2e/parcours.spec.ts:83:1 › 4. chloe voit les deux notifications (504ms)
+  ✓  5 [chromium] › e2e/parcours.spec.ts:99:1 › 5. la déconnexion revient sur l'application (490ms)
+  ✓  6 [chromium] › e2e/parcours.spec.ts:107:1 › 6. aucun jeton dans localStorage ni sessionStorage après connexion (479ms)
+  6 passed (4.9s)
+
+--- Exécution 2 sur 2 (code de sortie 0, 6 s au total) ---
+Running 6 tests using 1 worker
+  ✓  1 [chromium] › e2e/parcours.spec.ts:12:1 › 1. admin crée une catégorie (602ms)
+  ✓  2 [chromium] › e2e/parcours.spec.ts:21:1 › 2. chloe choisit cette catégorie comme centre d'intérêt (1.3s)
+  ✓  3 [chromium] › e2e/parcours.spec.ts:39:1 › 3. alice crée une boutique, publie, voit un rejet, change le prix (881ms)
+  ✓  4 [chromium] › e2e/parcours.spec.ts:83:1 › 4. chloe voit les deux notifications (582ms)
+  ✓  5 [chromium] › e2e/parcours.spec.ts:99:1 › 5. la déconnexion revient sur l'application (496ms)
+  ✓  6 [chromium] › e2e/parcours.spec.ts:107:1 › 6. aucun jeton dans localStorage ni sessionStorage après connexion (494ms)
+  6 passed (4.8s)

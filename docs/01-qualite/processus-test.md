@@ -59,6 +59,8 @@ Les jobs cités sont ceux de [cicd.md](cicd.md). « Poste » désigne le Mac du 
 
 Les contrôles de style et de typage du job `lint` (Ruff, mypy strict, voir [indicateurs.md](indicateurs.md), I2) ne sont pas des tests : ils s'exécutent avant les tests et alimentent la dette technique. Ils figurent dans le tableau de correspondance ci-dessous pour que celui-ci suive tous les jobs du pipeline.
 
+Résultat obtenu : le 06/11/2026, les 6 parcours Playwright passent sur le cluster k3d (tag `sha-cd5751f`, HTTPS mkcert vérifié, aucune violation de CSP ni erreur réseau) deux fois de suite, puis sur la pile `docker compose` ; journal et captures d'écran dans [`frontend/e2e/resultats/`](../../frontend/e2e/resultats/journal-cluster.txt).
+
 ### Correspondance avec le pipeline
 
 Les jobs sont listés dans l'ordre de [cicd.md](cicd.md). Un job qui n'exécute aucun test est signalé ; aucun test exécuté par la CI n'est en dehors de cette liste.

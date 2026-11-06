@@ -1,0 +1,9 @@
+Exécution des parcours Playwright sur la pile docker compose (run-compose.sh), 06/11/2026 10:01, mêmes contrôles CSP et réseau, 9,1 s
+Running 6 tests using 1 worker
+  ✓  1 [chromium] › e2e/parcours.spec.ts:12:1 › 1. admin crée une catégorie (2.0s)
+  ✓  2 [chromium] › e2e/parcours.spec.ts:21:1 › 2. chloe choisit cette catégorie comme centre d'intérêt (1.8s)
+  ✓  3 [chromium] › e2e/parcours.spec.ts:39:1 › 3. alice crée une boutique, publie, voit un rejet, change le prix (1.3s)
+  ✓  4 [chromium] › e2e/parcours.spec.ts:83:1 › 4. chloe voit les deux notifications (767ms)
+  ✓  5 [chromium] › e2e/parcours.spec.ts:99:1 › 5. la déconnexion revient sur l'application (863ms)
+  ✓  6 [chromium] › e2e/parcours.spec.ts:107:1 › 6. aucun jeton dans localStorage ni sessionStorage après connexion (769ms)
+  6 passed (9.1s)

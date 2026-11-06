@@ -83,7 +83,20 @@ npx playwright install chromium           # une fois ; Chromium est stocké dans
 ./e2e/run-compose.sh                      # lance Vite (npm run dev) puis les 6 parcours
 ```
 
-`run-compose.sh` lit les mots de passe des comptes de démonstration dans `deploy/compose/.env` et les exporte (`E2E_ADMIN_PASSWORD`, `E2E_ALICE_PASSWORD`, `E2E_CHLOE_PASSWORD`) pour ce seul processus. Ils ne sont ni affichés ni écrits. La configuration Playwright coupe les traces, captures et vidéos et n'écrit pas de rapport HTML, car ils reprennent les valeurs saisies ; la saisie du mot de passe passe par `evaluate`, dont les arguments n'apparaissent pas dans les messages d'erreur. Pour viser une autre adresse (le cluster, plus tard) : `E2E_BASE_URL=https://app.127.0.0.1.sslip.io`, avec les trois variables définies.
+`run-compose.sh` lit les mots de passe des comptes de démonstration dans `deploy/compose/.env` et les exporte (`E2E_ADMIN_PASSWORD`, `E2E_ALICE_PASSWORD`, `E2E_CHLOE_PASSWORD`) pour ce seul processus. Ils ne sont ni affichés ni écrits. La configuration Playwright coupe les traces, captures et vidéos et n'écrit pas de rapport HTML, car ils reprennent les valeurs saisies ; la saisie du mot de passe passe par `evaluate`, dont les arguments n'apparaissent pas dans les messages d'erreur. Pour viser une autre adresse : `E2E_BASE_URL=...`, avec les trois variables définies.
+
+### Sur le cluster k3d
+
+```bash
+./e2e/run-cluster.sh                 # les 6 parcours sur https://app.127.0.0.1.sslip.io (cluster déjà déployé)
+CAPTURES=1 ./e2e/run-cluster.sh      # la spécification des captures d'écran (e2e/resultats/captures/)
+```
+
+`run-cluster.sh` lit les mots de passe dans `deploy/local/.env` (même principe que `run-compose.sh`), vérifie que `https://app.` et `https://auth.` répondent, puis lance Playwright. La vérification TLS n'est jamais désactivée : le certificat mkcert doit être reconnu par Chromium (`mkcert -install`). Les parcours créent des données de démonstration (catégories, boutiques, articles) et se relancent sans réinitialisation.
+
+Contrôles ajoutés à chaque test (`watchBrowser` dans `e2e/helpers.ts`, pile compose et cluster) : aucune violation de la Content-Security-Policy (événement `securitypolicyviolation` et messages de console) et aucune erreur sur les appels `/api/v1/` (échec réseau ou statut 4xx/5xx). À la connexion, la page de Keycloak doit être en français (`lang="fr"`) et, sur le cluster, servie par `https://auth.127.0.0.1.sslip.io`.
+
+Preuves versionnées dans `e2e/resultats/` : `journal-cluster.txt` (deux exécutions 6 sur 6, tag `sha-cd5751f`, digests des images), `journal-compose.txt`, et `captures/` (7 PNG en 1280 de large : catalogue public, connexion Keycloak champs vides, article publié, article rejeté, historique des prix, notifications de `chloe`, catégories de `admin`). La spécification des captures ne tourne jamais avec les parcours ; aucune capture n'est prise après la saisie d'un mot de passe.
 
 ## La connexion en 5 lignes (Authorization Code + PKCE)
 

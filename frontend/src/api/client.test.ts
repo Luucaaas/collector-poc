@@ -108,9 +108,13 @@ describe("describeError", () => {
     expect(msg(422, [{ field: "x", code }])).toMatch(expected);
   });
 
+  it("garde le nom brut d'un champ inconnu", () => {
+    expect(msg(422, [{ field: "autre", code: "MISSING" }])).toContain("autre (champ obligatoire)");
+  });
+
   it("décrit une validation générique champ par champ", () => {
     expect(msg(422, [{ field: "price", code: "VALUE_ERROR" }])).toBe(
-      "Les données saisies sont invalides : price (valeur invalide).",
+      "Les données saisies sont invalides : prix (valeur invalide).",
     );
   });
 

@@ -24,5 +24,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // Les parcours Playwright (e2e/*.spec.ts) sont lancés à part, par `npm run e2e`.
+    include: ["src/**/*.test.{ts,tsx}"],
   },
 });

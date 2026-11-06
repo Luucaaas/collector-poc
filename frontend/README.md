@@ -1,6 +1,6 @@
 # Front React de Collector.shop
 
-Application web en **React + TypeScript** (outil de build : Vite), interface **MUI** en français. Cette première étape (P7-01) fournit le socle : connexion à Keycloak, appels aux deux API, page catalogue publique. Les pages vendeur, acheteur et administrateur sont des emplacements vides, réalisés ensuite.
+Application web en **React + TypeScript** (outil de build : Vite), interface **MUI** en français. Elle couvre les 5 user stories : connexion à Keycloak, appels aux deux API, et 4 pages (voir ci-dessous).
 
 ## Prérequis
 
@@ -17,6 +17,7 @@ Depuis le dossier `frontend/` :
 | `npm run dev` | Serveur de développement sur `http://localhost:5173` (le port est imposé : Keycloak n'accepte que lui) |
 | `npm run lint` | ESLint, aucun avertissement toléré |
 | `npm test` | Tests Vitest (une seule exécution) |
+| `npm run e2e` | Parcours Playwright (Chromium), **hors CI** : voir « Tests de bout en bout » |
 | `npm run build` | Vérification des types (`tsc -b`) puis build de production dans `dist/` |
 
 Les comptes de démonstration (`alice`, `bob`, `chloe`, `admin`) ont leurs mots de passe dans `deploy/compose/.env` (jamais versionné).
@@ -38,11 +39,36 @@ L'application charge `/config.json` **avant** de démarrer : `authority` (adress
 | `auth/` | `oidc.ts` (réglages OIDC), `roles.ts` (lecture des rôles), `RequireRole.tsx` (garde de route) |
 | `api/` | `client.ts` (fonction unique `apiRequest`), `errors.ts` (erreurs RFC 9457 traduites en français), `types.ts` (réponses, d'après `docs/02-architecture/contrats.md`), `useApi.ts` et `useAsync.ts` (hooks maison) |
 | `components/` | `Layout.tsx` : barre de navigation (nom, rôles, connexion, déconnexion) |
-| `pages/` | Une page par route : `CataloguePage.tsx` est complète, les autres sont des emplacements |
-| `format.ts` | Montants en euros (`"120.00"` devient `120,00 €`) |
+| `pages/` | Une page par route (détail ci-dessous) ; `pages/sell/` : formulaire de mise en vente et liste des articles du vendeur |
+| `format.ts`, `money.ts`, `reasons.ts` | Montants en euros et dates en `fr-FR` ; validation des montants saisis (chaîne décimale, jamais de `number`) ; motifs de rejet traduits |
+| `api/useAction.ts` | Hook d'envoi de formulaire : bouton désactivé pendant l'envoi, erreur traduite, pas de double soumission |
 | `test/` | Réglages des tests (jest-dom, nettoyage des stockages) |
 
 Les tests sont à côté du code qu'ils vérifient (`*.test.ts` et `*.test.tsx`).
+
+## Les 4 pages
+
+| Route | Rôle | Contenu |
+| --- | --- | --- |
+| `/` Catalogue | public | Articles `PUBLISHED`, filtre par catégorie, pagination |
+| `/categories` Catégories | `admin` (US-01) | Liste et création ; nom déjà utilisé ou invalide affiché en français |
+| `/vendre` Vendre | `seller` (US-02 à US-04) | Mes boutiques et création ; mise en vente avec le résultat du contrôle automatique (`Article publié`, `Article rejeté` avec motifs, ou `Saisie à corriger` pour un 422) ; mes articles par boutique, modification du prix et historique |
+| `/centres-interet` Mes centres d'intérêt | `buyer` (US-05) | Catégories suivies, préférences `new_article` et `price_changed`, notifications (bouton « Actualiser », pas de rafraîchissement automatique) |
+
+Un prix identique au prix actuel n'est pas envoyé à l'API : l'interface dit qu'aucune modification n'a été enregistrée (RM-04 : pas de ligne d'historique).
+
+## Tests de bout en bout (Playwright)
+
+Six parcours dans `e2e/parcours.spec.ts` : (1) `admin` crée une catégorie, (2) `chloe` la choisit, (3) `alice` crée une boutique, publie un article accepté puis un article rejeté (téléphone dans la description), change le prix et voit l'historique, (4) `chloe` voit les notifications `NEW_ARTICLE` et `PRICE_CHANGED`, (5) la déconnexion revient sur l'application, (6) aucun jeton dans `localStorage` ni `sessionStorage`. Les noms contiennent un suffixe horodaté : les parcours se relancent sans réinitialiser la base.
+
+```bash
+deploy/compose/up.sh                      # pile locale (une fois)
+cd frontend && npm ci
+npx playwright install chromium           # une fois ; Chromium est stocké dans ~/Library/Caches/ms-playwright, hors du dépôt
+./e2e/run-compose.sh                      # lance Vite (npm run dev) puis les 6 parcours
+```
+
+`run-compose.sh` lit les mots de passe des comptes de démonstration dans `deploy/compose/.env` et les exporte (`E2E_ADMIN_PASSWORD`, `E2E_ALICE_PASSWORD`, `E2E_CHLOE_PASSWORD`) pour ce seul processus. Ils ne sont ni affichés ni écrits. La configuration Playwright coupe les traces, captures et vidéos et n'écrit pas de rapport HTML, car ils reprennent les valeurs saisies ; la saisie du mot de passe passe par `evaluate`, dont les arguments n'apparaissent pas dans les messages d'erreur. Pour viser une autre adresse (le cluster, plus tard) : `E2E_BASE_URL=https://app.127.0.0.1.sslip.io`, avec les trois variables définies.
 
 ## La connexion en 5 lignes (Authorization Code + PKCE)
 

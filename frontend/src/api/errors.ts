@@ -39,6 +39,28 @@ function messageFor(code: string | undefined): string | undefined {
   return code !== undefined && Object.hasOwn(CODE_MESSAGES, code) ? CODE_MESSAGES[code] : undefined;
 }
 
+/** Libellés français des champs des corps de requête (contrats.md §2). */
+const FIELD_LABELS: Record<string, string> = {
+  name: "nom",
+  description: "description",
+  title: "titre",
+  price: "prix",
+  shipping_fee: "frais de port",
+  photo_urls: "adresse de la photo",
+  category_id: "catégorie",
+  category_ids: "catégories",
+  shop_id: "boutique",
+  currency: "devise",
+  new_article: "nouvel article",
+  price_changed: "changement de prix",
+};
+
+/** Libellé d'un champ ; le nom brut sert de repli pour un champ inconnu (ex. « photo_urls.0 » devient « adresse de la photo »). */
+function fieldLabel(field: string): string {
+  const root = field.split(".")[0];
+  return Object.hasOwn(FIELD_LABELS, root) ? FIELD_LABELS[root] : field;
+}
+
 const BUSINESS_CODES = [
   "CONTACT_EMAIL",
   "CONTACT_PHONE",
@@ -55,13 +77,13 @@ function validationMessage(error: ApiError): string {
   if (error.fields.length === 0) return "Les données saisies sont invalides.";
   const parts = error.fields.map((e) => {
     const reason = messageFor(e.code) ?? "valeur invalide";
-    return e.field ? `${e.field} (${reason})` : reason;
+    return e.field ? `${fieldLabel(e.field)} (${reason})` : reason;
   });
   return `Les données saisies sont invalides : ${parts.join(", ")}.`;
 }
 
 /** Message en français, destiné à l'utilisateur, pour n'importe quelle erreur levée par l'API. */
-export function describeError(error: unknown): string {
+export function describeError(error: unknown, options: { conflict?: string } = {}): string {
   if (!(error instanceof ApiError)) return "Une erreur inattendue est survenue.";
   switch (error.status) {
     case 0:
@@ -74,7 +96,7 @@ export function describeError(error: unknown): string {
       return "La ressource demandée est introuvable.";
     case 409: {
       const message = error.codes.map(messageFor).find((m) => m !== undefined);
-      return message ?? "Cette opération est en conflit avec l'état actuel des données.";
+      return message ?? options.conflict ?? "Cette opération est en conflit avec l'état actuel des données.";
     }
     case 422:
       return validationMessage(error);

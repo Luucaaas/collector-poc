@@ -10,3 +10,8 @@ export function formatMoney(amount: string, currency = "EUR"): string {
   // Intl.NumberFormat lit la chaîne décimale telle quelle, sans passer par un nombre flottant.
   return formatter.format(amount as `${number}`);
 }
+
+/** Date et heure locales en français, à partir d'une date ISO 8601 UTC : « 02/11/2026 15:05:00 ». */
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "medium" });
+}

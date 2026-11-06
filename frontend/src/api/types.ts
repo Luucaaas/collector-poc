@@ -75,3 +75,15 @@ export interface ProblemDetails {
   errors?: { field?: string; code?: string }[];
   correlation_id?: string;
 }
+
+/** Corps de POST /articles (montants en chaîne décimale). */
+export interface ArticleCreateBody {
+  shop_id: string;
+  category_id: string;
+  title: string;
+  description: string;
+  photo_urls: string[];
+  price: string;
+  shipping_fee: string;
+  currency: "EUR";
+}

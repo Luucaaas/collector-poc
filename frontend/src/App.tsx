@@ -2,7 +2,10 @@ import { Route, Routes } from "react-router";
 import { RequireRole } from "./auth/RequireRole";
 import { Layout } from "./components/Layout";
 import { CataloguePage } from "./pages/CataloguePage";
-import { Placeholder } from "./pages/Placeholder";
+import { CategoriesPage } from "./pages/CategoriesPage";
+import { InterestsPage } from "./pages/InterestsPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { SellPage } from "./pages/SellPage";
 
 export function App() {
   return (
@@ -13,7 +16,7 @@ export function App() {
           path="vendre"
           element={
             <RequireRole role="seller">
-              <Placeholder title="Vendre" />
+              <SellPage />
             </RequireRole>
           }
         />
@@ -21,7 +24,7 @@ export function App() {
           path="centres-interet"
           element={
             <RequireRole role="buyer">
-              <Placeholder title="Mes centres d'intérêt" />
+              <InterestsPage />
             </RequireRole>
           }
         />
@@ -29,11 +32,11 @@ export function App() {
           path="categories"
           element={
             <RequireRole role="admin">
-              <Placeholder title="Catégories" />
+              <CategoriesPage />
             </RequireRole>
           }
         />
-        <Route path="*" element={<Placeholder title="Page introuvable" />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   );

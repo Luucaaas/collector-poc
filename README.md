@@ -71,7 +71,7 @@ curl -s -X POST http://localhost:8001/api/v1/shops \
 
 Détails : [`deploy/compose/README.md`](deploy/compose/README.md) (pile) et [`tests/acceptance/README.md`](tests/acceptance/README.md) (tests).
 
-Test de charge sur le cluster k3d (Locust, indicateur I3 et ENF-14) : [`tests/load/README.md`](tests/load/README.md).
+Test de charge sur le cluster k3d (Locust, indicateur I3 et ENF-14) : [`tests/load/README.md`](tests/load/README.md). Montée en charge de l'HPA et disponibilité sous charge (pod supprimé pendant un pic) : [protocole 5](docs/04-experimentations/05-charge-disponibilite/protocole.md).
 
 Front React (`npm run dev` sur `http://localhost:5173`, contre cette pile) : voir [`frontend/README.md`](frontend/README.md).
 

@@ -1,0 +1,37 @@
+11:37:06 Normal ScalingReplicaSet Deployment/catalog-service Scaled up replica set catalog-service-597f75fc48 from 2 to 3
+11:37:06 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 3; reason: cpu resource utilization (percentage of request) above target
+11:37:07 Normal Scheduled Pod/catalog-service-597f75fc48-zv9j7 Successfully assigned collector/catalog-service-597f75fc48-zv9j7 to k3d-collector-agent-0
+11:37:07 Normal SuccessfulCreate ReplicaSet/catalog-service-597f75fc48 Created pod: catalog-service-597f75fc48-zv9j7
+11:37:08 Normal Created Pod/catalog-service-597f75fc48-zv9j7 Container created
+11:37:08 Normal Pulled Pod/catalog-service-597f75fc48-zv9j7 Container image "ghcr.io/luucaaas/catalog-service:sha-9d2c96e@sha256:30c1e2826661ed12ce58b5e1e46ab433a6ec6bf5d858cf7ef7394b38095e2664" already present on machine and can be accessed by the pod
+11:37:08 Normal Started Pod/catalog-service-597f75fc48-zv9j7 Container started
+11:37:36 Normal ScalingReplicaSet Deployment/catalog-service Scaled up replica set catalog-service-597f75fc48 from 3 to 4
+11:37:36 Normal SuccessfulCreate ReplicaSet/catalog-service-597f75fc48 Created pod: catalog-service-597f75fc48-rx7f4
+11:37:36 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 4; reason: cpu resource utilization (percentage of request) above target
+11:37:37 Normal Created Pod/catalog-service-597f75fc48-rx7f4 Container created
+11:37:37 Normal Pulled Pod/catalog-service-597f75fc48-rx7f4 Container image "ghcr.io/luucaaas/catalog-service:sha-9d2c96e@sha256:30c1e2826661ed12ce58b5e1e46ab433a6ec6bf5d858cf7ef7394b38095e2664" already present on machine and can be accessed by the pod
+11:37:37 Normal Scheduled Pod/catalog-service-597f75fc48-rx7f4 Successfully assigned collector/catalog-service-597f75fc48-rx7f4 to k3d-collector-agent-0
+11:37:37 Normal Started Pod/catalog-service-597f75fc48-rx7f4 Container started
+11:37:39 Warning Unhealthy Pod/catalog-service-597f75fc48-rx7f4 Startup probe failed: Get "http://10.42.1.20:8000/health/live": dial tcp 10.42.1.20:8000: connect: connection refused
+11:37:51 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 5; reason: cpu resource utilization (percentage of request) above target
+11:37:52 Normal Created Pod/catalog-service-597f75fc48-6m4zr Container created
+11:37:52 Normal Pulled Pod/catalog-service-597f75fc48-6m4zr Container image "ghcr.io/luucaaas/catalog-service:sha-9d2c96e@sha256:30c1e2826661ed12ce58b5e1e46ab433a6ec6bf5d858cf7ef7394b38095e2664" already present on machine and can be accessed by the pod
+11:37:52 Normal ScalingReplicaSet Deployment/catalog-service Scaled up replica set catalog-service-597f75fc48 from 4 to 5
+11:37:52 Normal Scheduled Pod/catalog-service-597f75fc48-6m4zr Successfully assigned collector/catalog-service-597f75fc48-6m4zr to k3d-collector-server-0
+11:37:52 Normal Started Pod/catalog-service-597f75fc48-6m4zr Container started
+11:37:52 Normal SuccessfulCreate ReplicaSet/catalog-service-597f75fc48 Created pod: catalog-service-597f75fc48-6m4zr
+11:37:54 Warning Unhealthy Pod/catalog-service-597f75fc48-6m4zr Startup probe failed: Get "http://10.42.0.15:8000/health/live": dial tcp 10.42.0.15:8000: connect: connection refused
+11:38:57 Normal Killing Pod/catalog-service-597f75fc48-4tr6d Stopping container app
+11:38:57 Normal Scheduled Pod/catalog-service-597f75fc48-jwbp9 Successfully assigned collector/catalog-service-597f75fc48-jwbp9 to k3d-collector-agent-1
+11:38:57 Normal SuccessfulCreate ReplicaSet/catalog-service-597f75fc48 Created pod: catalog-service-597f75fc48-jwbp9
+11:38:58 Normal Created Pod/catalog-service-597f75fc48-jwbp9 Container created
+11:38:58 Normal Pulled Pod/catalog-service-597f75fc48-jwbp9 Container image "ghcr.io/luucaaas/catalog-service:sha-9d2c96e@sha256:30c1e2826661ed12ce58b5e1e46ab433a6ec6bf5d858cf7ef7394b38095e2664" already present on machine and can be accessed by the pod
+11:38:58 Normal Started Pod/catalog-service-597f75fc48-jwbp9 Container started
+11:45:22 Normal Killing Pod/catalog-service-597f75fc48-6m4zr Stopping container app
+11:45:22 Normal Killing Pod/catalog-service-597f75fc48-rx7f4 Stopping container app
+11:45:22 Normal Killing Pod/catalog-service-597f75fc48-zv9j7 Stopping container app
+11:45:22 Normal ScalingReplicaSet Deployment/catalog-service Scaled down replica set catalog-service-597f75fc48 from 5 to 2
+11:45:22 Normal SuccessfulDelete ReplicaSet/catalog-service-597f75fc48 Deleted pod: catalog-service-597f75fc48-6m4zr
+11:45:22 Normal SuccessfulDelete ReplicaSet/catalog-service-597f75fc48 Deleted pod: catalog-service-597f75fc48-rx7f4
+11:45:22 Normal SuccessfulDelete ReplicaSet/catalog-service-597f75fc48 Deleted pod: catalog-service-597f75fc48-zv9j7
+11:45:22 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 2; reason: All metrics below target

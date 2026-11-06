@@ -1,6 +1,6 @@
 # 04 — Expérimentations en bac à sable
 
-Un protocole par expérience (les trois premiers testent une technologie, le quatrième mesure le déploiement du POC). Chaque dossier contient le protocole (`protocole.md`), le script qui le rejoue (`run.sh`) et le code ou les manifestes nécessaires. Un protocole n'est pas un guide d'installation : il pose une question, mesure, constate les limites et aboutit à une décision.
+Un protocole par expérience (les trois premiers testent une technologie, le quatrième mesure le déploiement du POC, le cinquième la montée en charge et la disponibilité). Chaque dossier contient le protocole (`protocole.md`), le script qui le rejoue (`run.sh`) et le code ou les manifestes nécessaires. Un protocole n'est pas un guide d'installation : il pose une question, mesure, constate les limites et aboutit à une décision.
 
 ## Index
 
@@ -10,7 +10,8 @@ Un protocole par expérience (les trois premiers testent une technologie, le qua
 | 2 | Keycloak + Traefik + certificat mkcert (images officielles, sans opérateur) | [02-keycloak-tls](02-keycloak-tls/protocole.md) | 03/11/2026 18:29 | Adoptée (validation locale des JWT, 15 cas d'autorisation conformes ; PKCE et rotation des clés à tester avec le front) |
 | 3 | Observabilité : kube-prometheus-stack (Prometheus, Grafana) sur k3d | [03-observabilite](03-observabilite/protocole.md) | 02/11/2026 22:43 | Adoptée en version allégée (environ 600 Mi ; bornes d'histogramme à définir pour le p95) |
 | 4 | Déploiement du POC sur k3d : déroulé à froid, mémoire et disque, auto-réparation, retour arrière, traçabilité | [04-deploiement](04-deploiement/protocole.md) | 06/11/2026 00:39 | Adoptée (199 s depuis rien, 1 938 Mi de pods et 6,3 Go de disque, 2 réplicas `Ready` en 7,1 s après suppression d'un pod, retour arrière automatique sans requête perdue) |
-| 5 | (option) Kafka | non réalisée | non réalisée | Écartée (journal des décisions du 02/11/2026), rejeté par l'ADR 0003 |
+| 5 | Montée en charge de l'HPA et disponibilité sous charge : pic Locust, suppression d'un pod de `catalog-service`, captures Grafana | [05-charge-disponibilite](05-charge-disponibilite/protocole.md) | 06/11/2026 11:32 | Adoptée (2 à 5 réplicas prêts en 60 s sous 200 utilisateurs, pod supprimé remplacé en 4,9 s, 0 échec sur 533 requêtes, retour à 2 pods en 325 s) |
+| 6 | (option) Kafka | non réalisée | non réalisée | Écartée (journal des décisions du 02/11/2026), rejeté par l'ADR 0003 |
 
 ## Modèle commun des protocoles
 

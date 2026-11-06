@@ -20,17 +20,34 @@ import time
 from pathlib import Path
 from typing import Any
 
-from locust import HttpUser, TaskSet, between, events, task  # noqa: F401
+from locust import HttpUser, LoadTestShape, TaskSet, between, events, task  # noqa: F401
 from locust.clients import HttpSession, ResponseContextManager
 from locust.env import Environment
 
 import config
+import peak_profile as load_profile
 from interests import interests_for_run
 from session import TokenHolder, login
 
 PREPARATION = "[prépa]"
 RUN_ID = os.environ.get("LOAD_RUN_ID") or time.strftime("%Y%m%d-%H%M")
 RESULTS_DIR = os.environ.get("LOAD_RESULTS_DIR")
+
+
+REQUEST_LOG = os.environ.get("LOAD_REQUEST_LOG")  # protocole 5 : une ligne par requête (facultatif)
+STOP_FILE = os.environ.get("LOAD_STOP_FILE")  # protocole 5 : sa création arrête le test
+PEAK_PROFILE = (
+    load_profile.PeakProfile(
+        nominal_users=int(os.environ.get("LOAD_NOMINAL_USERS", "50")),
+        nominal_rate=float(os.environ.get("LOAD_NOMINAL_RATE", "1")),
+        nominal_seconds=float(os.environ.get("LOAD_NOMINAL_SECONDS", "180")),
+        peak_users=int(os.environ.get("LOAD_PEAK_USERS", "150")),
+        peak_rate=float(os.environ.get("LOAD_PEAK_RATE", "5")),
+        max_seconds=float(os.environ.get("LOAD_MAX_SECONDS", "1800")),
+    )
+    if os.environ.get("LOAD_PROFILE") == "peak"
+    else None
+)
 
 
 class RunState:
@@ -298,3 +315,53 @@ class SellerUser(HttpUser):
 events.test_start.add_listener(prepare_run)  # type: ignore[no-untyped-call]
 events.spawning_complete.add_listener(plateau_reached)  # type: ignore[no-untyped-call]
 events.test_stop.add_listener(run_finished)  # type: ignore[no-untyped-call]
+
+
+if REQUEST_LOG:
+    _request_log = open(REQUEST_LOG, "w", buffering=1, encoding="utf-8")  # noqa: SIM115
+    _request_log.write("epoch,name,response_ms,status,failed\n")
+
+    def log_request(
+        name: str,
+        response_time: float,
+        response: Any = None,
+        exception: Any = None,
+        start_time: float | None = None,
+        **_: Any,
+    ) -> None:
+        """Une ligne par requête (instant, nom, durée, code HTTP, échec) : le protocole 5 calcule
+        ses p95 et ses 5xx par phase à partir de ce fichier, que l'historique de Locust (fenêtre
+        glissante de 10 s) ne permet pas."""
+        status = getattr(response, "status_code", 0) or 0
+        stamp = start_time if start_time is not None else time.time()
+        label = name.replace(",", " ")
+        failed = int(exception is not None)
+        _request_log.write(f"{stamp:.3f},{label},{response_time:.1f},{status},{failed}\n")
+
+    events.request.add_listener(log_request)  # type: ignore[no-untyped-call]
+
+
+if PEAK_PROFILE is not None:
+
+    class PeakShape(LoadTestShape):
+        """Charge nominale puis pic (`profile.py`) ; les transitions sont datées dans
+        `fenetre.json`, le test s'arrête quand `run.sh` crée le fichier d'arrêt."""
+
+        started: float | None = None
+        current = ""
+
+        def tick(self) -> tuple[int, float] | None:
+            assert PEAK_PROFILE is not None
+            now = time.time()
+            if self.started is None:
+                self.started = now
+            elapsed = now - self.started
+            name = load_profile.phase(PEAK_PROFILE, elapsed)
+            if name != self.current:
+                self.current = name
+                update: dict[str, Any] = {f"{name}_start": now}
+                if name == "nominal":
+                    update["nominal_ramp"] = PEAK_PROFILE.nominal_users / PEAK_PROFILE.nominal_rate
+                _write_window(update)
+            stop = bool(STOP_FILE) and Path(str(STOP_FILE)).exists()
+            return load_profile.stage(PEAK_PROFILE, elapsed, stop)

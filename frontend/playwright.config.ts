@@ -8,8 +8,13 @@ const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
 // valeurs saisies (mots de passe des comptes de démo) dans le titre des étapes.
 export default defineConfig({
   testDir: "./e2e",
-  // Les captures pour la soutenance (CAPTURES=1) sont lancées à part, jamais avec les parcours.
-  testMatch: process.env.CAPTURES ? /captures\.spec\.ts/ : /parcours\.spec\.ts/,
+  // Les captures pour la soutenance (CAPTURES=1) et celles de Grafana (GRAFANA_CAPTURES=1, protocole 5)
+  // sont lancées à part, jamais avec les parcours.
+  testMatch: process.env.GRAFANA_CAPTURES
+    ? /grafana\.spec\.ts/
+    : process.env.CAPTURES
+      ? /captures\.spec\.ts/
+      : /parcours\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
   retries: 0,

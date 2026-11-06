@@ -51,14 +51,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | fusionnée |
 | P8-01 | Délai des notifications mesuré (ENF-14) | developpeur | `phase-8/delai-notifications` | fusionnée |
 | P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | fusionnée |
-| P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | en cours |
-| P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | à faire |
+| P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | fusionnée |
+| P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P8-03 confiée au développeur (brief dans `docs/suivi/taches/P8-03.md`, branche locale `phase-8/charge-disponibilite`, cluster en `sha-9d2c96e`). À son retour : auditeur, contre-vérification (chronologie de l'HPA, captures), fusion. Ensuite brief de P8-04 (relevé des indicateurs I1 à I5 sur une même version, axes d'amélioration). Reportés : L19 au plan de remédiation (phase 9).
+P8-04 confiée au développeur (brief dans `docs/suivi/taches/P8-04.md`, branche locale `phase-8/indicateurs`). À son retour : auditeur, fusion, puis clôture de la phase 8 : cluster recréé et redéployé au dernier tag (régénère le mot de passe de Grafana, passé une fois en argument pendant P8-03), parcours Playwright, case du plan, `CLAUDE.md`, bilan à Lucas (dont le conseil sur iCloud). Reportés : L19 au plan de remédiation (phase 9).
 
 ## Décisions en attente
 
@@ -69,4 +69,4 @@ P8-03 confiée au développeur (brief dans `docs/suivi/taches/P8-03.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 11:14 — P8-02 fusionnée (`517c924`) : I3 et ENF-14 conformes à 50 utilisateurs ; brief de P8-03 écrit.
+06/11/2026 13:40 — P8-03 fusionnée (`bc46aed`) ; copies iCloud retirées et limite de Grafana relevée (`e778987`) ; brief de P8-04 écrit.

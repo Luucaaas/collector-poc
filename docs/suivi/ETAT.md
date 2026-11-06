@@ -4,11 +4,9 @@
 
 ## Phase en cours
 
-**Phase 7 en cours depuis le 06/11/2026** (front React), découpage validé par Lucas : P7-01 socle et connexion, P7-02 pages métier, P7-03 image nginx et `frontend.yml`, P7-04 déploiement sur le cluster, P7-05 parcours Playwright. Tâches enchaînées une par une (dossier de travail partagé).
+**Phase 7 terminée le 06/11/2026** (5 tâches P7-01 à P7-05, toutes fusionnées après audit ; contre-vérification du chef depuis un cluster neuf). Le front React tourne sur le cluster en HTTPS avec les deux services, au même tag (`sha-cd5751f`). Prochaine phase : **phase 8** (mesures et tests de charge), à découper par le chef et à faire valider par Lucas.
 
-Phase 6 terminée le 06/11/2026 : le POC tourne sur le cluster k3d local en HTTPS, déployé par `deploy/local/deploy.sh all <tag>`.
-
-Phase 5 terminée le 05/11/2026. Phase 4 terminée le 04/11/2026. Phase 3 terminée le 03/11/2026.
+Phase 6 terminée le 06/11/2026. Phase 5 terminée le 05/11/2026. Phase 4 terminée le 04/11/2026. Phase 3 terminée le 03/11/2026.
 
 ## Tâches
 
@@ -48,13 +46,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P7-02 | Pages métier, tests Vitest et parcours Playwright | developpeur | `phase-7/pages` | fusionnée |
 | P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | fusionnée |
 | P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | fusionnée |
-| P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | en cours |
+| P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P7-05 confiée au développeur (brief dans `docs/suivi/taches/P7-05.md`, branche locale `phase-7/e2e`). À son retour : auditeur, fusion, puis clôture de la phase 7 : contre-vérification du chef (parcours sur le cluster), cases du plan de réalisation (job front de la phase 5 et phase 7), `CLAUDE.md` (avancement, L1 à L25, `deploy.sh realm`, tag `sha-cd5751f`), bilan à Lucas. Cluster actuel : 3 composants en `sha-cd5751f`, realm à jour. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker (à planifier) ; rotation des clés Keycloak : de fait réalisée par `deploy.sh realm`, preuve attendue de P7-05.
+Attendre que Lucas demande la phase 8, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Acquis : cluster `collector` neuf, tout en `sha-cd5751f` (`deploy.sh all`), realm à jour, données de démo créées par Playwright. Reportés : capture Grafana sous charge (phase 8, Lucas), crash brutal du broker (à planifier), L19 au plan de remédiation (phase 9).
 
 ## Décisions en attente
 
@@ -65,4 +63,4 @@ P7-05 confiée au développeur (brief dans `docs/suivi/taches/P7-05.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 09:57 — P7-04 fusionnée (`3d48791`) ; realm du cluster mis à jour par `deploy.sh realm` avec l'accord de Lucas ; brief de P7-05 écrit.
+06/11/2026 10:10 — Phase 7 close : P7-05 fusionnée, contre-vérification depuis un cluster neuf (214 s, `smoke.sh` 18/18, Playwright 6/6), plan de réalisation et `CLAUDE.md` mis à jour.

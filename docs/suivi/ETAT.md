@@ -4,7 +4,7 @@
 
 ## Phase en cours
 
-**Phase 8 en cours depuis le 06/11/2026** (mesures et tests de charge), découpage validé par Lucas : P8-01 délai des notifications (ENF-14), P8-02 scénarios Locust, P8-03 protocole 5 charge et disponibilité, P8-04 relevé des indicateurs. Tâches enchaînées une par une.
+**Phase 8 terminée le 06/11/2026** (4 tâches P8-01 à P8-04, toutes fusionnées après audit ; contre-vérification du chef depuis un cluster neuf en `sha-20e080b`). I3 et ENF-14 mesurés et conformes, montée en charge et disponibilité démontrées (protocole 5), 5 indicateurs relevés avec la dette chiffrée. Prochaine phase : **phase 9** (audit de sécurité et plan de remédiation), à découper par le chef et à faire valider par Lucas.
 
 Phase 7 terminée le 06/11/2026 : front React sur le cluster en HTTPS, tout au tag `sha-cd5751f`.
 
@@ -52,13 +52,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P8-01 | Délai des notifications mesuré (ENF-14) | developpeur | `phase-8/delai-notifications` | fusionnée |
 | P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | fusionnée |
 | P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | fusionnée |
-| P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | en cours |
+| P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P8-04 confiée au développeur (brief dans `docs/suivi/taches/P8-04.md`, branche locale `phase-8/indicateurs`). À son retour : auditeur, fusion, puis clôture de la phase 8 : cluster recréé et redéployé au dernier tag (régénère le mot de passe de Grafana, passé une fois en argument pendant P8-03), parcours Playwright, case du plan, `CLAUDE.md`, bilan à Lucas (dont le conseil sur iCloud). Reportés : L19 au plan de remédiation (phase 9).
+Attendre que Lucas demande la phase 9, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Acquis : cluster neuf en `sha-20e080b`, mot de passe de Grafana régénéré. À reprendre en phase 9 : L1 à L25 (`architecture-poc.md` §8), L19 (console d'administration de Keycloak publique), axes de sécurité d'`indicateurs.md` (Trivy local et vulnérabilités sans correctif, arm64 des services non scanné, `npm audit fix` majeur), panne brutale du broker (sans outbox).
 
 ## Décisions en attente
 
@@ -69,4 +69,4 @@ P8-04 confiée au développeur (brief dans `docs/suivi/taches/P8-04.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 13:40 — P8-03 fusionnée (`bc46aed`) ; copies iCloud retirées et limite de Grafana relevée (`e778987`) ; brief de P8-04 écrit.
+06/11/2026 14:18 — Phase 8 close : P8-04 fusionnée (`20e080b`), contre-vérification depuis un cluster neuf (213 s, `smoke.sh` 18/18, Playwright 6/6), plan de réalisation et `CLAUDE.md` mis à jour.

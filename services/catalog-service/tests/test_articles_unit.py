@@ -76,6 +76,8 @@ def test_la_devise_a_une_valeur_par_defaut_les_frais_de_port_sont_obligatoires()
         ({"shipping_fee": "-0.01"}, False),
         ({"shipping_fee": "8.123"}, False),
         ({"shipping_fee": 8}, False),
+        ({"shipping_fee": "1000000.00"}, True),  # borne haute des frais de port
+        ({"shipping_fee": "1000000.01"}, False),
         ({"currency": "USD"}, False),
         ({"photo_urls": []}, False),
         ({"photo_urls": ["https://a.example/1.jpg"] * 10}, True),

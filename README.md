@@ -1,6 +1,7 @@
 # Collector.shop — POC
 
 [![backend](https://github.com/Luucaaas/collector-poc/actions/workflows/backend.yml/badge.svg?branch=main)](https://github.com/Luucaaas/collector-poc/actions/workflows/backend.yml)
+[![frontend](https://github.com/Luucaaas/collector-poc/actions/workflows/frontend.yml/badge.svg?branch=main)](https://github.com/Luucaaas/collector-poc/actions/workflows/frontend.yml)
 
 Pipeline CI/CD : schéma et contrat dans [docs/01-qualite/cicd.md](docs/01-qualite/cicd.md), preuves de conformité et mesures dans [docs/01-qualite/conformite-pipeline.md](docs/01-qualite/conformite-pipeline.md). Le lien vers les projets SonarCloud sera ajouté avec la tâche P5-04.
 
@@ -100,7 +101,7 @@ deploy/local/deploy.sh all sha-bec38ed       # infrastructure, supervision, serv
 | Keycloak | https://auth.127.0.0.1.sslip.io/realms/collector |
 | Grafana | https://grafana.127.0.0.1.sslip.io (utilisateur `admin`, mot de passe `GRAFANA_ADMIN_PASSWORD` dans `deploy/local/.env`) |
 
-L'application web (React) arrive en phase 7 ; d'ici là l'API se teste par ces URL (le realm du cluster ne contient pas le client de test de la pile `docker compose`).
+L'application web (React, dossier `frontend/`) utilise ces URL ; l'API peut aussi se tester directement par elles (le realm du cluster ne contient pas le client de test de la pile `docker compose`).
 
 ```bash
 curl -s https://api.127.0.0.1.sslip.io/catalog/api/v1/categories     # 200, liste (vide au départ)

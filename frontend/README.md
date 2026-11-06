@@ -57,6 +57,21 @@ Les tests sont à côté du code qu'ils vérifient (`*.test.ts` et `*.test.tsx`)
 
 Un prix identique au prix actuel n'est pas envoyé à l'API : l'interface dit qu'aucune modification n'a été enregistrée (RM-04 : pas de ligne d'historique).
 
+## Image Docker (nginx)
+
+`frontend/Dockerfile` (multi-stage) construit `dist/` sur `node:22.23.4-alpine3.24` (`npm ci --ignore-scripts`, `npm run build`), puis le sert avec `nginxinc/nginx-unprivileged` : utilisateur 101, port **8080**, bases épinglées par digest, `apk upgrade` pour les CVE de la base (voir `docs/01-qualite/cicd.md`). `/healthz` répond 200 (sondes). `index.html` et `config.json` ne sont jamais mis en cache ; `assets/` l'est un an.
+
+Les en-têtes de sécurité (CSP, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS) viennent des modèles `nginx/*.template`, traités par `envsubst` au démarrage. Les origines de l'API et de Keycloak ne sont pas dans l'image : variable `CSP_CONNECT_SRC` (adresses séparées par un espace, sans joker ; défaut = celles du cluster local). `style-src` garde `'unsafe-inline'` car MUI (Emotion) injecte des styles : limite connue.
+
+```bash
+docker build --build-arg GIT_SHA=$(git rev-parse HEAD) -t collector/frontend:local frontend
+docker run --rm --read-only --tmpfs /tmp --tmpfs /etc/nginx/conf.d:uid=101,gid=101 -p 8080:8080 \
+  -e CSP_CONNECT_SRC="http://localhost:8001 http://localhost:8002 http://localhost:8080" \
+  -v "$PWD/frontend/config.dev.json:/usr/share/nginx/html/config.json:ro" collector/frontend:local
+```
+
+Avec un système de fichiers en lecture seule, `/tmp` et `/etc/nginx/conf.d` doivent être des volumes inscriptibles. Le workflow `.github/workflows/frontend.yml` (ESLint, Vitest, `npm audit`, build, Trivy, publication sur `ghcr.io/luucaaas/frontend:sha-<7>`) est décrit dans `docs/01-qualite/cicd.md`.
+
 ## Tests de bout en bout (Playwright)
 
 Six parcours dans `e2e/parcours.spec.ts` : (1) `admin` crée une catégorie, (2) `chloe` la choisit, (3) `alice` crée une boutique, publie un article accepté puis un article rejeté (téléphone dans la description), change le prix et voit l'historique, (4) `chloe` voit les notifications `NEW_ARTICLE` et `PRICE_CHANGED`, (5) la déconnexion revient sur l'application, (6) aucun jeton dans `localStorage` ni `sessionStorage`. Les noms contiennent un suffixe horodaté : les parcours se relancent sans réinitialiser la base.

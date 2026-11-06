@@ -71,7 +71,7 @@ Les jobs sont listés dans l'ordre de [cicd.md](cicd.md). Un job qui n'exécute 
 | `build-scan` | Sécurité (Trivy : dépendances, image, secrets) | Scan de l'image amd64 avant tout push |
 | `acceptance` | Acceptation, non-régression | Pile `docker compose` ; images issues du job `build-scan` |
 | `publish` | Aucun test | N'est lancé que si tous les jobs précédents sont verts, sur `main` |
-| `frontend` (phase 7) | Front : composants (Vitest), non-régression | `npm ci`, ESLint, Vitest, build, Trivy |
+| `frontend` | Front : composants (Vitest), non-régression | `npm ci`, ESLint, Vitest, `npm audit`, build, Trivy |
 | Déploiement (manuel) | Aucun test automatisé | `kubectl rollout status` et sondes `/health/live` et `/health/ready` après `deploy.sh` ; échec : `helm rollback` |
 | Tests de charge (phase 8) | Performance et charge, disponibilité | Hors CI, sur le cluster |
 | Audit dynamique (phase 9) | Sécurité (OWASP ZAP) | Hors CI, ponctuel |

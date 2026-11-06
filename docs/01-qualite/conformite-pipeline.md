@@ -84,11 +84,11 @@ Légende des preuves : **R** = run de référence 41825781085 ; **ROUGE-LINT** =
 | Paquets GHCR lisibles sans secret | Visibilité des paquets réglée sur « public » | Lecture anonyme du manifeste : HTTP 200 pour les 2 paquets (relevé du chef, fiche P5-03) |
 | **Déploiement** (manuel) : `deploy.sh <tag sha>` (`helm upgrade --install --wait`), puis `rollout status` et sondes ; échec : `helm rollback` | `deploy/local/deploy.sh` (fonctions `check_images`, `services`, `rollback_all`) ; image déployée par `tag@digest` | [Protocole 4](../04-experimentations/04-deploiement/protocole.md), exécution du 06/11/2026 : déploiement à froid en 199 s, `smoke.sh` 8/8 ; version défaillante (`DEPLOY_VALUES`, limite mémoire de 24 Mi) : `UPGRADE FAILED`, code de sortie 1, `helm history` `failed` puis `Rollback to 1`, 2 113 requêtes sur 2 113 servies pendant l'opération. [Journal](../04-experimentations/04-deploiement/resultats/run-20261106-0039.log) |
 | Traçabilité (`cicd.md` §4) : pod → `imageID` → tag `sha-…` → commit → run | `kubectl get pod -o jsonpath`, `docker buildx imagetools inspect`, `git rev-parse`, `gh run list --commit` | Protocole 4, section « Traçabilité » : `imageID` = digest du tag `sha-bec38ed` sur GHCR (`sha256:81a09f74…`), label OCI `revision` = `bec38edd…`, run 42046581865 `success` |
-| `frontend` (phase 7), charge (phase 8), audit (phase 9) | Hors de cette tâche | — |
+| charge (phase 8), audit (phase 9) | Hors de cette tâche | — |
 
 ## 3. Écarts trouvés et traitement
 
-Les écarts E1 à E14 ont été tranchés par le chef et ramenés à un état conforme (E12 et E13 clos par P5-04). Sens de la correction : **contrat** = `cicd.md` mis à jour pour refléter le workflow ; **workflow** = `backend.yml` corrigé.
+Les écarts E15 à E18, propres à `frontend.yml`, sont décrits en section 6. Les écarts E1 à E14 ont été tranchés par le chef et ramenés à un état conforme (E12 et E13 clos par P5-04). Sens de la correction : **contrat** = `cicd.md` mis à jour pour refléter le workflow ; **workflow** = `backend.yml` corrigé.
 
 | # | Écart | Sens | Pourquoi |
 | --- | --- | --- | --- |
@@ -128,3 +128,31 @@ Les deux questions ouvertes par P5-05 sont tranchées (journal des décisions) :
 
 1. Déclencheur `pull_request` : prouvé par la pull request n°1 (E12 clos).
 2. Runs rouges de `test` et d'`acceptance` : non provoqués. Un test en échec ou une couverture sous 80 % rend pytest non nul, donc le job rouge ; `failure()` est vrai dès qu'un job ancêtre échoue (documentation de GitHub Actions), ce qui saute `sonar`, `build-scan`, `acceptance` et `publish`. Le même mécanisme est démontré par les runs rouges de `lint`, Trivy et du quality gate. Le blocage peut être montré en direct à la soutenance.
+
+## 6. Conformité de `frontend.yml` (P7-03)
+
+Les références `frontend.yml:<ligne>` désignent [`.github/workflows/frontend.yml`](../../.github/workflows/frontend.yml) tel qu'il est sur la branche `phase-7/ci-front`. Runs de preuve : **FV** = [42184993666](https://github.com/Luucaaas/collector-poc/actions/runs/42184993666) (branche, vert, `publish` sauté), **F-ESLINT** = [42185384274](https://github.com/Luucaaas/collector-poc/actions/runs/42185384274) (rouge), **F-TRIVY** = [42184547804](https://github.com/Luucaaas/collector-poc/actions/runs/42184547804) (rouge). La publication réelle sur `main` est relevée après la fusion.
+
+| Élément du contrat | Implémentation | Preuve |
+| --- | --- | --- |
+| Déclencheurs `push` (toutes branches) et `pull_request` vers `main` | `frontend.yml:6-9` | Runs sur la branche de tâche (FV) |
+| Une exécution à la fois par ref, pas d'annulation sur `main` | `frontend.yml:13-15` | Note sous le tableau (annulation d'un run précédent sur la même ref) |
+| Moindre privilège | `frontend.yml:18-19` (`contents: read`), `frontend.yml:90-92` (`packages: write` dans `publish` seulement) | Lecture du fichier |
+| Environnement figé, actions épinglées par SHA | `ubuntu-24.04` (`:29, :89`), 8 lignes `uses:` à SHA complet (`:36, :39, :96, :100, :101, :103, :110, :122`) | `grep -n "uses:" frontend.yml` : aucun tag flottant ; `setup-node` v7.1.0 publié le 08/10/2026 (29 jours) |
+| Dossier de travail `frontend` | `frontend.yml:30-32` | FV |
+| `npm ci`, ESLint, Vitest | `frontend.yml:44-49` | FV : 11 fichiers, 62 tests passés |
+| ESLint bloque | Code de sortie de `npm run lint --max-warnings 0` | F-ESLINT : `'inutilise' is assigned a value but never used`, étape ESLint en échec, `publish` sauté |
+| `npm audit --omit=dev --audit-level=high` (ajout au contrat) | `frontend.yml:53-54` | FV : « found 0 vulnerabilities » |
+| Image : build amd64, `GIT_SHA`, labels OCI, non root | `frontend.yml:57-64` ; `frontend/Dockerfile` (`ARG GIT_SHA`, `LABEL`, `USER 101`) | Journal « Afficher les labels OCI » ; essai local : `uid=101(nginx)`, démarrage `--read-only` |
+| Trivy 0.76.0 vérifié par SHA-256 (dans `frontend` et dans `publish`) | `frontend.yml:22-25, 65-74` et `131-140` | FV : `sha256sum --check` OK |
+| Trivy `vuln,secret`, `CRITICAL,HIGH`, `--ignore-unfixed`, `--exit-code 1` sur l'image amd64 construite | `frontend.yml:75-82` | FV : cible `alpine 3.24.2` du tableau de Trivy, 0 vulnérabilité, colonne Secrets `-` |
+| Trivy bloque | Code de sortie 1 | F-TRIVY : brotli-libs CVE-2026-111497 (CRITICAL), curl, libexpat, zlib (HIGH) sur la base nginx publiée le 19/10/2026 ; corrigé par `apk upgrade` (écart E15) |
+| **`publish`** : `needs: frontend`, condition `main` et `push` | `frontend.yml:86-88` | FV : `publish` sauté sur la branche |
+| `publish` : QEMU, Buildx, connexion par `GITHUB_TOKEN`, metadata (tags calculés), index amd64 + arm64 poussé **par digest, sans tag**, cache `gha` | `frontend.yml:100-130` | À relever après fusion sur `main` (`docker buildx imagetools inspect ghcr.io/luucaaas/frontend:sha-<7>`) |
+| `publish` : Trivy sur le digest publié, amd64 puis arm64, mêmes options bloquantes | `frontend.yml:142-152` (amd64), `153-163` (arm64) | À relever après fusion sur `main` |
+| `publish` : étiquetage `sha-<7>` et `main` par `docker buildx imagetools create`, seulement si les deux scans passent (tags passés par `env`), puis garde-fou : chaque tag doit désigner le digest scanné, sinon échec | `frontend.yml:165-186` | À relever après fusion sur `main` ; sur la branche, `publish` est sauté (FV) |
+| Digest, tags et résultat des scans dans `GITHUB_STEP_SUMMARY`, valeurs passées par `env` | `frontend.yml:188-204` | À relever après fusion sur `main` |
+
+Note sur la concurrence : un push de la branche annule le run précédent de la même ref (backend 42184897635, `cancelled`).
+
+Écarts : **E15** `apk upgrade --no-cache` dans l'image finale (voir `cicd.md`, précisions ; contenu dépendant des dépôts Alpine, le digest publié fait foi). **E16** `npm audit --omit=dev --audit-level=high` ajouté au contrat. **E18** `publish` du front en « publier par digest, scanner, puis étiqueter » (le backend scanne l'amd64 avant `publish` et reconstruit ensuite ; voir `cicd.md`, « Pourquoi Trivy avant toute étiquette »). **E17** `actionlint` n'est pas installé sur le poste : le workflow n'a pas été analysé par cet outil, sa validité est établie par l'exécution réelle sur GitHub (runs ci-dessus). Les 10 vulnérabilités modérées de la chaîne ESLint (outillage de développement, `minimatch`) sont hors seuil et notées sans mise à jour forcée.

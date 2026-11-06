@@ -49,8 +49,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | fusionnée |
 | P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | fusionnée |
 | P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | fusionnée |
-| P8-01 | Délai des notifications mesuré (ENF-14) | developpeur | `phase-8/delai-notifications` | en cours |
-| P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | à faire |
+| P8-01 | Délai des notifications mesuré (ENF-14) | developpeur | `phase-8/delai-notifications` | fusionnée |
+| P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | en cours |
 | P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | à faire |
 | P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | à faire |
 
@@ -58,7 +58,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P8-01 confiée au développeur (brief dans `docs/suivi/taches/P8-01.md`, branche `phase-8/delai-notifications` poussée pour la CI). À son retour : auditeur, fusion, vérification de la publication sur `main`, déploiement du nouveau tag (`deploy.sh services <tag>`), lecture de `notification_delay_seconds` dans Prometheus. Ensuite brief de P8-02 (Locust : connexion par le vrai flux PKCE, sans client à mot de passe direct ; 50 utilisateurs). Décisions de la phase : captures Grafana par un script Playwright qui lit `GRAFANA_ADMIN_PASSWORD` dans `deploy/local/.env` (aucun agent ne le voit) ; panne brutale du broker hors périmètre (plan de remédiation). Reportés : L19 au plan de remédiation (phase 9).
+P8-02 confiée au développeur (brief dans `docs/suivi/taches/P8-02.md`, branche locale `phase-8/locust`, cluster en `sha-9d2c96e`). À son retour : auditeur, contre-vérification (relancer `tests/load/run.sh`), fusion. Ensuite brief de P8-03 (protocole 5 : HPA de 2 à 5, suppression d'un pod sous charge, captures Grafana scriptées). Reportés : L19 au plan de remédiation (phase 9).
 
 ## Décisions en attente
 
@@ -69,4 +69,4 @@ P8-01 confiée au développeur (brief dans `docs/suivi/taches/P8-01.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 10:14 — Phase 8 lancée après validation du découpage par Lucas ; brief de P8-01 écrit.
+06/11/2026 10:39 — P8-01 fusionnée (`9d2c96e`) et déployée (`sha-9d2c96e`), métrique lue dans Prometheus ; brief de P8-02 écrit.

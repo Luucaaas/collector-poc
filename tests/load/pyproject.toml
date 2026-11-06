@@ -1,0 +1,30 @@
+[project]
+name = "collector-load"
+version = "0.1.0"
+description = "Test de charge de Collector.shop : scénarios Locust sur le cluster k3d (indicateur I3, ENF-14)"
+requires-python = ">=3.12"
+# Projet à part : aucun code des services n'est importé, tout passe par l'API publique.
+package = false
+dependencies = [
+    "locust==2.47.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "mypy>=2.4.1",
+    "ruff>=0.17.3",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+addopts = "-ra"

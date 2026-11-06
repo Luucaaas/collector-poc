@@ -71,6 +71,8 @@ curl -s -X POST http://localhost:8001/api/v1/shops \
 
 Détails : [`deploy/compose/README.md`](deploy/compose/README.md) (pile) et [`tests/acceptance/README.md`](tests/acceptance/README.md) (tests).
 
+Test de charge sur le cluster k3d (Locust, indicateur I3 et ENF-14) : [`tests/load/README.md`](tests/load/README.md).
+
 Front React (`npm run dev` sur `http://localhost:5173`, contre cette pile) : voir [`frontend/README.md`](frontend/README.md).
 
 ## Déployer sur le cluster local

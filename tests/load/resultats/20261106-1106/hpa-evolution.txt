@@ -1,0 +1,96 @@
+11:06:12
+catalog-service        Deployment/catalog-service        cpu: 6%/70%   2     5     2     57m
+frontend               Deployment/frontend               cpu: 4%/70%   2     5     2     56m
+notification-service   Deployment/notification-service   cpu: 6%/70%   2     5     2     57m
+11:06:27
+catalog-service        Deployment/catalog-service        cpu: 6%/70%   2     5     2     57m
+frontend               Deployment/frontend               cpu: 4%/70%   2     5     2     57m
+notification-service   Deployment/notification-service   cpu: 6%/70%   2     5     2     57m
+11:06:43
+catalog-service        Deployment/catalog-service        cpu: 7%/70%   2     5     2     58m
+frontend               Deployment/frontend               cpu: 4%/70%   2     5     2     57m
+notification-service   Deployment/notification-service   cpu: 8%/70%   2     5     2     57m
+11:06:58
+catalog-service        Deployment/catalog-service        cpu: 22%/70%   2     5     2     58m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     57m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     57m
+11:07:13
+catalog-service        Deployment/catalog-service        cpu: 42%/70%   2     5     2     58m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     57m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     58m
+11:07:29
+catalog-service        Deployment/catalog-service        cpu: 59%/70%   2     5     2     58m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     58m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     58m
+11:07:45
+catalog-service        Deployment/catalog-service        cpu: 67%/70%   2     5     2     59m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     58m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     58m
+11:08:00
+catalog-service        Deployment/catalog-service        cpu: 70%/70%   2     5     2     59m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     58m
+notification-service   Deployment/notification-service   cpu: 8%/70%    2     5     2     58m
+11:08:15
+catalog-service        Deployment/catalog-service        cpu: 68%/70%   2     5     2     59m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     58m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     59m
+11:08:30
+catalog-service        Deployment/catalog-service        cpu: 71%/70%   2     5     2     60m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     59m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     59m
+11:08:46
+catalog-service        Deployment/catalog-service        cpu: 68%/70%   2     5     2     60m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     59m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     59m
+11:09:01
+catalog-service        Deployment/catalog-service        cpu: 71%/70%   2     5     2     60m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     59m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     59m
+11:09:17
+catalog-service        Deployment/catalog-service        cpu: 69%/70%   2     5     2     60m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     59m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     60m
+11:09:33
+catalog-service        Deployment/catalog-service        cpu: 71%/70%   2     5     2     61m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     60m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     60m
+11:09:48
+catalog-service        Deployment/catalog-service        cpu: 71%/70%   2     5     2     61m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     60m
+notification-service   Deployment/notification-service   cpu: 9%/70%    2     5     2     60m
+11:10:03
+catalog-service        Deployment/catalog-service        cpu: 71%/70%   2     5     2     61m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     60m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     60m
+11:10:18
+catalog-service        Deployment/catalog-service        cpu: 74%/70%   2     5     2     61m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     60m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     61m
+11:10:34
+catalog-service        Deployment/catalog-service        cpu: 72%/70%   2     5     2     62m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     61m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     61m
+11:10:49
+catalog-service        Deployment/catalog-service        cpu: 71%/70%   2     5     2     62m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     61m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     61m
+11:11:04
+catalog-service        Deployment/catalog-service        cpu: 72%/70%   2     5     2     62m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     61m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     61m
+11:11:19
+catalog-service        Deployment/catalog-service        cpu: 72%/70%   2     5     2     62m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     61m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     62m
+11:11:35
+catalog-service        Deployment/catalog-service        cpu: 74%/70%   2     5     2     63m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     62m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     62m
+11:11:50
+catalog-service        Deployment/catalog-service        cpu: 71%/70%   2     5     2     63m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     62m
+notification-service   Deployment/notification-service   cpu: 7%/70%    2     5     2     62m
+11:12:05
+catalog-service        Deployment/catalog-service        cpu: 68%/70%   2     5     2     63m
+frontend               Deployment/frontend               cpu: 4%/70%    2     5     2     62m
+notification-service   Deployment/notification-service   cpu: 6%/70%    2     5     2     63m

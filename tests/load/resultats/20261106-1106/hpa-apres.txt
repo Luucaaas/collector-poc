@@ -1,0 +1,5 @@
+HPA après l'exécution (11:12:13) :
+NAME                   REFERENCE                         TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+catalog-service        Deployment/catalog-service        cpu: 61%/70%   2         5         2          63m
+frontend               Deployment/frontend               cpu: 4%/70%    2         5         2          62m
+notification-service   Deployment/notification-service   cpu: 5%/70%    2         5         2          63m

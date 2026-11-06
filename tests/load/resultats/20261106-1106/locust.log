@@ -1,0 +1,40 @@
+[2026-11-06 11:06:13,357] <machine>/INFO/locust.main: Starting Locust 2.47.0
+[2026-11-06 11:06:13,358] <machine>/INFO/locust.main: Run time limit set to 360 seconds
+[2026-11-06 11:06:13,658] <machine>/INFO/locust.runners: Ramping to 50 users at a rate of 1.00 per second
+[2026-11-06 11:07:02,801] <machine>/INFO/locust.runners: All users spawned: {"ReaderUser": 40, "SellerUser": 10} (50 total users)
+[2026-11-06 11:07:02,802] <machine>/INFO/locust.runners: Resetting stats
+
+[2026-11-06 11:12:12,981] <machine>/INFO/locust.main: --run-time limit reached, shutting down
+[2026-11-06 11:12:13,074] <machine>/INFO/locust.main: Shutting down (exit code 0)
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      GET /articles                                                                   3047     0(0.00%) |     13       4     179     12 |    9.82        0.00
+GET      GET /articles/{id}                                                              1922     0(0.00%) |      9       3     104      9 |    6.20        0.00
+GET      GET /categories                                                                 1173     0(0.00%) |      7       2      67      7 |    3.78        0.00
+POST     POST /articles                                                                   291     0(0.00%) |     14       7      50     14 |    0.94        0.00
+PUT      PUT /articles/{id}/price                                                         152     0(0.00%) |     17       9      50     17 |    0.49        0.00
+POST     [connexion] formulaire                                                             0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+GET      [connexion] page d'autorisation                                                    0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+POST     [connexion] renouvellement                                                        10     0(0.00%) |     41      25      96     35 |    0.03        0.00
+POST     [connexion] échange du code                                                        0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+GET      [prépa] GET /categories                                                            0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+GET      [prépa] GET /me/interests                                                          0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+POST     [prépa] POST /categories                                                           0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+POST     [prépa] POST /shops                                                                0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+PUT      [prépa] PUT /me/interests                                                          0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+PUT      [prépa] PUT /me/preferences                                                        0     0(0.00%) |      0       0       0      0 |    0.00        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                      6595     0(0.00%) |     11       2     179     10 |   21.26        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      GET /articles                                                                          12     14     14     15     17     21     24     29    150    180    180   3047
+GET      GET /articles/{id}                                                                      9     11     11     12     14     16     19     20    100    100    100   1922
+GET      GET /categories                                                                         7      8      9      9     11     13     16     18     67     68     68   1173
+POST     POST /articles                                                                         14     16     17     18     20     23     24     26     51     51     51    291
+PUT      PUT /articles/{id}/price                                                               17     18     20     21     25     28     30     41     51     51     51    152
+POST     [connexion] renouvellement                                                             35     36     39     59     97     97     97     97     97     97     97     10
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                             10     12     13     14     17     19     23     28    140    180    180   6595
+

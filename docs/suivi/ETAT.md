@@ -50,15 +50,15 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | fusionnée |
 | P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | fusionnée |
 | P8-01 | Délai des notifications mesuré (ENF-14) | developpeur | `phase-8/delai-notifications` | fusionnée |
-| P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | en cours |
-| P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | à faire |
+| P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | fusionnée |
+| P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | en cours |
 | P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P8-02 confiée au développeur (brief dans `docs/suivi/taches/P8-02.md`, branche locale `phase-8/locust`, cluster en `sha-9d2c96e`). À son retour : auditeur, contre-vérification (relancer `tests/load/run.sh`), fusion. Ensuite brief de P8-03 (protocole 5 : HPA de 2 à 5, suppression d'un pod sous charge, captures Grafana scriptées). Reportés : L19 au plan de remédiation (phase 9).
+P8-03 confiée au développeur (brief dans `docs/suivi/taches/P8-03.md`, branche locale `phase-8/charge-disponibilite`, cluster en `sha-9d2c96e`). À son retour : auditeur, contre-vérification (chronologie de l'HPA, captures), fusion. Ensuite brief de P8-04 (relevé des indicateurs I1 à I5 sur une même version, axes d'amélioration). Reportés : L19 au plan de remédiation (phase 9).
 
 ## Décisions en attente
 
@@ -69,4 +69,4 @@ P8-02 confiée au développeur (brief dans `docs/suivi/taches/P8-02.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 10:39 — P8-01 fusionnée (`9d2c96e`) et déployée (`sha-9d2c96e`), métrique lue dans Prometheus ; brief de P8-02 écrit.
+06/11/2026 11:14 — P8-02 fusionnée (`517c924`) : I3 et ENF-14 conformes à 50 utilisateurs ; brief de P8-03 écrit.

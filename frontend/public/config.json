@@ -1,0 +1,6 @@
+{
+  "authority": "https://auth.127.0.0.1.sslip.io/realms/collector",
+  "clientId": "collector-web",
+  "catalogApiUrl": "https://api.127.0.0.1.sslip.io/catalog/api/v1",
+  "notificationApiUrl": "https://api.127.0.0.1.sslip.io/notification/api/v1"
+}

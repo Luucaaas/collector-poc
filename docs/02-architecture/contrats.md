@@ -28,7 +28,7 @@ Ce document fixe les contrats entre les composants du POC : API REST des deux se
 - Jeton absent, invalide ou expiré → **401**. Rôle insuffisant ou ressource appartenant à un autre utilisateur → **403** (ENF-03).
 - Une ressource non publiée, consultée par un autre utilisateur que son propriétaire ou un admin, renvoie **404** et non 403. On ne révèle pas son existence : la règle vaut pour le détail, la modification du prix et l'historique d'un article non publié. Sur un article publié, un autre utilisateur reçoit 403 pour la modification du prix et l'historique ; le détail reste public. Le contrôle du rôle passe avant la lecture de la ressource : un utilisateur sans le rôle requis (par exemple `buyer` sur `PUT /price`) reçoit 403, que l'article existe ou non, ce qui ne révèle rien.
 - **Routes publiques et jeton.** Sur une route publique, le jeton n'est évalué que si l'identité change la réponse (détail d'un article : un jeton invalide donne 401). Ailleurs (liste des articles, catégories, boutiques), il est ignoré.
-- Le front est un client public OIDC (`collector-web`) qui utilise le flux *Authorization Code* avec PKCE. CORS n'autorise que l'origine `https://app.127.0.0.1.sslip.io`.
+- Le front est un client public OIDC (`collector-web`) qui utilise le flux *Authorization Code* avec PKCE. CORS n'autorise que l'origine `https://app.127.0.0.1.sslip.io`. Seule exception, la pile `docker compose` de développement : l'origine y est `http://localhost:5173` (serveur Vite), et le realm qu'elle importe accepte cette adresse en redirection ; le realm du cluster ne la connaît pas.
 
 ### 1.3 Formats
 

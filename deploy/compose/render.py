@@ -6,8 +6,9 @@
 - `rabbitmq-definitions.json` : utilisateurs, vhost et permissions de RabbitMQ.
 
 Usage : render.py <fichier .env> <dossier de sortie> [--cluster]. Bibliothèque standard seule.
-Avec `--cluster` (deploy/local/deploy.sh), le client de test n'est pas ajouté : le realm du
-cluster n'a pas de Direct Access Grants.
+Avec `--cluster` (deploy/local/deploy.sh), le client de test n'est pas ajouté et `collector-web`
+n'accepte pas `http://localhost:5173` : le realm du cluster n'a ni Direct Access Grants ni adresse
+de développement.
 """
 
 import json
@@ -17,6 +18,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 REALM_USERS = ("ADMIN", "ALICE", "BOB", "CHLOE")
+
+# Développement du front (`npm run dev`, Vite sur le port 5173) : adresse ajoutée au client public
+# `collector-web` dans la pile docker compose seulement. Le realm du cluster reste limité à https://app.
+DEV_FRONT_ORIGIN = "http://localhost:5173"
 
 # Client de test : jetons sans navigateur (Direct Access Grants), avec l'audience collector-api.
 # Il n'existe que dans la pile docker compose, jamais dans le realm de base.
@@ -56,6 +61,12 @@ def render_realm(env: dict[str, str], with_test_client: bool = True) -> str:
     realm = json.loads(text)
     if with_test_client:
         realm["clients"].append(TEST_CLIENT)
+        for client in realm["clients"]:
+            if client["clientId"] == "collector-web":
+                client["redirectUris"].append(f"{DEV_FRONT_ORIGIN}/*")
+                client["webOrigins"].append(DEV_FRONT_ORIGIN)
+                attributes = client["attributes"]
+                attributes["post.logout.redirect.uris"] += f"##{DEV_FRONT_ORIGIN}/*"
     return json.dumps(realm, indent=2, ensure_ascii=False) + "\n"
 
 

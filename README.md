@@ -70,6 +70,8 @@ curl -s -X POST http://localhost:8001/api/v1/shops \
 
 Détails : [`deploy/compose/README.md`](deploy/compose/README.md) (pile) et [`tests/acceptance/README.md`](tests/acceptance/README.md) (tests).
 
+Front React (`npm run dev` sur `http://localhost:5173`, contre cette pile) : voir [`frontend/README.md`](frontend/README.md).
+
 ## Déployer sur le cluster local
 
 Cluster Kubernetes **k3d** (1 server + 2 agents) sur le Mac, avec Traefik, HTTPS par un certificat mkcert, PostgreSQL, RabbitMQ, Keycloak, Prometheus et Grafana, puis les deux services du POC (2 réplicas chacun, HPA de 2 à 5). Tout se fait par scripts de `deploy/local/` ; la preuve chronométrée est dans [le compte rendu du déploiement](docs/04-experimentations/04-deploiement/protocole.md).

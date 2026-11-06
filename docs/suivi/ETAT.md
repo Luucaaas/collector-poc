@@ -47,14 +47,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P7-01 | Socle du front et connexion | developpeur | `phase-7/socle-front` | fusionnée |
 | P7-02 | Pages métier, tests Vitest et parcours Playwright | developpeur | `phase-7/pages` | fusionnée |
 | P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | fusionnée |
-| P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | à faire |
+| P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | en cours |
 | P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Vérifier la première publication du front sur le run de `main` (job `publish` de `frontend.yml` : push par digest, scans amd64 et arm64, tags, garde-fou ; `docker buildx imagetools inspect ghcr.io/luucaaas/frontend:sha-<7>` ; lecture anonyme du paquet, sinon Lucas le rend public dans GitHub), relever les lignes « À relever » de `conformite-pipeline.md` §6 et le doute D1 (version Alpine affichée par Trivy). Puis écrire le brief de P7-04 : réimport du realm du cluster (scope `profile`, `post.logout.redirect.uris`), page de connexion de Keycloak en français, chart générique pour le front (`emptyDir` `/tmp` et `/etc/nginx/conf.d`, `fsGroup: 101`, variable `CSP_CONNECT_SRC`, ConfigMap `config.json`, sondes `/healthz`, port 8080, Ingress `app.` à la racine), `deploy.sh` et `smoke.sh`. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
+P7-04 confiée au développeur (brief dans `docs/suivi/taches/P7-04.md`, branche locale `phase-7/deploiement-front`, tag `sha-cd5751f`). À son retour : auditeur, contre-vérification du chef sur le cluster, fusion. Ensuite brief de P7-05 (parcours Playwright sur le cluster, preuves, captures). Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
 
 ## Décisions en attente
 
@@ -65,4 +65,4 @@ Vérifier la première publication du front sur le run de `main` (job `publish` 
 
 ## Dernière mise à jour
 
-06/11/2026 09:25 — P7-03 fusionnée (`1702354`) après un aller-retour, un changement de conception du `publish` du front et un garde-fou du chef.
+06/11/2026 09:40 — Première publication du front vérifiée (`frontend:sha-cd5751f`, scans amd64 et arm64 à 0, tags sur le digest scanné, paquet public) ; brief de P7-04 écrit.

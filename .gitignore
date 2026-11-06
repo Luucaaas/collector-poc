@@ -33,3 +33,10 @@ kubeconfig*
 
 # Certificat mkcert du cluster local (clé privée)
 deploy/local/.certs/
+
+# Copies de conflit créées par la synchronisation iCloud du Bureau (« fichier 2.yml », « Dockerfile 2 ») :
+# jamais versionnées (une copie de workflow avait été publiée et tournait en double).
+* [0-9]
+* [0-9].*
+* [0-9][0-9]
+* [0-9][0-9].*

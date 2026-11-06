@@ -117,6 +117,8 @@ grafana:
     resources:
       requests: {cpu: 10m, memory: 32Mi}
       limits: {memory: 128Mi}
+  # 290 à 350 Mi au repos : 384 Mi faisaient tuer Grafana (OOMKilled) à l'ouverture d'un tableau
+  # de bord pendant le protocole 5 (P8-03). La requête suit la consommation réelle.
   resources:
-    requests: {cpu: 50m, memory: 128Mi}
-    limits: {memory: 384Mi}
+    requests: {cpu: 50m, memory: 320Mi}
+    limits: {memory: 768Mi}

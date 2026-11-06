@@ -4,8 +4,8 @@
 #   docs/04-experimentations/05-charge-disponibilite/captures.sh <dossier de résultats> [<motif>]
 #
 # Le motif (facultatif) ne garde que les captures dont le nom de fichier le contient, pour reprendre
-# celles qui manquent : Grafana peut être tué par manque de mémoire (limite de 384 Mi) pendant une
-# série de captures (voir protocole.md, difficultés).
+# celles qui manquent. Avant le relèvement de sa limite à 768 Mi, Grafana était tué par manque de
+# mémoire (limite de 384 Mi) pendant une série de captures (voir protocole.md, difficultés).
 #
 # Lancé par run.sh (CAPTURES=1) ou à part, sur un dossier de résultats existant : Prometheus ne
 # garde que 2 h de mesures, il faut donc le lancer dans les 2 h qui suivent l'exécution.

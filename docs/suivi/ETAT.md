@@ -4,7 +4,9 @@
 
 ## Phase en cours
 
-**Phase 7 terminée le 06/11/2026** (5 tâches P7-01 à P7-05, toutes fusionnées après audit ; contre-vérification du chef depuis un cluster neuf). Le front React tourne sur le cluster en HTTPS avec les deux services, au même tag (`sha-cd5751f`). Prochaine phase : **phase 8** (mesures et tests de charge), à découper par le chef et à faire valider par Lucas.
+**Phase 8 en cours depuis le 06/11/2026** (mesures et tests de charge), découpage validé par Lucas : P8-01 délai des notifications (ENF-14), P8-02 scénarios Locust, P8-03 protocole 5 charge et disponibilité, P8-04 relevé des indicateurs. Tâches enchaînées une par une.
+
+Phase 7 terminée le 06/11/2026 : front React sur le cluster en HTTPS, tout au tag `sha-cd5751f`.
 
 Phase 6 terminée le 06/11/2026. Phase 5 terminée le 05/11/2026. Phase 4 terminée le 04/11/2026. Phase 3 terminée le 03/11/2026.
 
@@ -47,12 +49,16 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | fusionnée |
 | P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | fusionnée |
 | P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | fusionnée |
+| P8-01 | Délai des notifications mesuré (ENF-14) | developpeur | `phase-8/delai-notifications` | en cours |
+| P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | à faire |
+| P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | à faire |
+| P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre que Lucas demande la phase 8, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Acquis : cluster `collector` neuf, tout en `sha-cd5751f` (`deploy.sh all`), realm à jour, données de démo créées par Playwright. Reportés : capture Grafana sous charge (phase 8, Lucas), crash brutal du broker (à planifier), L19 au plan de remédiation (phase 9).
+P8-01 confiée au développeur (brief dans `docs/suivi/taches/P8-01.md`, branche `phase-8/delai-notifications` poussée pour la CI). À son retour : auditeur, fusion, vérification de la publication sur `main`, déploiement du nouveau tag (`deploy.sh services <tag>`), lecture de `notification_delay_seconds` dans Prometheus. Ensuite brief de P8-02 (Locust : connexion par le vrai flux PKCE, sans client à mot de passe direct ; 50 utilisateurs). Décisions de la phase : captures Grafana par un script Playwright qui lit `GRAFANA_ADMIN_PASSWORD` dans `deploy/local/.env` (aucun agent ne le voit) ; panne brutale du broker hors périmètre (plan de remédiation). Reportés : L19 au plan de remédiation (phase 9).
 
 ## Décisions en attente
 
@@ -63,4 +69,4 @@ Attendre que Lucas demande la phase 8, puis présenter son découpage en tâches
 
 ## Dernière mise à jour
 
-06/11/2026 10:10 — Phase 7 close : P7-05 fusionnée, contre-vérification depuis un cluster neuf (214 s, `smoke.sh` 18/18, Playwright 6/6), plan de réalisation et `CLAUDE.md` mis à jour.
+06/11/2026 10:14 — Phase 8 lancée après validation du découpage par Lucas ; brief de P8-01 écrit.

@@ -45,8 +45,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P6-04 | Observabilité : Prometheus, Grafana, tableau de bord | developpeur | `phase-6/observabilite` | fusionnée |
 | P6-05 | Preuves du déploiement et documentation | developpeur | `phase-6/preuves` | fusionnée |
 | P7-01 | Socle du front et connexion | developpeur | `phase-7/socle-front` | fusionnée |
-| P7-02 | Pages métier, tests Vitest et parcours Playwright | developpeur | `phase-7/pages` | en cours |
-| P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | à faire |
+| P7-02 | Pages métier, tests Vitest et parcours Playwright | developpeur | `phase-7/pages` | fusionnée |
+| P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | en cours |
 | P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | à faire |
 | P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | à faire |
 
@@ -54,7 +54,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P7-02 confiée au développeur (brief dans `docs/suivi/taches/P7-02.md`, branche locale `phase-7/pages`). À son retour : auditeur, puis fusion ou renvoi. Ensuite brief de P7-03 (branche poussée : elle touche la CI). À inclure dans le brief de P7-04 : réimporter le realm du cluster (scope `profile`, `post.logout.redirect.uris`) avant toute connexion du front, et passer la page de connexion de Keycloak en français. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
+P7-03 confiée au développeur (brief dans `docs/suivi/taches/P7-03.md`, branche `phase-7/ci-front` poussée sur origin pour la CI). À son retour : auditeur, fusion, puis vérifier la publication de `ghcr.io/luucaaas/frontend:sha-<7>` sur le run de `main` (amd64 et arm64, paquet public : sinon, Lucas doit le rendre public dans GitHub). À inclure dans le brief de P7-04 : réimporter le realm du cluster (scope `profile`, `post.logout.redirect.uris`), page de connexion de Keycloak en français, `emptyDir` imposés par le modèle nginx avec `readOnlyRootFilesystem`. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
 
 ## Décisions en attente
 
@@ -65,4 +65,4 @@ P7-02 confiée au développeur (brief dans `docs/suivi/taches/P7-02.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 08:40 — P7-01 fusionnée (`e666aa3`) après audit et contre-vérification du chef ; brief de P7-02 écrit (Playwright avancé de P7-05 à P7-02, sur la pile compose).
+06/11/2026 09:00 — P7-02 fusionnée (`200ae27`) après un aller-retour et la contre-vérification du chef (6 parcours Playwright sur 6) ; brief de P7-03 écrit.

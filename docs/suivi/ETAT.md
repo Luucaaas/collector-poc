@@ -65,4 +65,4 @@ P7-05 confiée au développeur (brief dans `docs/suivi/taches/P7-05.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 09:58 — P7-04 fusionnée (`3d48791`) ; realm du cluster mis à jour par `deploy.sh realm` avec l'accord de Lucas ; brief de P7-05 écrit.
+06/11/2026 09:57 — P7-04 fusionnée (`3d48791`) ; realm du cluster mis à jour par `deploy.sh realm` avec l'accord de Lucas ; brief de P7-05 écrit.

@@ -1,0 +1,13 @@
+# Contexte de build minimal. e2e/ reste dans le contexte : `tsc -b` vérifie aussi les types des parcours Playwright.
+node_modules
+dist
+playwright-report
+test-results
+coverage
+.env
+.env.*
+*.pem
+*.key
+Dockerfile
+.dockerignore
+README.md

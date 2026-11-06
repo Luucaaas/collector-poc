@@ -47,14 +47,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P7-01 | Socle du front et connexion | developpeur | `phase-7/socle-front` | fusionnée |
 | P7-02 | Pages métier, tests Vitest et parcours Playwright | developpeur | `phase-7/pages` | fusionnée |
 | P7-03 | Image nginx et `frontend.yml` | developpeur | `phase-7/ci-front` | fusionnée |
-| P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | en cours |
-| P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | à faire |
+| P7-04 | Déploiement du front sur le cluster | developpeur | `phase-7/deploiement-front` | fusionnée |
+| P7-05 | Parcours Playwright sur le cluster et preuves | developpeur | `phase-7/e2e` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P7-04 confiée au développeur (brief dans `docs/suivi/taches/P7-04.md`, branche locale `phase-7/deploiement-front`, tag `sha-cd5751f`). À son retour : auditeur, contre-vérification du chef sur le cluster, fusion. Ensuite brief de P7-05 (parcours Playwright sur le cluster, preuves, captures). Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker et rotation des clés Keycloak (à planifier).
+P7-05 confiée au développeur (brief dans `docs/suivi/taches/P7-05.md`, branche locale `phase-7/e2e`). À son retour : auditeur, fusion, puis clôture de la phase 7 : contre-vérification du chef (parcours sur le cluster), cases du plan de réalisation (job front de la phase 5 et phase 7), `CLAUDE.md` (avancement, L1 à L25, `deploy.sh realm`, tag `sha-cd5751f`), bilan à Lucas. Cluster actuel : 3 composants en `sha-cd5751f`, realm à jour. Reportés : capture Grafana (phase 8, Lucas), crash brutal du broker (à planifier) ; rotation des clés Keycloak : de fait réalisée par `deploy.sh realm`, preuve attendue de P7-05.
 
 ## Décisions en attente
 
@@ -65,4 +65,4 @@ P7-04 confiée au développeur (brief dans `docs/suivi/taches/P7-04.md`, branche
 
 ## Dernière mise à jour
 
-06/11/2026 09:40 — Première publication du front vérifiée (`frontend:sha-cd5751f`, scans amd64 et arm64 à 0, tags sur le digest scanné, paquet public) ; brief de P7-04 écrit.
+06/11/2026 09:58 — P7-04 fusionnée (`3d48791`) ; realm du cluster mis à jour par `deploy.sh realm` avec l'accord de Lucas ; brief de P7-05 écrit.

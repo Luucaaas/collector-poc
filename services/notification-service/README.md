@@ -11,7 +11,7 @@ Le socle technique (configuration, logs JSON, RFC 9457, `X-Request-ID`, authenti
 | Fichier | Différence | Raison |
 | --- | --- | --- |
 | `config.py` | `event_publish_budget_seconds` retiré ; `consumer_prefetch` (10) et `amqp_retry_seconds` (1 s) ajoutés | ce service consomme au lieu de publier |
-| `metrics.py` | `BusinessMetrics` : `notifications_created_total{type}` et `events_consumed_total{event_type, outcome}` à la place des compteurs d'articles | métriques métier propres au service (contrats.md §2.3) |
+| `metrics.py` | `BusinessMetrics` : `notifications_created_total{type}`, `events_consumed_total{event_type, outcome}` et `notification_delay_seconds{event_type}` à la place des compteurs d'articles | métriques métier propres au service (contrats.md §2.3) |
 | `db.py` | seul le commentaire de `Base` change | les modèles existent désormais |
 | `main.py` | spécifique au service (non recopié tel quel) : routeur `/me`, consommateur dans le lifespan, CORS sans `POST` | pas de publication ni de route d'écriture en `POST` |
 
@@ -49,7 +49,8 @@ Lancé dans le lifespan de l'application (même processus), arrêté proprement 
 En plus des métriques HTTP (histogramme aux bornes de l'indicateur I3) :
 
 - `notifications_created_total{type}` ;
-- `events_consumed_total{event_type, outcome}` avec `outcome` = `processed`, `requeued`, `rejected`, `invalid` ou `ignored` (`event_type="unknown"` pour un message invalide ou ignoré).
+- `events_consumed_total{event_type, outcome}` avec `outcome` = `processed`, `requeued`, `rejected`, `invalid` ou `ignored` (`event_type="unknown"` pour un message invalide ou ignoré) ;
+- `notification_delay_seconds{event_type}` : histogramme du délai entre `occurred_at` et la disponibilité des notifications (après le commit), observé une fois par événement ayant créé au moins une notification (ENF-14, p95 < 2 s). Bornes 0,1 / 0,25 / 0,5 / 1 / 2 / 5 / 10 s : le seuil de 2 s est une borne, sans interpolation. Un délai négatif (horloges décalées) est ramené à 0 et signalé par le log `negative_notification_delay`.
 
 ## Prérequis
 

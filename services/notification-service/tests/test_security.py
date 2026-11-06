@@ -350,6 +350,17 @@ async def test_metrics_expose_l_histogramme_avec_les_bornes_de_i3(
     assert "http_requests_total" in text
 
 
+async def test_metrics_expose_le_delai_des_notifications_avec_la_borne_de_2_s(
+    client: httpx.AsyncClient, app: FastAPI
+) -> None:
+    app.state.business_metrics.notification_delay.labels(event_type="article.published").observe(
+        0.4
+    )
+    text = (await client.get("/metrics")).text
+    assert 'notification_delay_seconds_bucket{event_type="article.published",le="2.0"} 1.0' in text
+    assert 'notification_delay_seconds_count{event_type="article.published"} 1.0' in text
+
+
 def _cache(server: JwksServer, now: list[float], max_stale: float = 3600) -> JwksCache:
     return JwksCache(
         "http://x",

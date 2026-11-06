@@ -3,7 +3,8 @@
 #   1. cibles Prometheus : les 2 réplicas des 2 services doivent être `up` ;
 #   2. un peu de trafic sur les routes publiques (200 boucles de 3 requêtes) ;
 #   3. chaque requête du tableau de bord est exécutée par l'API de Grafana (/api/ds/query) pour
-#      chaque service : aucune ne doit renvoyer une série vide ;
+#      chaque service : aucune ne doit renvoyer une série vide (sauf le délai des notifications, non vérifiable sans
+#      notification créée ; un panneau propre à un autre service est sauté) ;
 #   4. mémoire et CPU des pods (metrics-server).
 # Prometheus n'est pas exposé : accès par `kubectl port-forward` (fermé en fin de script).
 # Le mot de passe de Grafana est lu dans le Secret `grafana-admin`, écrit dans un fichier 600
@@ -64,13 +65,18 @@ step "3. Requêtes du tableau de bord via l'API de Grafana"
 ( umask 077; printf 'machine %s login admin password %s\n' "$GRAFANA" \
     "$($K get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d)" > "${tmp}/netrc" )
 python3 - "$DASHBOARD" "${tmp}/netrc" "$GRAFANA" <<'PY'
-import json, subprocess, sys
+import json, re, subprocess, sys
 dash = json.load(open(sys.argv[1]))
 netrc, host = sys.argv[2], sys.argv[3]
 empty = 0
 for svc in ("catalog-service", "notification-service"):
     print(f"-- {svc}")
     for panel in dash["panels"]:
+        # Panneau dont la requête fixe un `job` : propre à ce service, sauté pour les autres.
+        fixed = {j for t in panel["targets"] for j in re.findall(r'job="([a-z-]+)"', t["expr"])}
+        if fixed and svc not in fixed:
+            print(f"   {panel['title'][:30]:30} | sauté : propre à {', '.join(sorted(fixed))}")
+            continue
         for target in panel["targets"]:
             body = {"queries": [{"refId": "A", "datasource": {"type": "prometheus", "uid": "prometheus"},
                                  "expr": target["expr"].replace("$service", svc), "range": True,
@@ -86,6 +92,11 @@ for svc in ("catalog-service", "notification-service"):
                 points = [v for v in (values[1] if len(values) > 1 else []) if v is not None and v == v]
                 if points:
                     series.append(points[-1])
+            if "error" not in res and not series and "notification_delay_seconds" in target["expr"]:
+                # Pas d'événement ayant créé de notification depuis le démarrage : le panneau est vide
+                # sans que la chaîne soit en défaut. Ce n'est pas un échec, mais ce n'est pas vérifié.
+                print(f"   {panel['title'][:30]:30} | {target['legendFormat'][:32]:32} | non vérifiable : aucune notification créée depuis le démarrage (lancer les parcours Playwright ou Locust)")
+                continue
             if "error" in res or not series:
                 empty += 1
             shown = ", ".join(f"{v:.4g}" for v in series[:3]) or "VIDE"

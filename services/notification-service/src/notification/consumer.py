@@ -13,6 +13,8 @@ Règle d'échec mesurée dans l'expérimentation 1 (scénario C).
 
 import asyncio
 import contextlib
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 import aio_pika
 import structlog
@@ -41,10 +43,14 @@ class EventProcessor:
     testé sans broker."""
 
     def __init__(
-        self, session_factory: async_sessionmaker[AsyncSession], metrics: BusinessMetrics
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        metrics: BusinessMetrics,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._session_factory = session_factory
         self._metrics = metrics
+        self._clock = clock  # injectable : les tests fixent l'instant de fin du traitement
 
     async def process(self, event: Event) -> int:
         """Renvoie le nombre de notifications créées par cet appel."""
@@ -56,7 +62,28 @@ class EventProcessor:
             self._metrics.notifications_created.labels(type=notification_type(event)).inc(
                 len(notified)
             )
+            self._observe_delay(event)
         return len(notified)
+
+    def _observe_delay(self, event: Event) -> None:
+        """Délai ENF-14, observé une fois par événement ayant créé des notifications. Un délai
+        négatif (horloges décalées entre les services) est ramené à 0 et signalé dans les logs :
+        plus simple qu'un compteur dédié, et l'anomalie reste visible sans créer de série.
+
+        Appelée après le commit : une erreur de mesure ne doit jamais faire échouer (donc remettre
+        en file) un événement déjà traité, elle est seulement journalisée.
+        """
+        try:
+            occurred_at = event.occurred_at
+            if occurred_at.tzinfo is None:  # le contrat impose l'UTC (`Z`) : sans fuseau, UTC
+                occurred_at = occurred_at.replace(tzinfo=UTC)
+            delay = (self._clock() - occurred_at).total_seconds()
+            if delay < 0:
+                logger.warning("negative_notification_delay", delay_seconds=round(delay, 3))
+                delay = 0.0
+            self._metrics.notification_delay.labels(event_type=event.event_type).observe(delay)
+        except Exception as error:
+            logger.warning("notification_delay_failed", error=type(error).__name__)
 
 
 class ArticleEventConsumer:

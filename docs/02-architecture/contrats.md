@@ -162,7 +162,7 @@ Tous les chemins sont sous `/me` : l'utilisateur est toujours celui du jeton (`s
 | --- | --- | --- |
 | GET | `/health/live` | Sonde *liveness* : le processus répond. Ne teste aucune dépendance, pour éviter des redémarrages en cascade |
 | GET | `/health/ready` | Sonde *readiness* : la base de données du service est joignable. En cas d'échec, le pod est retiré du Service sans être redémarré. RabbitMQ n'en fait pas partie : une panne du broker ne doit pas retirer les services du trafic. La connexion AMQP se rétablit automatiquement (connexion robuste d'aio-pika) |
-| GET | `/metrics` | Métriques Prometheus (débit, latence et erreurs HTTP, plus les compteurs métier : articles publiés et rejetés, notifications créées) |
+| GET | `/metrics` | Métriques Prometheus (débit, latence et erreurs HTTP, plus les métriques métier : articles publiés et rejetés, notifications créées, et pour `notification-service` l'histogramme `notification_delay_seconds{event_type}` du délai entre l'événement et la notification, qui mesure ENF-14) |
 
 ## 3. Événements
 

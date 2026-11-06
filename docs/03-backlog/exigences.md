@@ -154,7 +154,7 @@ Chaque exigence a une cible mesurable et un moyen de vérification. Les quatre i
 | --- | --- | --- | --- | --- |
 | ENF-12 | Le temps de réponse reste court sous charge nominale. | Comportement temporel | Avec 50 utilisateurs simultanés (Locust) : p95 < 300 ms en lecture du catalogue, p95 < 500 ms en publication d'article | POC |
 | ENF-13 | Le taux d'erreur reste faible sous charge nominale. | Capacité | Moins de 1 % de réponses 5xx sur le scénario Locust | POC |
-| ENF-14 | Une notification est disponible peu après l'événement qui la déclenche. | Comportement temporel | p95 < 2 s entre l'horodatage de l'événement et la création de la notification | POC |
+| ENF-14 | Une notification est disponible peu après l'événement qui la déclenche. | Comportement temporel | p95 < 2 s entre l'horodatage de l'événement et la création de la notification (mesuré par `notification_delay_seconds`) | POC |
 | ENF-15 | Les services consomment des ressources bornées. | Utilisation des ressources | Requests et limits CPU et mémoire définis pour chaque pod, consommation suivie dans Grafana | POC |
 
 ### 4.3 Fiabilité

@@ -4,7 +4,9 @@
 
 ## Phase en cours
 
-**Phase 8 terminée le 06/11/2026** (4 tâches P8-01 à P8-04, toutes fusionnées après audit ; contre-vérification du chef depuis un cluster neuf en `sha-20e080b`). I3 et ENF-14 mesurés et conformes, montée en charge et disponibilité démontrées (protocole 5), 5 indicateurs relevés avec la dette chiffrée. Prochaine phase : **phase 9** (audit de sécurité et plan de remédiation), à découper par le chef et à faire valider par Lucas.
+**Phase 9 en cours depuis le 10/11/2026** (audit de sécurité et plan de remédiation), découpage validé par Lucas : P9-01 audit ZAP et rapports de scans, P9-02 corrections prioritaires (dont L19), P9-03 analyse de risques STRIDE et OWASP (POC et reste du SI), P9-04 plan de remédiation priorisé.
+
+Phase 8 terminée le 06/11/2026 : charge, disponibilité et 5 indicateurs mesurés, cluster en `sha-20e080b`.
 
 Phase 7 terminée le 06/11/2026 : front React sur le cluster en HTTPS, tout au tag `sha-cd5751f`.
 
@@ -53,12 +55,16 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | fusionnée |
 | P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | fusionnée |
 | P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | fusionnée |
+| P9-01 | Audit dynamique (ZAP) et rapports de scans | developpeur | `phase-9/audit-zap` | en cours |
+| P9-02 | Corrections prioritaires du POC (dont L19) | developpeur | `phase-9/corrections` | à faire |
+| P9-03 | Analyse de risques STRIDE et OWASP (POC et SI) | developpeur | `phase-9/analyse-risques` | à faire |
+| P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Attendre que Lucas demande la phase 9, puis présenter son découpage en tâches (agent, branche, critères de fin) avant toute délégation. Acquis : cluster neuf en `sha-20e080b`, mot de passe de Grafana régénéré. À reprendre en phase 9 : L1 à L25 (`architecture-poc.md` §8), L19 (console d'administration de Keycloak publique), axes de sécurité d'`indicateurs.md` (Trivy local et vulnérabilités sans correctif, arm64 des services non scanné, `npm audit fix` majeur), panne brutale du broker (sans outbox).
+P9-01 confiée au développeur (brief dans `docs/suivi/taches/P9-01.md`, branche locale `phase-9/audit-zap`, cluster en `sha-20e080b`). À son retour : auditeur, contre-vérification (aucun jeton dans les rapports, constats qualifiés), fusion. Ensuite brief de P9-02 à partir des constats retenus, plus L19. Décisions de la phase : scans actifs seulement sur le POC local (aucun scan de WordPress, Office 365 ou du Wi-Fi) ; OWASP Top 10:2025 et API Security Top 10:2023 ; matrice impact × probabilité 5 × 5.
 
 ## Décisions en attente
 
@@ -69,4 +75,4 @@ Attendre que Lucas demande la phase 9, puis présenter son découpage en tâches
 
 ## Dernière mise à jour
 
-06/11/2026 14:18 — Phase 8 close : P8-04 fusionnée (`20e080b`), contre-vérification depuis un cluster neuf (213 s, `smoke.sh` 18/18, Playwright 6/6), plan de réalisation et `CLAUDE.md` mis à jour.
+10/11/2026 15:55 — Phase 9 lancée après validation du découpage par Lucas ; brief de P9-01 écrit.

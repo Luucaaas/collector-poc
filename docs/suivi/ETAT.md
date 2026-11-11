@@ -62,15 +62,15 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P9-03 | Analyse de risques STRIDE et OWASP (POC et SI) | developpeur | `phase-9/analyse-risques` | fusionnée |
 | P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | fusionnée |
 | P10-01 | README complet et guide du jury | developpeur | `phase-10/readme-guide` | fusionnée |
-| P10-02 | Démo de 6 min outillée | developpeur | `phase-10/demo` | en cours |
-| P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | à faire |
+| P10-02 | Démo de 6 min outillée | developpeur | `phase-10/demo` | fusionnée |
+| P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | en cours |
 | P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P10-02 confiée au développeur (brief dans `docs/suivi/taches/P10-02.md`, branche locale `phase-10/demo`). À son retour : auditeur, fusion, brief de P10-03 (contenu du support), puis le chef construit le diaporama avec l'outil de présentation de Claude. Cluster en `sha-ee45469`.
+P10-03 confiée au développeur (contenu `docs/07-soutenance/support.md`, branche locale `phase-10/support`). À son retour : auditeur, fusion, puis le chef construit le diaporama (outil de présentation de Claude : `quickstart` intent `slides`). Ensuite P10-04 (questions et glossaire). Cluster prêt pour la démo en `sha-5975ca0` avec les données de démo : ne pas y lancer de charge ni de Playwright.
 
 ## Décisions en attente
 
@@ -81,4 +81,4 @@ P10-02 confiée au développeur (brief dans `docs/suivi/taches/P10-02.md`, branc
 
 ## Dernière mise à jour
 
-11/11/2026 18:05 — P10-01 fusionnée (`a1050ec`, README vérifié sur cluster neuf, guide du jury) ; brief de P10-02 écrit.
+11/11/2026 19:05 — P10-02 fusionnée (`ad68a56`, démo de 5 min 10 outillée) ; brief de P10-03 écrit.

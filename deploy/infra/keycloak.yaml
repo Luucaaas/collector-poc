@@ -67,6 +67,11 @@ spec:
                 secretKeyRef: {name: postgres-credentials, key: KEYCLOAK_DB_PASSWORD}
             - name: KC_HOSTNAME
               value: https://auth.127.0.0.1.sslip.io
+            # Console d'administration : adresse propre, jointe par `kubectl port-forward` (l'hôte public
+            # ne la route plus, Ingress ci-dessous). Sans elle, la console appellerait l'hôte public
+            # pour son API (/admin/realms/...) et recevrait un 404.
+            - name: KC_HOSTNAME_ADMIN
+              value: http://localhost:8080
             - name: KC_HTTP_ENABLED
               value: "true"
             - name: KC_PROXY_HEADERS
@@ -110,6 +115,21 @@ spec:
           secret:
             secretName: keycloak-realm
 ---
+# HSTS sur l'hôte public de Keycloak (audit P9-01, F-07). Les autres en-têtes sont posés par Keycloak.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: keycloak-security-headers
+  namespace: collector
+spec:
+  headers:
+    stsSeconds: 31536000
+---
+# L'hôte public n'expose que ce dont le navigateur a besoin : /realms/ (connexion, déconnexion, jetons,
+# configuration OpenID, clés) et /resources/ (feuilles de style et scripts de la page de connexion).
+# La console d'administration (/admin) et le realm master ne sont plus joignables de l'extérieur (L19,
+# audit P9-01, F-06) ; l'administrateur y accède par `kubectl port-forward` (deploy/README.md).
+# Les services joignent Keycloak par l'URL interne du Service (JWKS_URL), sans passer par cet Ingress.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -117,6 +137,7 @@ metadata:
   namespace: collector
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: collector-keycloak-security-headers@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
@@ -126,7 +147,14 @@ spec:
     - host: auth.127.0.0.1.sslip.io
       http:
         paths:
-          - path: /
+          - path: /realms/
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+          - path: /resources/
             pathType: Prefix
             backend:
               service:

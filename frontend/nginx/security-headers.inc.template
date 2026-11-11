@@ -5,7 +5,7 @@
 # (fetch) ne vont que vers l'origine et les adresses de CSP_CONNECT_SRC.
 # style-src 'unsafe-inline' : Emotion (MUI) injecte des balises <style> à l'exécution (limite connue).
 # Aucun frame-src : le renouvellement des jetons utilise le jeton de rafraîchissement, pas d'iframe.
-add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' ${CSP_CONNECT_SRC}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ${CSP_CONNECT_SRC}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header X-Frame-Options "DENY" always;
 # Une origine seulement vers un autre site : l'adresse complète (avec ?code= du retour de Keycloak) ne fuit pas.

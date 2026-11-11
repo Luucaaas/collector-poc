@@ -73,5 +73,5 @@ Dans le POC, les étapes Code à Release sont automatisées dans le pipeline, ta
 | L13 | Semgrep, Bandit, pip-audit, Gitleaks, ZAP en CI | Build, Test, Monitor |
 | L17 | `securityContext` de l'infrastructure (Keycloak, PostgreSQL) | Deploy |
 | L18 | Broker RabbitMQ démarré en root | Deploy |
-| L19 | Console d'administration de Keycloak exposée, en-têtes `X-Forwarded-*` | Deploy, Operate |
+| L19 | Réduite en phase 9 : console d'administration de Keycloak retirée de l'hôte public (P9-02) ; reste la confiance dans les en-têtes `X-Forwarded-*` | Deploy, Operate |
 | L20 | Observabilité sans stockage persistant ni contrôle d'accès | Operate, Monitor |

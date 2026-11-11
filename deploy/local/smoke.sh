@@ -48,6 +48,31 @@ else
   fail=1
 fi
 
+# Audit P9-01 (F-06, F-07). Keycloak : l'hôte public n'expose que /realms/ et /resources/ ; la console
+# d'administration n'est plus joignable de l'extérieur (L19), la configuration OpenID l'est toujours.
+AUTH="https://auth.127.0.0.1.sslip.io"
+check "keycloak : console d'administration hors de l'hôte public" 404 "${AUTH}/admin/"
+check "keycloak : console du realm master hors de l'hôte public" 404 "${AUTH}/admin/master/console/"
+check "keycloak : configuration OpenID du realm collector" 200 "${AUTH}/realms/collector/.well-known/openid-configuration"
+
+# En-têtes de sécurité posés par Traefik (middleware) : HSTS et nosniff sur l'API, HSTS sur Keycloak.
+headers="$(curl -s --max-time 10 -D - -o /dev/null "${API}/catalog/api/v1/categories" || true)"
+for name in Strict-Transport-Security X-Content-Type-Options Cross-Origin-Resource-Policy; do
+  if grep -qi "^${name}: ." <<< "$headers"; then
+    printf 'OK    %-55s\n' "catalogue : en-tête ${name} présent"
+  else
+    printf 'ECHEC %-55s\n' "catalogue : en-tête ${name} absent" >&2
+    fail=1
+  fi
+done
+headers="$(curl -s --max-time 10 -D - -o /dev/null "${AUTH}/realms/collector/.well-known/openid-configuration" || true)"
+if grep -qi '^strict-transport-security: .' <<< "$headers"; then
+  printf 'OK    %-55s\n' "keycloak : en-tête Strict-Transport-Security présent"
+else
+  printf 'ECHEC %-55s\n' "keycloak : en-tête Strict-Transport-Security absent" >&2
+  fail=1
+fi
+
 # Front (nginx) : page d'accueil, en-têtes de sécurité, configuration d'exécution, fallback SPA.
 check "front : page d'accueil" 200 "${APP}/"
 check "front : route de l'application (fallback SPA)" 200 "${APP}/vendre"

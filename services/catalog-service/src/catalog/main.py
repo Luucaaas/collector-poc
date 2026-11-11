@@ -30,9 +30,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         await application.state.publisher.start()  # n'échoue pas si RabbitMQ est absent
-        yield
-        await application.state.publisher.close()
-        await engine.dispose()  # arrêt propre : les connexions sont fermées
+        try:
+            yield
+        finally:  # même sortie anticipée : la fermeture n'est jamais sautée (Sonar python:S9152)
+            try:
+                await application.state.publisher.close()
+            finally:
+                await engine.dispose()  # arrêt propre : les connexions sont fermées
 
     app = FastAPI(
         title="catalog-service",

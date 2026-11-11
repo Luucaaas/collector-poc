@@ -14,6 +14,23 @@ spec:
     prefixes:
       - {{ required "ingress.prefix est obligatoire (ex. /catalog)" .Values.ingress.prefix }}
 ---
+# En-têtes de sécurité des réponses de l'API (audit P9-01, F-07), posés une fois par Traefik plutôt que
+# dans le code de chaque service : HSTS, nosniff et Cross-Origin-Resource-Policy. `same-site` : les appels
+# `fetch` du front (https://app.) sont des requêtes CORS, que CORP ne bloque pas ; seul le chargement
+# direct (balise <img>, <script>) par un autre site est refusé.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "collector-service.name" . }}-security-headers
+  labels:
+    {{- include "collector-service.labels" . | nindent 4 }}
+spec:
+  headers:
+    stsSeconds: {{ .Values.ingress.stsSeconds | int64 }}
+    contentTypeNosniff: true
+    customResponseHeaders:
+      Cross-Origin-Resource-Policy: same-site
+---
 # Seul <prefix>/api/v1 est routé : /health/* et /metrics ne sont pas joignables par l'ingress.
 {{- else }}
 # Mode « racine » (front) : tout le chemin / de l'hôte est routé vers le Service, sans Middleware.
@@ -27,7 +44,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     {{- if not $root }}
-    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "collector-service.name" . }}-strip-prefix@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "collector-service.name" . }}-strip-prefix@kubernetescrd,{{ .Release.Namespace }}-{{ include "collector-service.name" . }}-security-headers@kubernetescrd
     {{- end }}
 spec:
   ingressClassName: traefik

@@ -55,6 +55,17 @@ La commande, relançable :
 
 Elle ne s'exécute jamais toute seule : ni `infra` ni `all` ne la lancent (ils mettent seulement le Secret à jour). Sur un cluster neuf, le realm est importé au premier démarrage et `realm` est inutile. Alternative plus lourde : `cluster.sh delete`, `create`, puis `deploy.sh infra`.
 
+## Console d'administration de Keycloak : `kubectl port-forward`
+
+L'Ingress de `https://auth.127.0.0.1.sslip.io` ne route que `/realms/` et `/resources/` : la console d'administration répond 404 depuis l'extérieur (limite L19 traitée, audit de sécurité P9-01, constat F-06). Pour l'administrateur :
+
+```bash
+kubectl -n collector port-forward svc/keycloak 8080:8080
+# puis http://localhost:8080/admin/ ; utilisateur `admin`, mot de passe du Secret `keycloak-admin` (deploy/local/.env)
+```
+
+`KC_HOSTNAME_ADMIN=http://localhost:8080` (dans `infra/keycloak.yaml`) donne à la console sa propre adresse : sans lui, elle appellerait l'hôte public pour son API et recevrait un 404. Les services, eux, joignent Keycloak par l'URL interne (`JWKS_URL`), sans Ingress.
+
 ## Le front : `https://app.127.0.0.1.sslip.io`
 
 `deploy.sh services <tag>` (et `all <tag>`) déploie aussi l'image `ghcr.io/luucaaas/frontend:<tag>` avec **le même chart** que les services, configuré par `helm/values/frontend.yaml`. Ce qui change par rapport aux services, tout se lit dans ce fichier :

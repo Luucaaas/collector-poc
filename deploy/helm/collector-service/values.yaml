@@ -70,6 +70,7 @@ ingress:
   mode: api             # api : <prefix><apiPath> avec Middleware StripPrefix ; root : chemin / sans Middleware (front)
   host: api.127.0.0.1.sslip.io
   prefix: ""            # ex. /catalog : retiré par le Middleware StripPrefix avant d'appeler le service
+  stsSeconds: 31536000  # HSTS (mode api) : un an, sans includeSubDomains ni preload (le domaine sslip.io n'est pas le nôtre)
   apiPath: /api/v1      # seul ce chemin est routé : /health/* et /metrics restent hors de l'Ingress
 
 migration:

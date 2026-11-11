@@ -28,9 +28,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         await application.state.consumer.start()  # rend la main même si RabbitMQ est absent
-        yield
-        await application.state.consumer.close()  # arrêt propre : le consommateur est fermé
-        await engine.dispose()  # arrêt propre : les connexions sont fermées
+        try:
+            yield
+        finally:  # même sortie anticipée : la fermeture n'est jamais sautée (Sonar python:S9152)
+            try:
+                await application.state.consumer.close()  # arrêt propre : le consommateur est fermé
+            finally:
+                await engine.dispose()  # arrêt propre : les connexions sont fermées
 
     app = FastAPI(
         title="notification-service",

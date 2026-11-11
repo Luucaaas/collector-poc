@@ -54,7 +54,7 @@ Un constat n'a de valeur que s'il entre dans le backlog. Toute alerte issue d'un
 
 1. **Source** : échec de la CI (SonarCloud, Trivy, tests), mesure hors seuil lors de la revue de fin de sprint ([indicateurs.md](indicateurs.md)), alerte observée dans Grafana, rapport ZAP de l'audit.
 2. **Ticket** : une issue GitHub est ouverte avec la mesure, la preuve (lien vers le job CI ou le rapport) et la mesure de sécurité concernée. Elle est étiquetée `dette` ou `sécurité`.
-3. **Priorisation** : le Lead Developer classe le ticket selon la sévérité (CVSS pour une vulnérabilité) et l'exposition. Un CRITICAL ou HIGH avec correctif passe avant toute nouvelle fonctionnalité. Les autres entrent dans le plan de remédiation de `docs/06-securite`.
+3. **Priorisation** : le Lead Developer classe le ticket selon la sévérité (CVSS pour une vulnérabilité) et l'exposition. Un CRITICAL ou HIGH avec correctif passe avant toute nouvelle fonctionnalité. Les autres entrent dans le [plan de remédiation](../06-securite/plan-remediation.md) de `docs/06-securite` (règles de priorité R1 à R9 du § 2.2, suivi au § 9).
 4. **Retour au Plan** : le ticket est planifié au sprint suivant. Si le constat révèle une exigence manquante, `exigences.md` est complétée. S'il remet en cause un choix d'architecture, une ADR est ouverte.
 5. **Vérification** : la correction n'est validée que lorsque la mesure revient sous le seuil lors de l'exécution suivante de la CI.
 

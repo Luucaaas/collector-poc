@@ -251,7 +251,7 @@ sequenceDiagram
 
 ## 8. Limites assumées du POC
 
-Chaque élément de l'architecture cible absent du POC laisse un risque connu. Ce tableau alimente directement le plan de remédiation (`docs/06-securite`, critère 8). La priorité tient compte de l'impact en production et de la facilité d'exploitation.
+Chaque élément de l'architecture cible absent du POC laisse un risque connu. Ce tableau alimente directement le plan de remédiation (`docs/06-securite`, critère 8) : chaque limite est rattachée à une action dans le [plan de remédiation](../06-securite/plan-remediation.md#53-limites-l1-à-l25-encore-ouvertes), sauf L14 (écartée, sans effet de sécurité). La priorité tient compte de l'impact en production et de la facilité d'exploitation.
 
 | # | Élément absent du POC | Risque laissé | Recommandation pour la cible | Priorité |
 | --- | --- | --- | --- | --- |

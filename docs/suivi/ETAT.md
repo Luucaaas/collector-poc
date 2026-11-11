@@ -63,14 +63,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | fusionnée |
 | P10-01 | README complet et guide du jury | developpeur | `phase-10/readme-guide` | fusionnée |
 | P10-02 | Démo de 6 min outillée | developpeur | `phase-10/demo` | fusionnée |
-| P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | en cours |
-| P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | à faire |
+| P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | fusionnée (diaporama en cours par le chef) |
+| P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P10-03 confiée au développeur (contenu `docs/07-soutenance/support.md`, branche locale `phase-10/support`). À son retour : auditeur, fusion, puis le chef construit le diaporama (outil de présentation de Claude : `quickstart` intent `slides`). Ensuite P10-04 (questions et glossaire). Cluster prêt pour la démo en `sha-5975ca0` avec les données de démo : ne pas y lancer de charge ni de Playwright.
+P10-04 confiée au développeur (brief dans `docs/suivi/taches/P10-04.md`, branche locale `phase-10/questions`). Le chef termine le diaporama (https://claude.ai/artifact/MdhpZcHvTz1qiuib1BMHoU) : diapositive 8 et annexe A3 avec la nouvelle exécution du protocole 5 (`resultats/20261111-1930`, captures Grafana à l'axe corrigé), puis commit de ces résultats. Ensuite : audit de P10-04, fusion, clôture de la phase 10 (cluster neuf et données de démo pour la soutenance, liste de ce qui reste à Lucas).
 
 ## Décisions en attente
 
@@ -81,4 +81,4 @@ P10-03 confiée au développeur (contenu `docs/07-soutenance/support.md`, branch
 
 ## Dernière mise à jour
 
-11/11/2026 19:05 — P10-02 fusionnée (`ad68a56`, démo de 5 min 10 outillée) ; brief de P10-03 écrit.
+11/11/2026 19:38 — P10-03 fusionnée (`5109f04`) ; axe du panneau Grafana corrigé (`e724741`) ; diaporama en construction ; brief de P10-04 écrit.

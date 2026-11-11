@@ -1,0 +1,33 @@
+Date de début : 10/11/2026 16:41:48
+Commit du dépôt : 558f097
+Docker : 28.5.1
+Image ZAP : zaproxy/zap-stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238
+Cible active : https://api.127.0.0.1.sslip.io ; passif : https://app.127.0.0.1.sslip.io et https://auth.127.0.0.1.sslip.io
+
+Images déployées (lues sur le cluster) :
+  ghcr.io/luucaaas/catalog-service:sha-20e080b@sha256:ec3f47e6c92015bd4592724e7c8012e9c28569d357bdc58110bb67fa47fcfebd
+  ghcr.io/luucaaas/notification-service:sha-20e080b@sha256:2eb6448744d294bba586f234c48219ee2eda77e685da69edd28f99e25b089453
+  ghcr.io/luucaaas/frontend:sha-20e080b@sha256:93afcde080277d0a685d706705a9e3cd3957e0eaab6c1a306deb71484f38798b
+
+Digests lus sur les pods :
+  catalog-service-6db7bc475d-8m7pd	ghcr.io/luucaaas/catalog-service@sha256:ec3f47e6c92015bd4592724e7c8012e9c28569d357bdc58110bb67fa47fcfebd
+  catalog-service-6db7bc475d-s5sgp	ghcr.io/luucaaas/catalog-service@sha256:ec3f47e6c92015bd4592724e7c8012e9c28569d357bdc58110bb67fa47fcfebd
+  catalog-service-6db7bc475d-ss7l9	ghcr.io/luucaaas/catalog-service@sha256:ec3f47e6c92015bd4592724e7c8012e9c28569d357bdc58110bb67fa47fcfebd
+  catalog-service-6db7bc475d-vzz2t	ghcr.io/luucaaas/catalog-service@sha256:ec3f47e6c92015bd4592724e7c8012e9c28569d357bdc58110bb67fa47fcfebd
+  frontend-567ccd44df-9pwpp	ghcr.io/luucaaas/frontend@sha256:93afcde080277d0a685d706705a9e3cd3957e0eaab6c1a306deb71484f38798b
+  frontend-567ccd44df-wmgqz	ghcr.io/luucaaas/frontend@sha256:93afcde080277d0a685d706705a9e3cd3957e0eaab6c1a306deb71484f38798b
+  notification-service-97b5df7f6-298cl	ghcr.io/luucaaas/notification-service@sha256:2eb6448744d294bba586f234c48219ee2eda77e685da69edd28f99e25b089453
+  notification-service-97b5df7f6-zs7jm	ghcr.io/luucaaas/notification-service@sha256:2eb6448744d294bba586f234c48219ee2eda77e685da69edd28f99e25b089453
+
+Node : v22.23.4 ; npm : 10.9.9
+Trivy 0.76.0 (archive trivy_0.76.0_macOS-ARM64.tar.gz, SHA-256 vérifiée)
+Base de vulnérabilités de Trivy :
+  Vulnerability DB:
+    Version: 2
+    UpdatedAt: 2026-11-10 13:03:09.93195248 +0000 UTC
+    NextUpdate: 2026-11-11 13:03:09.93195222 +0000 UTC
+    DownloadedAt: 2026-11-10 15:42:13.42548 +0000 UTC
+  Check Bundle:
+    Digest: sha256:b591e9190cff4aa4e385b1a25bccfd9ecf178d3c77fd194e1410b7ce7e1df058
+    DownloadedAt: 2026-11-10 15:42:50.122232 +0000 UTC
+ZAP : zap-2.17.0.jar ; image zaproxy/zap-stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238

@@ -1,0 +1,3 @@
+catalog-service        Deployment/catalog-service        cpu: 2%/70%   2     5     4     4d2h
+frontend               Deployment/frontend               cpu: 4%/70%   2     5     2     4d2h
+notification-service   Deployment/notification-service   cpu: 2%/70%   2     5     2     4d2h

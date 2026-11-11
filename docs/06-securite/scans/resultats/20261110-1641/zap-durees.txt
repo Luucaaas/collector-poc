@@ -1,0 +1,6 @@
+front : 29 s
+keycloak : 35 s
+api-catalog-anonyme : 39 s
+api-notification-anonyme : 31 s
+api-catalog-alice : 41 s
+api-notification-alice : 33 s

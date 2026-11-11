@@ -168,3 +168,5 @@ Une ligne par décision, la plus récente en bas. Mentionner l'identifiant de la
 | 11/11/2026 | P9-04, audit n° 1 : horizons qui ne suivent pas la méthode (risque de 4/5 au critère 8) | 1. Fusionner. 2. Méthode par risque, exceptions écrites et contrôlées par script (R9) | 2 | La grille exige une priorisation justifiée ; chaque écart a maintenant sa raison |
 | 11/11/2026 | P9-04 : coûts par utilisateur | 1. 10 comptes. 2. 7 personnes (effectif du contexte), variante à 10 avec les recrutements | 2 | Fidèle au contexte de l'entreprise |
 | 11/11/2026 | Phase 9 : clôture | — | Phase terminée | Plan de 58 actions contrôlé par script (612 contrôles), cluster en `sha-1be69a1`, `smoke.sh` 25/25 |
+| 11/11/2026 | Phase 10 : pipeline dans la démo | 1. Push et run en direct. 2. Run déjà terminé montré, push lancé en début de soutenance | 2 | Un run complet dure environ 8 min, plus que la démo de 6 min |
+| 11/11/2026 | Phase 10 : outil du diaporama | 1. PowerPoint fait à la main. 2. Outil de présentation de Claude, exportable en PDF ou PowerPoint | 2 | Construit et corrigé par le chef à partir d'un contenu audité ; Lucas garde un fichier exportable |

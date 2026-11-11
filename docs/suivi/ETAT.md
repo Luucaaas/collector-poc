@@ -4,7 +4,7 @@
 
 ## Phase en cours
 
-**Phase 9 en cours depuis le 10/11/2026** (audit de sécurité et plan de remédiation), découpage validé par Lucas : P9-01 audit ZAP et rapports de scans, P9-02 corrections prioritaires (dont L19), P9-03 analyse de risques STRIDE et OWASP (POC et reste du SI), P9-04 plan de remédiation priorisé.
+**Phase 9 terminée le 11/11/2026** (4 tâches P9-01 à P9-04, toutes fusionnées ; P9-01 vérifiée par le chef faute d'audit rendu). Audit de sécurité reproductible, 7 corrections déployées en `sha-1be69a1`, registre de 62 risques sur tout le SI, plan de remédiation priorisé de 58 actions. Prochaine phase : **phase 10** (soutenance), à découper par le chef et à faire valider par Lucas.
 
 Phase 8 terminée le 06/11/2026 : charge, disponibilité et 5 indicateurs mesurés, cluster en `sha-20e080b`.
 
@@ -58,13 +58,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P9-01 | Audit dynamique (ZAP) et rapports de scans | developpeur | `phase-9/audit-zap` | fusionnée |
 | P9-02 | Corrections prioritaires du POC (dont L19) | developpeur | `phase-9/corrections` | fusionnée |
 | P9-03 | Analyse de risques STRIDE et OWASP (POC et SI) | developpeur | `phase-9/analyse-risques` | fusionnée |
-| P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | en cours |
+| P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P9-04 confiée au développeur (brief dans `docs/suivi/taches/P9-04.md`, branche locale `phase-9/plan-remediation`). À son retour : auditeur, fusion, puis clôture de la phase 9 : cases du plan de réalisation (phase 9), `CLAUDE.md` (avancement, L1 à L25 et S1 à S9), bilan à Lucas (relecture des références juridiques « à confirmer » et des montants des échelles d'impact).
+Attendre que Lucas demande la phase 10, puis présenter son découpage (support, script de démo, vidéo de secours, README, répétitions). Acquis : cluster en `sha-1be69a1`, `smoke.sh` 25/25. Points à faire relire par Lucas : références juridiques « à confirmer » (`analyse-risques.md` § 6) et montants des échelles d'impact. Restent de son côté : question à l'intervenant (critère 5), copies iCloud (dossier sur le Bureau).
 
 ## Décisions en attente
 
@@ -75,4 +75,4 @@ P9-04 confiée au développeur (brief dans `docs/suivi/taches/P9-04.md`, branche
 
 ## Dernière mise à jour
 
-11/11/2026 16:05 — P9-03 fusionnée (`c0978ae`, 62 risques, 7 critiques) ; brief de P9-04 écrit.
+11/11/2026 17:27 — Phase 9 close : P9-04 fusionnée (`7c5f713`), `smoke.sh` 25/25 sur `sha-1be69a1`, plan de réalisation et `CLAUDE.md` mis à jour.

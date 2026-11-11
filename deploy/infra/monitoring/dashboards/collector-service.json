@@ -132,7 +132,8 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line"
-            }
+            },
+            "axisSoftMax": 0.02
           }
         },
         "overrides": []

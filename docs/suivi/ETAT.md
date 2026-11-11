@@ -61,8 +61,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P9-02 | Corrections prioritaires du POC (dont L19) | developpeur | `phase-9/corrections` | fusionnée |
 | P9-03 | Analyse de risques STRIDE et OWASP (POC et SI) | developpeur | `phase-9/analyse-risques` | fusionnée |
 | P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | fusionnée |
-| P10-01 | README complet et guide du jury | developpeur | `phase-10/readme-guide` | en cours |
-| P10-02 | Démo de 6 min outillée | developpeur | `phase-10/demo` | à faire |
+| P10-01 | README complet et guide du jury | developpeur | `phase-10/readme-guide` | fusionnée |
+| P10-02 | Démo de 6 min outillée | developpeur | `phase-10/demo` | en cours |
 | P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | à faire |
 | P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | à faire |
 
@@ -70,7 +70,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P10-01 confiée au développeur (brief dans `docs/suivi/taches/P10-01.md`, branche locale `phase-10/readme-guide` ; il recrée le cluster en suivant le README). À son retour : auditeur, fusion, brief de P10-02. Décisions de la phase : pipeline montré par un run terminé (un run dure environ 8 min) ; diaporama construit par le chef avec l'outil de présentation de Claude, exportable en PDF ou PowerPoint.
+P10-02 confiée au développeur (brief dans `docs/suivi/taches/P10-02.md`, branche locale `phase-10/demo`). À son retour : auditeur, fusion, brief de P10-03 (contenu du support), puis le chef construit le diaporama avec l'outil de présentation de Claude. Cluster en `sha-ee45469`.
 
 ## Décisions en attente
 
@@ -81,4 +81,4 @@ P10-01 confiée au développeur (brief dans `docs/suivi/taches/P10-01.md`, branc
 
 ## Dernière mise à jour
 
-11/11/2026 17:43 — Phase 10 lancée après validation du découpage par Lucas ; brief de P10-01 écrit.
+11/11/2026 18:05 — P10-01 fusionnée (`a1050ec`, README vérifié sur cluster neuf, guide du jury) ; brief de P10-02 écrit.

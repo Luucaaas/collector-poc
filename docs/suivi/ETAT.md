@@ -56,15 +56,15 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | fusionnée |
 | P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | fusionnée |
 | P9-01 | Audit dynamique (ZAP) et rapports de scans | developpeur | `phase-9/audit-zap` | fusionnée |
-| P9-02 | Corrections prioritaires du POC (dont L19) | developpeur | `phase-9/corrections` | en cours |
-| P9-03 | Analyse de risques STRIDE et OWASP (POC et SI) | developpeur | `phase-9/analyse-risques` | à faire |
+| P9-02 | Corrections prioritaires du POC (dont L19) | developpeur | `phase-9/corrections` | fusionnée |
+| P9-03 | Analyse de risques STRIDE et OWASP (POC et SI) | developpeur | `phase-9/analyse-risques` | en cours |
 | P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | à faire |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P9-02 confiée au développeur (brief dans `docs/suivi/taches/P9-02.md`, branche `phase-9/corrections` poussée pour la CI). À son retour : auditeur, fusion, vérification de la publication, déploiement du nouveau tag par le chef, puis demander au développeur de rejouer Playwright et `run-scans.sh` sur le cluster et de compléter « Après corrections ». Ensuite brief de P9-03 (STRIDE et OWASP, POC et reste du SI). Si un agent est coupé par la mise en veille du Mac : le relancer par message ; si l'audit ne peut aboutir, le chef vérifie lui-même (fait pour P9-01).
+P9-03 confiée au développeur (brief dans `docs/suivi/taches/P9-03.md`, branche locale `phase-9/analyse-risques`, documentation seulement). À son retour : auditeur, fusion, puis brief de P9-04 (plan de remédiation priorisé ; y reprendre la proposition CORP `same-origin`, F-26, F-24, L6). Cluster en `sha-1be69a1` (corrections de P9-02 déployées).
 
 ## Décisions en attente
 
@@ -75,4 +75,4 @@ P9-02 confiée au développeur (brief dans `docs/suivi/taches/P9-02.md`, branche
 
 ## Dernière mise à jour
 
-11/11/2026 07:01 — P9-01 fusionnée (`6482a2b`) après vérification du chef (auditeur coupé deux fois par la mise en veille) ; brief de P9-02 écrit.
+11/11/2026 15:45 — P9-02 fusionnée (`1be69a1` puis preuves `cb126cf`), déployée en `sha-1be69a1` et vérifiée (25 contrôles, console Keycloak en 404, Playwright 6/6) ; brief de P9-03 écrit.

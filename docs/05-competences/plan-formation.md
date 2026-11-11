@@ -2,7 +2,7 @@
 
 Ce document répond à la consigne 1.1.3 (critère 9) : il détaille l'action de formation qui réduit l'écart n° 2 de [matrice.md](matrice.md) (section 4). Il suppose que le lecteur a lu cette matrice : les niveaux 0 à 4 et leur définition sont ceux de la section 1.
 
-Les exercices portent sur les livrables prévus du POC (cluster k3d, chart Helm générique, `deploy/local/deploy.sh`, kube-prometheus-stack). **Ces livrables n'existent pas encore** : ils sont produits en phase 6. Chaque exercice est donc formulé comme une tâche à réaliser sur le livrable au moment où il est écrit.
+Les exercices portent sur les livrables prévus du POC (cluster k3d, chart Helm générique, `deploy/local/deploy.sh`, kube-prometheus-stack). Ces livrables existent depuis la phase 6 (`deploy/local/`, `deploy/helm/collector-service/`, `deploy/infra/`) : chaque exercice s'appuie sur eux tels qu'ils sont dans le dépôt.
 
 ## 1. Intitulé, écart ciblé, niveaux
 

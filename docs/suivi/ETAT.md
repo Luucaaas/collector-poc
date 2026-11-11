@@ -55,8 +55,8 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P8-02 | Scénarios Locust | developpeur | `phase-8/locust` | fusionnée |
 | P8-03 | Protocole 5 : charge et disponibilité | developpeur | `phase-8/charge-disponibilite` | fusionnée |
 | P8-04 | Relevé des indicateurs et axes d'amélioration | developpeur | `phase-8/indicateurs` | fusionnée |
-| P9-01 | Audit dynamique (ZAP) et rapports de scans | developpeur | `phase-9/audit-zap` | en cours |
-| P9-02 | Corrections prioritaires du POC (dont L19) | developpeur | `phase-9/corrections` | à faire |
+| P9-01 | Audit dynamique (ZAP) et rapports de scans | developpeur | `phase-9/audit-zap` | fusionnée |
+| P9-02 | Corrections prioritaires du POC (dont L19) | developpeur | `phase-9/corrections` | en cours |
 | P9-03 | Analyse de risques STRIDE et OWASP (POC et SI) | developpeur | `phase-9/analyse-risques` | à faire |
 | P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | à faire |
 
@@ -64,7 +64,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P9-01 confiée au développeur (brief dans `docs/suivi/taches/P9-01.md`, branche locale `phase-9/audit-zap`, cluster en `sha-20e080b`). À son retour : auditeur, contre-vérification (aucun jeton dans les rapports, constats qualifiés), fusion. Ensuite brief de P9-02 à partir des constats retenus, plus L19. Décisions de la phase : scans actifs seulement sur le POC local (aucun scan de WordPress, Office 365 ou du Wi-Fi) ; OWASP Top 10:2025 et API Security Top 10:2023 ; matrice impact × probabilité 5 × 5.
+P9-02 confiée au développeur (brief dans `docs/suivi/taches/P9-02.md`, branche `phase-9/corrections` poussée pour la CI). À son retour : auditeur, fusion, vérification de la publication, déploiement du nouveau tag par le chef, puis demander au développeur de rejouer Playwright et `run-scans.sh` sur le cluster et de compléter « Après corrections ». Ensuite brief de P9-03 (STRIDE et OWASP, POC et reste du SI). Si un agent est coupé par la mise en veille du Mac : le relancer par message ; si l'audit ne peut aboutir, le chef vérifie lui-même (fait pour P9-01).
 
 ## Décisions en attente
 
@@ -75,4 +75,4 @@ P9-01 confiée au développeur (brief dans `docs/suivi/taches/P9-01.md`, branche
 
 ## Dernière mise à jour
 
-10/11/2026 15:55 — Phase 9 lancée après validation du découpage par Lucas ; brief de P9-01 écrit.
+11/11/2026 07:01 — P9-01 fusionnée (`6482a2b`) après vérification du chef (auditeur coupé deux fois par la mise en veille) ; brief de P9-02 écrit.

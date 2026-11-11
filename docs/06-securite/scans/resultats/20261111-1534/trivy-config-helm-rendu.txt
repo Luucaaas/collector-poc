@@ -1,0 +1,277 @@
+
+catalog-service.yaml (kubernetes)
+=================================
+Tests: 5 (SUCCESSES: 0, FAILURES: 5)
+Failures: 5 (UNKNOWN: 0, LOW: 2, MEDIUM: 3, HIGH: 0, CRITICAL: 0)
+
+KSV-01010 (MEDIUM): ConfigMap 'catalog-service-config' in 'default' namespace stores sensitive contents in key(s) or value(s) '{"LOG_LEVEL"}'
+════════════════════════════════════════
+Storing sensitive content such as usernames and email addresses in configMaps is unsafe
+
+See https://avd.aquasec.com/misconfig/ksv-01010
+────────────────────────────────────────
+
+
+KSV-0110 (LOW): deployment catalog-service in default namespace should set metadata.namespace to a non-default namespace
+════════════════════════════════════════
+Checks whether a workload is running in the default namespace.
+
+See https://avd.aquasec.com/misconfig/ksv-0110
+────────────────────────────────────────
+ catalog-service.yaml:43-49
+────────────────────────────────────────
+  43 ┌ metadata:
+  44 │   name: catalog-service
+  45 │   labels:
+  46 │     app.kubernetes.io/name: catalog-service
+  47 │     app.kubernetes.io/instance: catalog-service
+  48 │     app.kubernetes.io/managed-by: Helm
+  49 └     helm.sh/chart: collector-service-0.1.0
+────────────────────────────────────────
+
+
+KSV-0110 (LOW): job catalog-service-migrate in default namespace should set metadata.namespace to a non-default namespace
+════════════════════════════════════════
+Checks whether a workload is running in the default namespace.
+
+See https://avd.aquasec.com/misconfig/ksv-0110
+────────────────────────────────────────
+ catalog-service.yaml:262-272
+────────────────────────────────────────
+ 262 ┌ metadata:
+ 263 │   name: catalog-service-migrate
+ 264 │   labels:
+ 265 │     app.kubernetes.io/name: catalog-service
+ 266 │     app.kubernetes.io/instance: catalog-service
+ 267 │     app.kubernetes.io/managed-by: Helm
+ 268 │     helm.sh/chart: collector-service-0.1.0
+ 269 │   annotations:
+ 270 └     "helm.sh/hook": pre-install,pre-upgrade
+ ...   
+────────────────────────────────────────
+
+
+KSV-0125 (MEDIUM): Container app in deployment catalog-service (namespace: default) uses an image from an untrusted registry.
+════════════════════════════════════════
+Ensure that all containers use images only from trusted registry domains.
+
+See https://avd.aquasec.com/misconfig/ksv-0125
+────────────────────────────────────────
+ catalog-service.yaml:78-129
+────────────────────────────────────────
+  78 ┌         - name: app
+  79 │           image: "ghcr.io/luucaaas/catalog-service:audit@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  80 │           imagePullPolicy: IfNotPresent
+  81 │           ports:
+  82 │             - name: http
+  83 │               containerPort: 8000
+  84 │           envFrom:
+  85 │             - configMapRef:
+  86 └                 name: catalog-service-config
+  ..   
+────────────────────────────────────────
+
+
+KSV-0125 (MEDIUM): Container migrate in job catalog-service-migrate (namespace: default) uses an image from an untrusted registry.
+════════════════════════════════════════
+Ensure that all containers use images only from trusted registry domains.
+
+See https://avd.aquasec.com/misconfig/ksv-0125
+────────────────────────────────────────
+ catalog-service.yaml:289-317
+────────────────────────────────────────
+ 289 ┌         - name: migrate
+ 290 │           image: "ghcr.io/luucaaas/catalog-service:audit@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+ 291 │           imagePullPolicy: IfNotPresent
+ 292 │           command:
+ 293 │             - alembic
+ 294 │             - upgrade
+ 295 │             - head
+ 296 │           env:
+ 297 └             - name: DATABASE_URL
+ ...   
+────────────────────────────────────────
+
+
+
+frontend.yaml (kubernetes)
+==========================
+Tests: 4 (SUCCESSES: 0, FAILURES: 4)
+Failures: 4 (UNKNOWN: 0, LOW: 3, MEDIUM: 1, HIGH: 0, CRITICAL: 0)
+
+KSV-0020 (LOW): Container 'app' of Deployment 'frontend' should set 'securityContext.runAsUser' > 10000
+════════════════════════════════════════
+Force the container to run with user ID > 10000 to avoid conflicts with the host’s user table.
+
+See https://avd.aquasec.com/misconfig/ksv-0020
+────────────────────────────────────────
+ frontend.yaml:97-152
+────────────────────────────────────────
+  97 ┌         - name: app
+  98 │           image: "ghcr.io/luucaaas/frontend:audit@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  99 │           imagePullPolicy: IfNotPresent
+ 100 │           ports:
+ 101 │             - name: http
+ 102 │               containerPort: 8080
+ 103 │           envFrom:
+ 104 │             - configMapRef:
+ 105 └                 name: frontend-config
+ ...   
+────────────────────────────────────────
+
+
+KSV-0021 (LOW): Container 'app' of Deployment 'frontend' should set 'securityContext.runAsGroup' > 10000
+════════════════════════════════════════
+Force the container to run with group ID > 10000 to avoid conflicts with the host’s user table.
+
+See https://avd.aquasec.com/misconfig/ksv-0021
+────────────────────────────────────────
+ frontend.yaml:97-152
+────────────────────────────────────────
+  97 ┌         - name: app
+  98 │           image: "ghcr.io/luucaaas/frontend:audit@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  99 │           imagePullPolicy: IfNotPresent
+ 100 │           ports:
+ 101 │             - name: http
+ 102 │               containerPort: 8080
+ 103 │           envFrom:
+ 104 │             - configMapRef:
+ 105 └                 name: frontend-config
+ ...   
+────────────────────────────────────────
+
+
+KSV-0110 (LOW): deployment frontend in default namespace should set metadata.namespace to a non-default namespace
+════════════════════════════════════════
+Checks whether a workload is running in the default namespace.
+
+See https://avd.aquasec.com/misconfig/ksv-0110
+────────────────────────────────────────
+ frontend.yaml:60-66
+────────────────────────────────────────
+  60 ┌ metadata:
+  61 │   name: frontend
+  62 │   labels:
+  63 │     app.kubernetes.io/name: frontend
+  64 │     app.kubernetes.io/instance: frontend
+  65 │     app.kubernetes.io/managed-by: Helm
+  66 └     helm.sh/chart: collector-service-0.1.0
+────────────────────────────────────────
+
+
+KSV-0125 (MEDIUM): Container app in deployment frontend (namespace: default) uses an image from an untrusted registry.
+════════════════════════════════════════
+Ensure that all containers use images only from trusted registry domains.
+
+See https://avd.aquasec.com/misconfig/ksv-0125
+────────────────────────────────────────
+ frontend.yaml:97-152
+────────────────────────────────────────
+  97 ┌         - name: app
+  98 │           image: "ghcr.io/luucaaas/frontend:audit@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  99 │           imagePullPolicy: IfNotPresent
+ 100 │           ports:
+ 101 │             - name: http
+ 102 │               containerPort: 8080
+ 103 │           envFrom:
+ 104 │             - configMapRef:
+ 105 └                 name: frontend-config
+ ...   
+────────────────────────────────────────
+
+
+
+notification-service.yaml (kubernetes)
+======================================
+Tests: 5 (SUCCESSES: 0, FAILURES: 5)
+Failures: 5 (UNKNOWN: 0, LOW: 2, MEDIUM: 3, HIGH: 0, CRITICAL: 0)
+
+KSV-01010 (MEDIUM): ConfigMap 'notification-service-config' in 'default' namespace stores sensitive contents in key(s) or value(s) '{"LOG_LEVEL"}'
+════════════════════════════════════════
+Storing sensitive content such as usernames and email addresses in configMaps is unsafe
+
+See https://avd.aquasec.com/misconfig/ksv-01010
+────────────────────────────────────────
+
+
+KSV-0110 (LOW): deployment notification-service in default namespace should set metadata.namespace to a non-default namespace
+════════════════════════════════════════
+Checks whether a workload is running in the default namespace.
+
+See https://avd.aquasec.com/misconfig/ksv-0110
+────────────────────────────────────────
+ notification-service.yaml:43-49
+────────────────────────────────────────
+  43 ┌ metadata:
+  44 │   name: notification-service
+  45 │   labels:
+  46 │     app.kubernetes.io/name: notification-service
+  47 │     app.kubernetes.io/instance: notification-service
+  48 │     app.kubernetes.io/managed-by: Helm
+  49 └     helm.sh/chart: collector-service-0.1.0
+────────────────────────────────────────
+
+
+KSV-0110 (LOW): job notification-service-migrate in default namespace should set metadata.namespace to a non-default namespace
+════════════════════════════════════════
+Checks whether a workload is running in the default namespace.
+
+See https://avd.aquasec.com/misconfig/ksv-0110
+────────────────────────────────────────
+ notification-service.yaml:262-272
+────────────────────────────────────────
+ 262 ┌ metadata:
+ 263 │   name: notification-service-migrate
+ 264 │   labels:
+ 265 │     app.kubernetes.io/name: notification-service
+ 266 │     app.kubernetes.io/instance: notification-service
+ 267 │     app.kubernetes.io/managed-by: Helm
+ 268 │     helm.sh/chart: collector-service-0.1.0
+ 269 │   annotations:
+ 270 └     "helm.sh/hook": pre-install,pre-upgrade
+ ...   
+────────────────────────────────────────
+
+
+KSV-0125 (MEDIUM): Container app in deployment notification-service (namespace: default) uses an image from an untrusted registry.
+════════════════════════════════════════
+Ensure that all containers use images only from trusted registry domains.
+
+See https://avd.aquasec.com/misconfig/ksv-0125
+────────────────────────────────────────
+ notification-service.yaml:78-129
+────────────────────────────────────────
+  78 ┌         - name: app
+  79 │           image: "ghcr.io/luucaaas/notification-service:audit@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  80 │           imagePullPolicy: IfNotPresent
+  81 │           ports:
+  82 │             - name: http
+  83 │               containerPort: 8000
+  84 │           envFrom:
+  85 │             - configMapRef:
+  86 └                 name: notification-service-config
+  ..   
+────────────────────────────────────────
+
+
+KSV-0125 (MEDIUM): Container migrate in job notification-service-migrate (namespace: default) uses an image from an untrusted registry.
+════════════════════════════════════════
+Ensure that all containers use images only from trusted registry domains.
+
+See https://avd.aquasec.com/misconfig/ksv-0125
+────────────────────────────────────────
+ notification-service.yaml:289-317
+────────────────────────────────────────
+ 289 ┌         - name: migrate
+ 290 │           image: "ghcr.io/luucaaas/notification-service:audit@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+ 291 │           imagePullPolicy: IfNotPresent
+ 292 │           command:
+ 293 │             - alembic
+ 294 │             - upgrade
+ 295 │             - head
+ 296 │           env:
+ 297 └             - name: DATABASE_URL
+ ...   
+────────────────────────────────────────
+
+

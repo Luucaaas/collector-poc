@@ -1,0 +1,31 @@
+Date de début : 11/11/2026 15:34:53
+Commit du dépôt : 1be69a1
+Docker : 28.5.1
+Image ZAP : zaproxy/zap-stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238
+Cible active : https://api.127.0.0.1.sslip.io ; passif : https://app.127.0.0.1.sslip.io et https://auth.127.0.0.1.sslip.io
+
+Images déployées (lues sur le cluster) :
+  ghcr.io/luucaaas/catalog-service:sha-1be69a1@sha256:814658310d07d2533b709ac4e68db9e6a4f5c07408213d5e4326572a254584da
+  ghcr.io/luucaaas/notification-service:sha-1be69a1@sha256:15695045d7b2500aa531f4c0702d1aead9aa2d5ff5df4fd414412c600b90a3f9
+  ghcr.io/luucaaas/frontend:sha-1be69a1@sha256:e172921b518c255878274ebeb7f645a7ee44923eed54140d7088c50cb4a45106
+
+Digests lus sur les pods :
+  catalog-service-5749c59c9c-2hzbs	ghcr.io/luucaaas/catalog-service@sha256:814658310d07d2533b709ac4e68db9e6a4f5c07408213d5e4326572a254584da
+  catalog-service-5749c59c9c-w5vwn	ghcr.io/luucaaas/catalog-service@sha256:814658310d07d2533b709ac4e68db9e6a4f5c07408213d5e4326572a254584da
+  frontend-66674cccd7-rm4lr	ghcr.io/luucaaas/frontend@sha256:e172921b518c255878274ebeb7f645a7ee44923eed54140d7088c50cb4a45106
+  frontend-66674cccd7-w7xtv	ghcr.io/luucaaas/frontend@sha256:e172921b518c255878274ebeb7f645a7ee44923eed54140d7088c50cb4a45106
+  notification-service-55bffd9855-m6n9l	ghcr.io/luucaaas/notification-service@sha256:15695045d7b2500aa531f4c0702d1aead9aa2d5ff5df4fd414412c600b90a3f9
+  notification-service-55bffd9855-r459h	ghcr.io/luucaaas/notification-service@sha256:15695045d7b2500aa531f4c0702d1aead9aa2d5ff5df4fd414412c600b90a3f9
+
+Node : v22.23.4 ; npm : 10.9.9
+Trivy 0.76.0 (archive trivy_0.76.0_macOS-ARM64.tar.gz, SHA-256 vérifiée)
+Base de vulnérabilités de Trivy :
+  Vulnerability DB:
+    Version: 2
+    UpdatedAt: 2026-11-11 13:00:47.186797699 +0000 UTC
+    NextUpdate: 2026-11-12 13:00:47.186796988 +0000 UTC
+    DownloadedAt: 2026-11-11 14:35:01.797563 +0000 UTC
+  Check Bundle:
+    Digest: sha256:b591e9190cff4aa4e385b1a25bccfd9ecf178d3c77fd194e1410b7ce7e1df058
+    DownloadedAt: 2026-11-11 14:35:31.556467 +0000 UTC
+ZAP : zap-2.17.0.jar ; image zaproxy/zap-stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238

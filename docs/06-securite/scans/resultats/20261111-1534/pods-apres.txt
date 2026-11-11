@@ -1,0 +1,13 @@
+catalog-service-5749c59c9c-2hzbs          true   0
+catalog-service-5749c59c9c-w5vwn          true   0
+frontend-66674cccd7-rm4lr                 true   0
+frontend-66674cccd7-w7xtv                 true   0
+keycloak-5457d86dc-rvsd9                  true   0
+kps-grafana-74d9f48b46-nttp9              true   1
+kps-kube-state-metrics-6bbcdf4f85-vfltq   true   5
+kps-operator-75dd7fffc9-x57qj             true   5
+notification-service-55bffd9855-m6n9l     true   0
+notification-service-55bffd9855-r459h     true   0
+postgres-0                                true   4
+prometheus-kps-prometheus-0               true   5
+rabbitmq-0                                true   0

@@ -190,3 +190,69 @@ Le protocole 5 (`docs/04-experimentations/05-charge-disponibilite/`) a démontr�
 - Reprendre **F-09** (L24, CSP à *nonce*).
 
 Aucune correction n'a été faite dans cette tâche. Le cluster est resté sain (`smoke.sh` 18/18 avant et après, voir `scans/resultats/20261110-1641/`).
+
+## 10. Après corrections (P9-02)
+
+Nouveau passage de `docs/06-securite/scans/run-scans.sh` le 11/11/2026 (démarré à 15:34), **même commande, mêmes plafonds de ZAP**, sur le cluster qui exécute `sha-1be69a1` (fusion de P9-02 sur `main`). Résultats : [`scans/resultats/20261111-1534/`](scans/resultats/20261111-1534/) ; l'« avant » est le dossier `20261110-1641/` de l'audit initial (images `sha-20e080b`). Digests déployés : `environnement.txt`. Base Trivy du 11/11/2026 13:00 UTC (la veille : 10/11 13:03 UTC). Compteurs de secrets sur ce qui est versionné : jetons 0, mots de passe du `.env` 0, nom de la machine 0, dossier personnel 0 ; redémarrages de conteneurs 20 avant et 20 après (cluster intact).
+
+### 10.1 Les sept constats corrigés : preuve avant et après
+
+| Id | Avant (`20261110-1641`) | Après (`20261111-1534`) | Verdict |
+| --- | --- | --- | --- |
+| F-01 `zlib1g` | `trivy-catalog-service-amd64.txt:719` et `:723` (2 HIGH, 1 MEDIUM, version `…+b1`) ; idem notification et arm64 | Aucune ligne `zlib` dans les 4 rapports des services (`grep -c zlib` : 0) ; l'OS passe de 49 à 47 HIGH et de 75 à 74 MEDIUM. Correction : `apt-get install --only-upgrade zlib1g` dans les Dockerfiles (aucun digest de `python:3.12-slim` ne contenait le correctif, L25) | **Disparu** |
+| F-02 `PyJWT` | `trivy-catalog-service-amd64.txt:739`, `:743` (2 MEDIUM, 2.14.0) | Plus aucun constat `PyJWT` (2.15.0) ; le résultat « Python » de Trivy n'existe plus pour les services | **Disparu** |
+| F-03 `pip` | `trivy-catalog-service-amd64.txt:747` à `:766` (5 MEDIUM, 1 LOW, 25.0.1) | Plus aucun constat `pip` : le paquet n'est plus dans l'image. Le total de lignes d'un service passe de 197 (189 pour l'OS, 8 pour Python) à 201 (OS seul) | **Disparu** |
+| F-06 console Keycloak | `zap-keycloak.md:146` : `/admin/master/console/` répond 200 sur l'hôte public (38 mentions de `/admin` dans le rapport) | 0 mention de `/admin` dans `zap-keycloak.md` ; `curl https://auth.127.0.0.1.sslip.io/admin/master/console/` : 404 (aussi dans `smoke.sh`). Accès administrateur par `kubectl port-forward` : 302 puis 200 (vérifié par le chef) | **Disparu** (L19 réduite : reste la confiance dans `X-Forwarded-*`) |
+| F-07 en-têtes | `zap-api-catalog-anonyme.md:44` à `:46`, idem alice et notification : HSTS, `X-Content-Type-Options` et CORP absents des réponses de l'API ; HSTS absent sur Keycloak (`zap-keycloak.md:54`) | `curl -D -` sur `/catalog/api/v1/categories` : `strict-transport-security: max-age=31536000`, `x-content-type-options: nosniff`, `cross-origin-resource-policy: same-site`. Plus d'alerte `X-Content-Type-Options`. **Restes de ZAP** : voir § 10.2 | **Corrigé, deux restes expliqués** |
+| F-08 CSP `img-src` | `zap-front.md:39` : `CSP: Wildcard Directive` (`img-src 'self' https: data:`) ; front : 2 moyennes | Plus d'alerte « Wildcard Directive » ; le front n'a plus qu'une moyenne (`style-src 'unsafe-inline'`, L24). Playwright 6 sur 6 avec le contrôle des violations de CSP (exécuté par le chef) | **Disparu** |
+| F-23 Sonar S9152 | `sonar-catalog-service-issues.json` (ligne 33) et `sonar-notification-service-issues.json` (ligne 31) | API publique de SonarCloud après l'analyse de `main` (commit `1be69a1`, 11/11/2026 14:26 UTC) : 0 issue ouverte et quality gate OK pour les deux projets ; le nouveau dossier le confirme (`sonar-*-issues.json`, 0) | **Disparu** |
+
+### 10.2 Ce qui reste, et ce qui est nouveau
+
+**Restes de ZAP sur F-07 (aucune régression, deux explications).**
+
+- **HSTS « absent » sur 2 instances par passe de l'API** : `/catalog/health/live`, `/catalog/health/ready` et leurs équivalents de `notification` (voir `zap-api-*-anonyme.json`). Ces chemins ne sont pas routés par l'Ingress (`smoke.sh` attend 404) : la réponse est le 404 de Traefik lui-même, que le middleware du chart ne traverse pas. Sur Keycloak : `/`, `/robots.txt` et `/sitemap.xml` (404 de Traefik, hors des deux préfixes routés). Toutes les routes réellement servies portent l'en-tête.
+- **CORP « Missing or Invalid » avec la preuve `same-site`** (1 à 4 instances par passe, niveau bas) : l'en-tête est bien présent, mais ZAP préfère `same-origin` et juge `same-site` « moins sûr ». `same-site` a été retenu pour ne pas gêner l'usage de l'API par le front ; comme CORP ne s'applique pas aux appels `fetch` en mode CORS, `same-origin` serait probablement aussi sans effet sur le front, à vérifier par Playwright avant de le décider (proposition pour le plan, non faite ici).
+
+**Nouveau constat (F-26, vulnérabilités sans correctif).** La base de Trivy a changé depuis l'audit et ajoute **15 lignes de sévérité UNKNOWN par service** (5 CVE d'OpenSSL : CVE-2026-107496, -88822, -88823, -95691, -95692, sur `libssl3t64`, `openssl` et `openssl-provider-legacy`, statut `affected`, sans correctif). Ce n'est pas une régression du POC (les paquets étaient déjà là) et la CI ne les bloque pas (`--severity CRITICAL,HIGH`). Qualification : **VPA**, même raison que F-04 ; à suivre au plan avec F-04.
+
+**Nombres de vulnérabilités sans correctif, mis à jour** (par service, identiques en amd64 et arm64) :
+
+| | Avant (10/11) | Après (11/11) |
+| --- | ---: | ---: |
+| Lignes avec correctif | 11 | **0** |
+| Lignes sans correctif | 186 (84 CVE) | **201 (89 CVE)** |
+| dont HIGH | 47 (11 CVE) | 47 (11 CVE) |
+| dont MEDIUM | 74 (38 CVE) | 74 (38 CVE) |
+| dont LOW | 65 (35 CVE) | 65 (35 CVE) |
+| dont UNKNOWN | 0 | **15 (5 CVE)** |
+| CRITICAL | 0 | 0 |
+| Total des lignes | 197 | 201 |
+
+Le front n'a plus aucune ligne (F-05, `zlib` 1.3.2-r1 : absent de la base Trivy du 11/11 ; cause non vérifiée, compatible avec l'hypothèse du faux positif de F-05). Les 11 CVE HIGH sans correctif sont inchangées (`util-linux`, `libsqlite3-0`, `libsystemd0`, `libacl1`, `ncurses`, `perl-base`).
+
+### 10.3 Tableau résumé, après corrections
+
+| Outil | Cible | Haute | Moyenne | Basse | Informatif | Avant (H, M, B, I) |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| ZAP | front (passif) | 0 | 1 | 4 | 5 | 0, 2, 4, 5 |
+| ZAP | Keycloak (passif) | 0 | 5 | 7 | 5 | 0, 5, 7, 6 |
+| ZAP | API catalog, sans jeton | 0 | 0 | 2 | 5 | 0, 0, 3, 5 |
+| ZAP | API catalog, alice | 0 | 0 | 2 | 4 | 0, 0, 3, 4 |
+| ZAP | API notification, sans jeton | 0 | 0 | 1 | 4 | 0, 0, 1, 4 |
+| ZAP | API notification, alice | 0 | 0 | 2 | 4 | 0, 0, 3, 4 |
+| Trivy, images avec correctif | services | 0 | 0 | 0 | 0 | 2 HIGH, 8 MEDIUM, 1 LOW par service |
+| Trivy, images (toutes) | services | 47 | 74 | 65 | 15 (UNKNOWN) | 49, 82, 66, 0 |
+| Trivy, images (toutes) | front | 0 | 0 | 0 | 0 | 0, 1, 0, 0 |
+| Trivy, configuration | Dockerfiles, `deploy/`, chart rendu | 7 | 18 | 34 | 0 | 59 constats, identique |
+| SonarCloud | issues ouvertes (2 services) | 0 | 0 | 0 | 0 | 2 (majeures) |
+| `npm audit --omit=dev` | front | 0 | 0 | 0 | 0 | 0 |
+| `npm audit` complet | front | 0 | 10 | 0 | 0 | 10 (F-25, inchangé) |
+
+Alertes ZAP de l'API, ligne par ligne : plus de « `X-Content-Type-Options` absent » ; plus de « HSTS absent » sur les routes servies ; restent les deux restes ci-dessus. **Aucune régression** : aucun constat de niveau supérieur ni d'identifiant nouveau côté ZAP, Sonar ou `npm audit` ; la configuration Trivy est identique (59 constats, mêmes lignes) ; le scan n'a pas déstabilisé le cluster (20 redémarrages avant et après).
+
+### 10.4 Limites de cette comparaison
+
+- Les deux passages ne portent pas sur les mêmes jeux de données : le scan actif crée des données de démonstration, d'où de petites différences d'instances sans signification.
+- La base de Trivy a évolué entre les deux (F-26) : un « après » avec la base du 10/11 aurait donné 186 lignes sans correctif. La comparaison de F-01 à F-03 est indépendante de la base (le paquet ou la version a disparu).
+- F-06 est vérifié depuis l'extérieur (ZAP, `curl`) et par le `port-forward` du chef ; il n'est pas vérifié que l'administrateur puisse encore exécuter toutes les opérations de la console par cette voie.

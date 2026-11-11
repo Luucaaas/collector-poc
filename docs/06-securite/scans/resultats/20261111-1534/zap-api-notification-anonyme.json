@@ -1,0 +1,2127 @@
+{
+	"@programName": "ZAP",
+	"@version": "2.17.0",
+	"@generated": "Wed, 11 Nov 2026 14:37:49",
+	"created": "2026-11-11T14:37:49.742091584Z",
+	"insights":[
+		{
+			"level": "Medium",
+			"reason": "Exceeded High",
+			"site": "https://api.127.0.0.1.sslip.io",
+			"key": "insight.code.4xx",
+			"description": "Percentage of responses with status code 4xx",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://api.127.0.0.1.sslip.io",
+			"key": "insight.endpoint.ctype.application/problem+json",
+			"description": "Percentage of endpoints with content type application/problem+json",
+			"statistic": "24"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://api.127.0.0.1.sslip.io",
+			"key": "insight.endpoint.ctype.text/plain",
+			"description": "Percentage of endpoints with content type text/plain",
+			"statistic": "75"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://api.127.0.0.1.sslip.io",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "74"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://api.127.0.0.1.sslip.io",
+			"key": "insight.endpoint.method.POST",
+			"description": "Percentage of endpoints with method POST",
+			"statistic": "18"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://api.127.0.0.1.sslip.io",
+			"key": "insight.endpoint.method.PUT",
+			"description": "Percentage of endpoints with method PUT",
+			"statistic": "7"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://api.127.0.0.1.sslip.io",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "177"
+		}
+	],
+	"site":[ 
+		{
+			"@name": "https://api.127.0.0.1.sslip.io",
+			"@host": "api.127.0.0.1.sslip.io",
+			"@port": "443",
+			"@ssl": "true",
+			"alerts": [ 
+				{
+					"pluginid": "10035",
+					"alertRef": "10035-1",
+					"alert": "Strict-Transport-Security Header Not Set",
+					"name": "Strict-Transport-Security Header Not Set",
+					"riskcode": "1",
+					"confidence": "3",
+					"riskdesc": "Low (High)",
+					"desc": "<p>HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.</p>",
+					"instances":[ 
+						{
+							"id": "7",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": ""
+						},
+						{
+							"id": "8",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": ""
+						}
+					],
+					"count": "2",
+					"systemic": false,
+					"solution": "<p>Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.</p>",
+					"otherinfo": "",
+					"reference": "<p>https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html</p><p>https://owasp.org/www-community/Security_Headers</p><p>https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security</p><p>https://caniuse.com/stricttransportsecurity</p><p>https://datatracker.ietf.org/doc/html/rfc6797</p>",
+					"cweid": "319",
+					"wascid": "15",
+					"sourceid": "1"
+				},
+				{
+					"pluginid": "100000",
+					"alertRef": "100000-1",
+					"alert": "A Client Error response code was returned by the server",
+					"name": "A Client Error response code was returned by the server",
+					"riskcode": "0",
+					"confidence": "3",
+					"riskdesc": "Informational (High)",
+					"desc": "<p>A response code of 404 was returned by the server.</p><p>This may indicate that the application is failing to handle unexpected input correctly.</p><p>Raised by the 'Alert on HTTP Response Code Error' script</p>",
+					"instances":[ 
+						{
+							"id": "19",
+							"uri": "https://api.127.0.0.1.sslip.io",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "504",
+							"uri": "https://api.127.0.0.1.sslip.io?aaa=bbb",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io (aaa)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "500",
+							"uri": "https://api.127.0.0.1.sslip.io?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "810",
+							"uri": "https://api.127.0.0.1.sslip.io/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "959",
+							"uri": "https://api.127.0.0.1.sslip.io/.DS_Store",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.DS_Store",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "988",
+							"uri": "https://api.127.0.0.1.sslip.io/._darcs",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/._darcs",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "987",
+							"uri": "https://api.127.0.0.1.sslip.io/.bzr",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.bzr",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "921",
+							"uri": "https://api.127.0.0.1.sslip.io/.env",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.env",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "944",
+							"uri": "https://api.127.0.0.1.sslip.io/.git/config",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.git\/config",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "986",
+							"uri": "https://api.127.0.0.1.sslip.io/.hg",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.hg",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "908",
+							"uri": "https://api.127.0.0.1.sslip.io/.htaccess",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.htaccess",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "938",
+							"uri": "https://api.127.0.0.1.sslip.io/.idea/WebServers.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.idea\/WebServers.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "960",
+							"uri": "https://api.127.0.0.1.sslip.io/.php_cs.cache",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.php_cs.cache",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "971",
+							"uri": "https://api.127.0.0.1.sslip.io/.ssh/id_dsa",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.ssh\/id_dsa",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "970",
+							"uri": "https://api.127.0.0.1.sslip.io/.ssh/id_rsa",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.ssh\/id_rsa",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "945",
+							"uri": "https://api.127.0.0.1.sslip.io/.svn/entries",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.svn\/entries",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "946",
+							"uri": "https://api.127.0.0.1.sslip.io/.svn/wc.db",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.svn\/wc.db",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "933",
+							"uri": "https://api.127.0.0.1.sslip.io/.zap5555075977121294313",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/.zap5555075977121294313",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13",
+							"uri": "https://api.127.0.0.1.sslip.io/197660837832113796",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/197660837832113796",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "989",
+							"uri": "https://api.127.0.0.1.sslip.io/BitKeeper",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/BitKeeper",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "974",
+							"uri": "https://api.127.0.0.1.sslip.io/CHANGELOG.txt",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/CHANGELOG.txt",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "947",
+							"uri": "https://api.127.0.0.1.sslip.io/CVS/root",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/CVS\/root",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "961",
+							"uri": "https://api.127.0.0.1.sslip.io/DEADJOE",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/DEADJOE",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "956",
+							"uri": "https://api.127.0.0.1.sslip.io/FileZilla.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/FileZilla.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "118",
+							"uri": "https://api.127.0.0.1.sslip.io/WEB-INF/applicationContext.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/WEB-INF\/applicationContext.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "115",
+							"uri": "https://api.127.0.0.1.sslip.io/WEB-INF/web.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/WEB-INF\/web.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "953",
+							"uri": "https://api.127.0.0.1.sslip.io/WS_FTP.INI",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/WS_FTP.INI",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "951",
+							"uri": "https://api.127.0.0.1.sslip.io/WS_FTP.ini",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/WS_FTP.ini",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "958",
+							"uri": "https://api.127.0.0.1.sslip.io/WinSCP.ini",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/WinSCP.ini",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "985",
+							"uri": "https://api.127.0.0.1.sslip.io/_framework/blazor.boot.json",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/_framework\/blazor.boot.json",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "984",
+							"uri": "https://api.127.0.0.1.sslip.io/_wpeprivate/config.json",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/_wpeprivate\/config.json",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "972",
+							"uri": "https://api.127.0.0.1.sslip.io/adminer.php",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/adminer.php",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1300",
+							"uri": "https://api.127.0.0.1.sslip.io/api-docs",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/api-docs ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "823",
+							"uri": "https://api.127.0.0.1.sslip.io/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/api\/v1\/me\/interests",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "825",
+							"uri": "https://api.127.0.0.1.sslip.io/api/v1/me/notifications",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/api\/v1\/me\/notifications",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "827",
+							"uri": "https://api.127.0.0.1.sslip.io/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/api\/v1\/me\/preferences",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "963",
+							"uri": "https://api.127.0.0.1.sslip.io/app/etc/local.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/app\/etc\/local.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "976",
+							"uri": "https://api.127.0.0.1.sslip.io/composer.json",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/composer.json",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "977",
+							"uri": "https://api.127.0.0.1.sslip.io/composer.lock",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/composer.lock",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "942",
+							"uri": "https://api.127.0.0.1.sslip.io/config/database.yml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/config\/database.yml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "940",
+							"uri": "https://api.127.0.0.1.sslip.io/config/databases.yml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/config\/databases.yml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "949",
+							"uri": "https://api.127.0.0.1.sslip.io/core",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/core",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1301",
+							"uri": "https://api.127.0.0.1.sslip.io/docs/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/docs\/ ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "892",
+							"uri": "https://api.127.0.0.1.sslip.io/elmah.axd",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/elmah.axd",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "954",
+							"uri": "https://api.127.0.0.1.sslip.io/filezilla.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/filezilla.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "982",
+							"uri": "https://api.127.0.0.1.sslip.io/i.php",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/i.php",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "969",
+							"uri": "https://api.127.0.0.1.sslip.io/id_dsa",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/id_dsa",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "968",
+							"uri": "https://api.127.0.0.1.sslip.io/id_rsa",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/id_rsa",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "981",
+							"uri": "https://api.127.0.0.1.sslip.io/info.php",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/info.php",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "967",
+							"uri": "https://api.127.0.0.1.sslip.io/key.pem",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/key.pem",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "936",
+							"uri": "https://api.127.0.0.1.sslip.io/lfm.php",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/lfm.php",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "966",
+							"uri": "https://api.127.0.0.1.sslip.io/myserver.key",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/myserver.key",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "20",
+							"uri": "https://api.127.0.0.1.sslip.io/notification",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "501",
+							"uri": "https://api.127.0.0.1.sslip.io/notification?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "811",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "923",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/.env",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/.env",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "911",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/.htaccess",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/.htaccess",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "14",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/185427310155490084",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/185427310155490084",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "21",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "506",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "817",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "925",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/.env",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/.env",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "913",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/.htaccess",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/.htaccess",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "15",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/3827331555768636747",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/3827331555768636747",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "901",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/trace.axd",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/trace.axd",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "22",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "508",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1 (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "820",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "927",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/.env",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/.env",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "916",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/.htaccess",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/.htaccess",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "16",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/2947851221513203003",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/2947851221513203003",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "23",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "512",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "822",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "919",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/.env",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/.env",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "907",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/.htaccess",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/.htaccess",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "17",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/9173588265916044009",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/9173588265916044009",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "932",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/actuator/health",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/actuator\/health",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "2",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "1311",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "513",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "496",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests (class.module.classLoader.DefaultAssertio...)({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "824",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1315",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "517",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications?limit=20&offset=0&class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications (class.module.classLoader.DefaultAssertio...,limit,offset)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "6",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications?limit=20&offset=0",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications (limit,offset)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "826",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "4",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "1295",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences ()({new_article,price_changed})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "518",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "495",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences (class.module.classLoader.DefaultAssertio...)({new_article,price_changed})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "828",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "894",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/trace.axd",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/trace.axd",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "904",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/trace.axd",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/trace.axd",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "25",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "521",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "829",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "929",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/.env",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/.env",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "917",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/.htaccess",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/.htaccess",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "18",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/909403169081254649",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/909403169081254649",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "0",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "519",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "831",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "528",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready?class.module.classLoader.DefaultAssertionStatus=nonsense",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready (class.module.classLoader.DefaultAssertio...)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "830",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "905",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/trace.axd",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/trace.axd",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "899",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/trace.axd",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/trace.axd",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1299",
+							"uri": "https://api.127.0.0.1.sslip.io/openapi.json",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/openapi.json ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1306",
+							"uri": "https://api.127.0.0.1.sslip.io/openapi.yaml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/openapi.yaml ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "980",
+							"uri": "https://api.127.0.0.1.sslip.io/phpinfo.php",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/phpinfo.php",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "965",
+							"uri": "https://api.127.0.0.1.sslip.io/privatekey.key",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/privatekey.key",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "979",
+							"uri": "https://api.127.0.0.1.sslip.io/server-info",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/server-info",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "948",
+							"uri": "https://api.127.0.0.1.sslip.io/server-status",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/server-status",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "964",
+							"uri": "https://api.127.0.0.1.sslip.io/server.key",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/server.key",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "950",
+							"uri": "https://api.127.0.0.1.sslip.io/sftp-config.json",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/sftp-config.json",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "955",
+							"uri": "https://api.127.0.0.1.sslip.io/sitemanager.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/sitemanager.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "975",
+							"uri": "https://api.127.0.0.1.sslip.io/sites/default/files/.ht.sqlite",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/sites\/default\/files\/.ht.sqlite",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "962",
+							"uri": "https://api.127.0.0.1.sslip.io/sites/default/private/files/backup_migrate/scheduled/test.txt",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/sites\/default\/private\/files\/backup_migrate\/scheduled\/test.txt",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1302",
+							"uri": "https://api.127.0.0.1.sslip.io/swagger",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/swagger ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1293",
+							"uri": "https://api.127.0.0.1.sslip.io/swagger-ui/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/swagger-ui\/ ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1305",
+							"uri": "https://api.127.0.0.1.sslip.io/swagger-ui/index.html",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/swagger-ui\/index.html ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1298",
+							"uri": "https://api.127.0.0.1.sslip.io/swagger.json",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/swagger.json ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1307",
+							"uri": "https://api.127.0.0.1.sslip.io/swagger.yaml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/swagger.yaml ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1309",
+							"uri": "https://api.127.0.0.1.sslip.io/swagger/ui/index.html",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/swagger\/ui\/index.html ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "983",
+							"uri": "https://api.127.0.0.1.sslip.io/test.php",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/test.php",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "897",
+							"uri": "https://api.127.0.0.1.sslip.io/trace.axd",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/trace.axd",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1304",
+							"uri": "https://api.127.0.0.1.sslip.io/v2/api-docs",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/v2\/api-docs ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "1296",
+							"uri": "https://api.127.0.0.1.sslip.io/v3/api-docs",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/v3\/api-docs ()({category_ids:[]})",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "973",
+							"uri": "https://api.127.0.0.1.sslip.io/vb_test.php",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/vb_test.php",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "978",
+							"uri": "https://api.127.0.0.1.sslip.io/vim_settings.xml",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/vim_settings.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "957",
+							"uri": "https://api.127.0.0.1.sslip.io/winscp.ini",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/winscp.ini",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "952",
+							"uri": "https://api.127.0.0.1.sslip.io/ws_ftp.ini",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/ws_ftp.ini",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "930",
+							"uri": "https://api.127.0.0.1.sslip.io/zap2673275491035090742",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/zap2673275491035090742",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "507",
+							"uri": "https://api.127.0.0.1.sslip.io",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "139",
+							"uri": "https://api.127.0.0.1.sslip.io/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/ (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "145",
+							"uri": "https://api.127.0.0.1.sslip.io/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/ (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "503",
+							"uri": "https://api.127.0.0.1.sslip.io/notification",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "143",
+							"uri": "https://api.127.0.0.1.sslip.io/notification?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "147",
+							"uri": "https://api.127.0.0.1.sslip.io/notification?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "511",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "144",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "148",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "510",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1 ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "149",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1 (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "151",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1 (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "515",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "154",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "157",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "531",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests ()(------b3918f33-d7b6-41b0-947c-361eee330eae\r\nContent-Disposition: form-data; name=\"1\"\r\n\r\n{}\r\n------b3918f33-d7b6-41b0-947c-361eee330eae\r\nContent-Disposition: form-data; name=\"0\"\r\n\r\n[\"$1:a:a\"]\r\n------b3918f33-d7b6-41b0-947c-361eee330eae--\r\n)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "499",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "136",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "141",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "152",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "156",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "522",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications?limit=20&offset=0",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications (limit,offset)(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "498",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "137",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "140",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "523",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "160",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "164",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "524",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "163",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "165",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "529",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready ()(class.module.classLoader.DefaultAssertio...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "161",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo dbspgmf5x6fa...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "166",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo dbspgmf5x6fal9shc3nr',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "813",
+							"uri": "https://api.127.0.0.1.sslip.io/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/api\/v1\/me\/interests ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "812",
+							"uri": "https://api.127.0.0.1.sslip.io/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/api\/v1\/me\/preferences ()({new_article,price_changed})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "657",
+							"uri": "https://api.127.0.0.1.sslip.io/computeMetadata/v1/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/computeMetadata\/v1\/ ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "652",
+							"uri": "https://api.127.0.0.1.sslip.io/latest/meta-data/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/latest\/meta-data\/ ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "677",
+							"uri": "https://api.127.0.0.1.sslip.io/metadata/instance",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/metadata\/instance ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "680",
+							"uri": "https://api.127.0.0.1.sslip.io/metadata/v1",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/metadata\/v1 ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "815",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests\/ ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "5",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences ()({new_article,price_changed})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "816",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences\/ ()({new_article,price_changed})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "661",
+							"uri": "https://api.127.0.0.1.sslip.io/opc/v1/instance/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/opc\/v1\/instance\/ ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "667",
+							"uri": "https://api.127.0.0.1.sslip.io/opc/v2/instance/",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/opc\/v2\/instance\/ ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "683",
+							"uri": "https://api.127.0.0.1.sslip.io/openstack/latest/meta_data.json",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/openstack\/latest\/meta_data.json ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						}
+					],
+					"count": "181",
+					"systemic": false,
+					"solution": "",
+					"otherinfo": "",
+					"reference": "",
+					"cweid": "388",
+					"wascid": "20",
+					"sourceid": "26"
+				},
+				{
+					"pluginid": "10049",
+					"alertRef": "10049-1",
+					"alert": "Non-Storable Content",
+					"name": "Non-Storable Content",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>The response contents are not storable by caching components such as proxy servers. If the response does not contain sensitive, personal or user-specific information, it may benefit from being stored and cached, to improve performance.</p>",
+					"instances":[ 
+						{
+							"id": "11",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "527",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/notifications?limit=20&offset=0",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/notifications (limit,offset)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "526",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "12",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "PUT ",
+							"otherinfo": ""
+						},
+						{
+							"id": "525",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences ()({new_article,price_changed})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "PUT ",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": false,
+					"solution": "<p>The content may be marked as storable by ensuring that the following conditions are satisfied:</p><p>The request method must be understood by the cache and defined as being cacheable (\"GET\", \"HEAD\", and \"POST\" are currently defined as cacheable)</p><p>The response status code must be understood by the cache (one of the 1XX, 2XX, 3XX, 4XX, or 5XX response classes are generally understood)</p><p>The \"no-store\" cache directive must not appear in the request or response header fields</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"private\" response directive must not appear in the response</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"Authorization\" header field must not appear in the request, unless the response explicitly allows it (using one of the \"must-revalidate\", \"public\", or \"s-maxage\" Cache-Control response directives)</p><p>In addition to the conditions above, at least one of the following conditions must also be satisfied by the response:</p><p>It must contain an \"Expires\" header field</p><p>It must contain a \"max-age\" response directive</p><p>For \"shared\" caches such as \"proxy\" caches, it must contain a \"s-maxage\" response directive</p><p>It must contain a \"Cache Control Extension\" that allows it to be cached</p><p>It must have a status code that is defined as cacheable by default (200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501).</p>",
+					"otherinfo": "",
+					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
+					"cweid": "524",
+					"wascid": "13",
+					"sourceid": "6"
+				},
+				{
+					"pluginid": "10049",
+					"alertRef": "10049-3",
+					"alert": "Storable and Cacheable Content",
+					"name": "Storable and Cacheable Content",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>The response contents are storable by caching components such as proxy servers, and may be retrieved directly from the cache, rather than from the origin server by the caching servers, in response to similar requests from other users. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where \"shared\" caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
+					"instances":[ 
+						{
+							"id": "10",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/live",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/live",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "In the absence of an explicitly specified caching lifetime directive in the response, a liberal lifetime heuristic of 1 year was assumed. This is permitted by rfc7234."
+						},
+						{
+							"id": "9",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/health/ready",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/health\/ready",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "In the absence of an explicitly specified caching lifetime directive in the response, a liberal lifetime heuristic of 1 year was assumed. This is permitted by rfc7234."
+						}
+					],
+					"count": "2",
+					"systemic": false,
+					"solution": "<p>Validate that the response does not contain sensitive, personal or user-specific information. If it does, consider the use of the following HTTP response headers, to limit, or prevent the content being stored and retrieved from the cache by another user:</p><p>Cache-Control: no-cache, no-store, must-revalidate, private</p><p>Pragma: no-cache</p><p>Expires: 0</p><p>This configuration directs both HTTP 1.0 and HTTP 1.1 compliant caching servers to not store the response, and to not retrieve the response (without validation) from the cache, in response to a similar request.</p>",
+					"otherinfo": "<p>In the absence of an explicitly specified caching lifetime directive in the response, a liberal lifetime heuristic of 1 year was assumed. This is permitted by rfc7234.</p>",
+					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
+					"cweid": "524",
+					"wascid": "13",
+					"sourceid": "1"
+				},
+				{
+					"pluginid": "10104",
+					"alertRef": "10104",
+					"alert": "User Agent Fuzzer",
+					"name": "User Agent Fuzzer",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the original response.</p>",
+					"instances":[ 
+						{
+							"id": "1045",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "Header User-Agent",
+							"attack": "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)",
+							"evidence": "",
+							"otherinfo": ""
+						},
+						{
+							"id": "1033",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/interests",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/interests ()({category_ids:[]})",
+							"method": "PUT",
+							"param": "Header User-Agent",
+							"attack": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)",
+							"evidence": "",
+							"otherinfo": ""
+						},
+						{
+							"id": "1050",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences ()({new_article,price_changed})",
+							"method": "PUT",
+							"param": "Header User-Agent",
+							"attack": "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)",
+							"evidence": "",
+							"otherinfo": ""
+						},
+						{
+							"id": "1039",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences ()({new_article,price_changed})",
+							"method": "PUT",
+							"param": "Header User-Agent",
+							"attack": "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)",
+							"evidence": "",
+							"otherinfo": ""
+						},
+						{
+							"id": "1031",
+							"uri": "https://api.127.0.0.1.sslip.io/notification/api/v1/me/preferences",
+							"nodeName": "https:\/\/api.127.0.0.1.sslip.io\/notification\/api\/v1\/me\/preferences ()({new_article,price_changed})",
+							"method": "PUT",
+							"param": "Header User-Agent",
+							"attack": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)",
+							"evidence": "",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "",
+					"otherinfo": "",
+					"reference": "<p>https://owasp.org/www-project-web-security-testing-guide/</p>",
+					"cweid": "0",
+					"wascid": "0",
+					"sourceid": "1081"
+				}
+			]
+		}
+	],
+	"sequences":[
+	]
+
+}

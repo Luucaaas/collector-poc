@@ -1,0 +1,45 @@
+Date de début : 11/11/2026 19:30:46
+macOS : 27.2, arm64
+Docker : 28.5.1, 10 CPU, 8322555904 octets de mémoire
+k3d v5.9.0, k3s des nœuds v1.35.8+k3s1, Client Version: v1.34.1, helm v4.3.1+gc0d08d0, mkcert v1.4.4
+Locust : locust 2.47.0
+Commit du dépôt : e724741
+
+Images déployées :
+  catalog-service	ghcr.io/luucaaas/catalog-service:sha-5975ca0@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683
+  notification-service	ghcr.io/luucaaas/notification-service:sha-5975ca0@sha256:f11f5ac0f9a7f5fc3bc526cb401ed208c9fcb39a1ee3aa13187d5b76f801d5c2
+  frontend	ghcr.io/luucaaas/frontend:sha-5975ca0@sha256:10d67b251b4d64a9d1c0c54f09ecba36c573548d495eba3613385a943157eb92
+
+Digests lus sur les pods :
+  catalog-service-97f67479b-8xcj6	ghcr.io/luucaaas/catalog-service@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683
+  catalog-service-97f67479b-nltkm	ghcr.io/luucaaas/catalog-service@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683
+  frontend-b7c67c6d8-c5v9s	ghcr.io/luucaaas/frontend@sha256:10d67b251b4d64a9d1c0c54f09ecba36c573548d495eba3613385a943157eb92
+  frontend-b7c67c6d8-djvp2	ghcr.io/luucaaas/frontend@sha256:10d67b251b4d64a9d1c0c54f09ecba36c573548d495eba3613385a943157eb92
+  notification-service-6c9ccfd445-vrbbn	ghcr.io/luucaaas/notification-service@sha256:f11f5ac0f9a7f5fc3bc526cb401ed208c9fcb39a1ee3aa13187d5b76f801d5c2
+  notification-service-6c9ccfd445-zpwgx	ghcr.io/luucaaas/notification-service@sha256:f11f5ac0f9a7f5fc3bc526cb401ed208c9fcb39a1ee3aa13187d5b76f801d5c2
+
+Ressources de catalog-service (requêtes et limites) :
+  {"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}
+
+Nœuds :
+NAME                     CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+k3d-collector-agent-0    27m          0%       1228Mi          15%         
+k3d-collector-agent-1    155m         1%       895Mi           11%         
+k3d-collector-server-0   55m          0%       2462Mi          31%         
+
+HPA avant :
+NAME                   REFERENCE                         TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+catalog-service        Deployment/catalog-service        cpu: 2%/70%   2         5         2          35m
+frontend               Deployment/frontend               cpu: 4%/70%   2         5         2          34m
+notification-service   Deployment/notification-service   cpu: 2%/70%   2         5         2          35m
+
+Politique de réduction de l'HPA de catalog-service (vide : valeurs par défaut de Kubernetes) :
+  
+Pods avant :
+NAME                                      READY   STATUS    RESTARTS   AGE   IP           NODE                     NOMINATED NODE   READINESS GATES
+catalog-service-97f67479b-8xcj6           1/1     Running   0          35m   10.42.0.11   k3d-collector-server-0   <none>           <none>
+catalog-service-97f67479b-nltkm           1/1     Running   0          35m   10.42.1.8    k3d-collector-agent-1    <none>           <none>
+frontend-b7c67c6d8-c5v9s                  1/1     Running   0          34m   10.42.1.9    k3d-collector-agent-1    <none>           <none>
+frontend-b7c67c6d8-djvp2                  1/1     Running   0          34m   10.42.0.14   k3d-collector-server-0   <none>           <none>
+notification-service-6c9ccfd445-vrbbn     1/1     Running   0          34m   10.42.2.8    k3d-collector-agent-0    <none>           <none>
+notification-service-6c9ccfd445-zpwgx     1/1     Running   0          35m   10.42.0.13   k3d-collector-server-0   <none>           <none>

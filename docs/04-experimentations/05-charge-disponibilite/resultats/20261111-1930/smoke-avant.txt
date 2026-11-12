@@ -1,0 +1,25 @@
+OK    catalogue : liste des catégories (public)              HTTP 200
+OK    catalogue : liste des articles (public)                 HTTP 200
+OK    notification : route protégée sans jeton              HTTP 401
+OK    catalogue : /health/ready hors de l'Ingress             HTTP 404
+OK    catalogue : /metrics hors de l'Ingress                  HTTP 404
+OK    notification : /health/ready hors de l'Ingress          HTTP 404
+OK    notification : /metrics hors de l'Ingress               HTTP 404
+OK    catalogue : en-tête X-Request-ID présent             
+OK    keycloak : console d'administration hors de l'hôte public HTTP 404
+OK    keycloak : console du realm master hors de l'hôte public HTTP 404
+OK    keycloak : configuration OpenID du realm collector      HTTP 200
+OK    catalogue : en-tête Strict-Transport-Security présent
+OK    catalogue : en-tête X-Content-Type-Options présent   
+OK    catalogue : en-tête Cross-Origin-Resource-Policy présent
+OK    keycloak : en-tête Strict-Transport-Security présent 
+OK    front : page d'accueil                                  HTTP 200
+OK    front : route de l'application (fallback SPA)           HTTP 200
+OK    front : /config.json                                    HTTP 200
+OK    front : fichier caché refusé (/.git/config)           HTTP 404
+OK    front : en-tête Content-Security-Policy présent      
+OK    front : en-tête X-Content-Type-Options présent       
+OK    front : en-tête Strict-Transport-Security présent    
+OK    front : en-tête X-Frame-Options présent              
+OK    front : CSP avec les origines de l'API et de Keycloak  
+OK    front : config.json contient collector-web             

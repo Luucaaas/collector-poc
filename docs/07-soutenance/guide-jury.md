@@ -240,7 +240,7 @@ Ce guide répond à une question : **pour chacun des 10 critères de la grille, 
 | Processus | [pipeline CI/CD](../01-qualite/img/pipeline-cicd.svg), [pipeline backend](../01-qualite/img/pipeline-backend.svg), [cycle DevSecOps](../01-qualite/img/cycle-devsecops.svg), [pyramide des tests](../01-qualite/img/pyramide-tests.svg) |
 | Sécurité | [matrice des risques](../06-securite/img/matrice-risques.svg) |
 | Application | [7 captures d'écran](../../frontend/e2e/resultats/captures/) du parcours complet |
-| Observabilité | [captures Grafana](../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/grafana-pic-catalog-service.png) |
+| Observabilité | [captures Grafana (11/11)](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png) |
 
 **Démonstration.** Elle s'appuie sur le cluster déployé par les commandes du [README](../../README.md) : application sur `https://app.127.0.0.1.sslip.io`, comptes `admin`, `alice`, `bob` et `chloe`, Grafana, `kubectl get hpa`. Les parcours à montrer sont décrits dans la section « Utiliser l'application » du README ; le journal Playwright et les captures prouvent qu'ils fonctionnent.
 

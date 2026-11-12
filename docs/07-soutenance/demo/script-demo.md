@@ -187,7 +187,7 @@ Revenir au terminal **dès que le panneau Réplicas de Grafana montre 4 ou 5 pod
 | Locust ne démarre pas ou le terminal se fige | Ctrl+C (Locust s'arrête proprement), puis montrer le [résumé du protocole 5](../../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/resume.md) et ses captures Grafana `grafana-pic-catalog-service.png` dans le même dossier |
 | Les 5 réplicas ne sont pas atteints (le bilan dit « 2 à 4 ») | Ne pas s'en excuser : « la montée dépend de la mesure du processeur, le protocole 5 a mesuré 5 en 60 secondes, ici 4 ; la suppression a eu lieu quand même ». Ce n'est pas un échec du critère (la montée est démontrée) |
 | Une requête échoue pendant la suppression | Le dire tel quel et donner le chiffre du bilan ; le protocole 5 en a mesuré 0 sur 533 |
-| Grafana est vide ou ne répond pas | Rester sur le terminal, qui montre HPA et pods ; la capture Grafana de secours : `docs/04-experimentations/05-charge-disponibilite/resultats/20261106-1132/grafana-pic-catalog-service.png` |
+| Grafana est vide ou ne répond pas | Rester sur le terminal, qui montre HPA et pods ; la capture Grafana de secours : `docs/04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png` |
 | Tout échoue | Vidéo de secours |
 
 ## Listes de contrôle

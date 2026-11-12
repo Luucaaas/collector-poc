@@ -1,0 +1,37 @@
+19:35:31 Normal ScalingReplicaSet Deployment/catalog-service Scaled up replica set catalog-service-97f67479b from 2 to 4
+19:35:31 Normal Scheduled Pod/catalog-service-97f67479b-s8kll Successfully assigned collector/catalog-service-97f67479b-s8kll to k3d-collector-server-0
+19:35:31 Normal Scheduled Pod/catalog-service-97f67479b-wr7z8 Successfully assigned collector/catalog-service-97f67479b-wr7z8 to k3d-collector-agent-0
+19:35:31 Normal SuccessfulCreate ReplicaSet/catalog-service-97f67479b Created pod: catalog-service-97f67479b-s8kll
+19:35:31 Normal SuccessfulCreate ReplicaSet/catalog-service-97f67479b Created pod: catalog-service-97f67479b-wr7z8
+19:35:31 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 4; reason: cpu resource utilization (percentage of request) above target
+19:35:32 Normal Created Pod/catalog-service-97f67479b-s8kll Container created
+19:35:32 Normal Pulled Pod/catalog-service-97f67479b-s8kll Container image "ghcr.io/luucaaas/catalog-service:sha-5975ca0@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683" already present on machine and can be accessed by the pod
+19:35:32 Normal Pulling Pod/catalog-service-97f67479b-wr7z8 Pulling image "ghcr.io/luucaaas/catalog-service:sha-5975ca0@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683"
+19:35:32 Normal Started Pod/catalog-service-97f67479b-s8kll Container started
+19:35:35 Normal Created Pod/catalog-service-97f67479b-wr7z8 Container created
+19:35:35 Normal Pulled Pod/catalog-service-97f67479b-wr7z8 Successfully pulled image "ghcr.io/luucaaas/catalog-service:sha-5975ca0@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683" in 3.583s (3.583s including waiting). Image size: 73233939 bytes.
+19:35:35 Normal Started Pod/catalog-service-97f67479b-wr7z8 Container started
+19:35:46 Normal Created Pod/catalog-service-97f67479b-bjqmm Container created
+19:35:46 Normal Pulled Pod/catalog-service-97f67479b-bjqmm Container image "ghcr.io/luucaaas/catalog-service:sha-5975ca0@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683" already present on machine and can be accessed by the pod
+19:35:46 Normal ScalingReplicaSet Deployment/catalog-service Scaled up replica set catalog-service-97f67479b from 4 to 5
+19:35:46 Normal Scheduled Pod/catalog-service-97f67479b-bjqmm Successfully assigned collector/catalog-service-97f67479b-bjqmm to k3d-collector-agent-1
+19:35:46 Normal Started Pod/catalog-service-97f67479b-bjqmm Container started
+19:35:46 Normal SuccessfulCreate ReplicaSet/catalog-service-97f67479b Created pod: catalog-service-97f67479b-bjqmm
+19:35:46 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 5; reason: cpu resource utilization (percentage of request) above target
+19:36:50 Normal Killing Pod/catalog-service-97f67479b-8xcj6 Stopping container app
+19:36:51 Normal Created Pod/catalog-service-97f67479b-rxfkw Container created
+19:36:51 Normal Pulled Pod/catalog-service-97f67479b-rxfkw Container image "ghcr.io/luucaaas/catalog-service:sha-5975ca0@sha256:330e7ed1f54a7587e74ba33dc11f0098133d8dc6761d52cbd247a40dc4990683" already present on machine and can be accessed by the pod
+19:36:51 Normal Scheduled Pod/catalog-service-97f67479b-rxfkw Successfully assigned collector/catalog-service-97f67479b-rxfkw to k3d-collector-server-0
+19:36:51 Normal Started Pod/catalog-service-97f67479b-rxfkw Container started
+19:36:51 Normal SuccessfulCreate ReplicaSet/catalog-service-97f67479b Created pod: catalog-service-97f67479b-rxfkw
+19:36:53 Warning Unhealthy Pod/catalog-service-97f67479b-rxfkw Startup probe failed: Get "http://10.42.0.16:8000/health/live": dial tcp 10.42.0.16:8000: connect: connection refused
+19:43:01 Normal Killing Pod/catalog-service-97f67479b-bjqmm Stopping container app
+19:43:01 Normal Killing Pod/catalog-service-97f67479b-rxfkw Stopping container app
+19:43:01 Normal ScalingReplicaSet Deployment/catalog-service Scaled down replica set catalog-service-97f67479b from 5 to 3
+19:43:01 Normal SuccessfulDelete ReplicaSet/catalog-service-97f67479b Deleted pod: catalog-service-97f67479b-bjqmm
+19:43:01 Normal SuccessfulDelete ReplicaSet/catalog-service-97f67479b Deleted pod: catalog-service-97f67479b-rxfkw
+19:43:01 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 3; reason: All metrics below target
+19:43:16 Normal Killing Pod/catalog-service-97f67479b-s8kll Stopping container app
+19:43:16 Normal ScalingReplicaSet Deployment/catalog-service Scaled down replica set catalog-service-97f67479b from 3 to 2
+19:43:16 Normal SuccessfulDelete ReplicaSet/catalog-service-97f67479b Deleted pod: catalog-service-97f67479b-s8kll
+19:43:16 Normal SuccessfulRescale HorizontalPodAutoscaler/catalog-service New size: 2; reason: All metrics below target

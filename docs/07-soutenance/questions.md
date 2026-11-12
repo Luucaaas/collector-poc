@@ -913,7 +913,7 @@ Les chiffres viennent de fichiers du dépôt, cités en lien relatif ; `python3 
 
 **Chiffres.** 0 échec sur 533 requêtes ; 4,9 s ([index](../04-experimentations/README.md)).
 
-**À montrer.** [Plan de secours étape 3](demo/script-demo.md) ; [capture Grafana](../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/grafana-pic-catalog-service.png).
+**À montrer.** [Plan de secours étape 3](demo/script-demo.md) ; [capture Grafana](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png).
 
 **Limite à reconnaître.** Une seule suppression par exécution mesurée (ENF-16 conforme pour une suppression).
 

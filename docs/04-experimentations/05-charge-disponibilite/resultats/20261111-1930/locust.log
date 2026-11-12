@@ -1,0 +1,53 @@
+[2026-11-11 19:30:50,192] <machine>/INFO/locust.main: Starting Locust 2.47.0
+[2026-11-11 19:30:50,193] <machine>/INFO/locust.runners: Shape test starting.
+[2026-11-11 19:30:50,194] <machine>/INFO/locust.runners: Shape worker starting
+[2026-11-11 19:30:50,194] <machine>/INFO/locust.runners: Shape test updating to 50 users at 1.00 spawn rate
+[2026-11-11 19:30:50,567] <machine>/INFO/locust.runners: Ramping to 50 users at a rate of 1.00 per second
+[2026-11-11 19:31:39,803] <machine>/INFO/locust.runners: All users spawned: {"ReaderUser": 40, "SellerUser": 10} (50 total users)
+[2026-11-11 19:34:50,375] <machine>/INFO/locust.runners: Shape test updating to 200 users at 5.00 spawn rate
+[2026-11-11 19:34:50,375] <machine>/INFO/locust.runners: Ramping to 200 users at a rate of 5.00 per second
+[2026-11-11 19:35:19,485] <machine>/INFO/locust.runners: All users spawned: {"ReaderUser": 160, "SellerUser": 40} (200 total users)
+[2026-11-11 19:37:58,013] <machine>/INFO/locust.runners: Shape test stopping
+[2026-11-11 19:37:58,068] <machine>/INFO/locust.main: Shape test completed, shutting down
+[2026-11-11 19:37:58,100] <machine>/INFO/locust.main: Shutting down (exit code 0)
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      GET /articles                                                                   9287     0(0.00%) |      8       3     469      7 |   21.71        0.00
+GET      GET /articles/{id}                                                              5422     0(0.00%) |      6       3     403      5 |   12.67        0.00
+GET      GET /categories                                                                 3724     0(0.00%) |      5       2     382      4 |    8.70        0.00
+POST     POST /articles                                                                   868     0(0.00%) |     11       6     242      9 |    2.03        0.00
+PUT      PUT /articles/{id}/price                                                         480     0(0.00%) |     12       7     151     10 |    1.12        0.00
+POST     [connexion] formulaire                                                            42     0(0.00%) |     34      25      73     31 |    0.10        0.00
+GET      [connexion] page d'autorisation                                                   42     0(0.00%) |     21      12     106     17 |    0.10        0.00
+POST     [connexion] renouvellement                                                        10     0(0.00%) |     28      18      55     28 |    0.02        0.00
+POST     [connexion] échange du code                                                       42     0(0.00%) |     11       6      97      9 |    0.10        0.00
+GET      [prépa] GET /categories                                                            1     0(0.00%) |      8       8       8      8 |    0.00        0.00
+GET      [prépa] GET /me/interests                                                          1     0(0.00%) |     50      50      50     50 |    0.00        0.00
+POST     [prépa] POST /categories                                                           1     0(0.00%) |     38      38      38     38 |    0.00        0.00
+POST     [prépa] POST /shops                                                                2     0(0.00%) |     23       9      37     37 |    0.00        0.00
+PUT      [prépa] PUT /me/interests                                                          1     0(0.00%) |     39      39      39     39 |    0.00        0.00
+PUT      [prépa] PUT /me/preferences                                                        1     0(0.00%) |     12      12      12     12 |    0.00        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                     19924     0(0.00%) |      7       2     469      6 |   46.57        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      GET /articles                                                                           7      8      8      8     10     13     22     46    170    470    470   9287
+GET      GET /articles/{id}                                                                      5      6      6      7      8      9     15     25    150    400    400   5422
+GET      GET /categories                                                                         4      4      5      5      6      7     13     27    120    380    380   3724
+POST     POST /articles                                                                          9     10     11     12     14     16     24     45    240    240    240    868
+PUT      PUT /articles/{id}/price                                                               10     11     12     13     16     20     26     52    150    150    150    480
+POST     [connexion] formulaire                                                                 31     33     36     40     46     50     73     73     73     73     73     42
+GET      [connexion] page d'autorisation                                                        17     18     21     22     32     37    110    110    110    110    110     42
+POST     [connexion] renouvellement                                                             28     29     31     39     55     55     55     55     55     55     55     10
+POST     [connexion] échange du code                                                             9     10     10     11     15     21     98     98     98     98     98     42
+GET      [prépa] GET /categories                                                                 8      8      8      8      8      8      8      8      8      8      8      1
+GET      [prépa] GET /me/interests                                                              50     50     50     50     50     50     50     50     50     50     50      1
+POST     [prépa] POST /categories                                                               39     39     39     39     39     39     39     39     39     39     39      1
+POST     [prépa] POST /shops                                                                    37     37     37     37     37     37     37     37     37     37     37      2
+PUT      [prépa] PUT /me/interests                                                              40     40     40     40     40     40     40     40     40     40     40      1
+PUT      [prépa] PUT /me/preferences                                                            12     12     12     12     12     12     12     12     12     12     12      1
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                              6      7      8      8     10     13     21     40    160    440    470  19924
+

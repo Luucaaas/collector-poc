@@ -69,7 +69,7 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 | [`pipeline-cicd.svg`](../01-qualite/img/pipeline-cicd.svg) | Existant, utilisé tel quel | 7 | Rapport 3 : 1, texte lisible en plein écran ; vérifier en projection |
 | [`cycle-devsecops.svg`](../01-qualite/img/cycle-devsecops.svg) | Existant, utilisé tel quel | 11 | Rapport 2,6 : 1, lisible |
 | [`pyramide-tests.svg`](../01-qualite/img/pyramide-tests.svg) | Existant, utilisé tel quel | 10 | Rapport 1,75 : 1, lisible |
-| [`grafana-pic-catalog-service.png`](../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/grafana-pic-catalog-service.png) | Existant, **à remplacer par la nouvelle capture (axe du panneau « Taux d'erreur » corrigé)**, même chemin | 8 | Lisible ; l'axe actuel va jusqu'à « 10000 % » alors que le taux est à 0 |
+| [`grafana-pic-catalog-service.png`](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png) | Capture de la seconde exécution du protocole 5 (11/11), axe du panneau « Taux d'erreur » corrigé (0 à 2 %) | 8 | Lisible ; remplace celle du 06/11, dont l'axe allait jusqu'à « 10000 % » |
 | [Captures 01, 03, 04 et 06](../../frontend/e2e/resultats/captures/) | Existantes, utilisées telles quelles | 1, 6 | Lisibles ; à placer côte à côte |
 | [`pipeline-backend.svg`](../01-qualite/img/pipeline-backend.svg), [`matrice-risques.svg`](../06-securite/img/matrice-risques.svg), [`sequence-authentification.svg`](../02-architecture/img/sequence-authentification.svg) | Existants, en annexe seulement | A1, A2, A6 | Denses : réservés aux questions |
 | [`architecture-poc.svg`](../02-architecture/img/architecture-poc.svg) | **Existant mais à ne pas projeter** : en annexe A5 | (diapositive 3) | 3 638 × 793, rapport 4,6 : 1 : le texte devient minuscule sur un écran 16:9. Remplacé par un schéma simplifié |
@@ -318,31 +318,31 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 
 **Minutes** : 1:00, cumul 14:00.
 
-**Message clé** : sous un pic de 200 utilisateurs (protocole 5) l'HPA passe de 2 à 5 pods en une minute sans erreur, et un pod supprimé en pleine charge est remplacé en 5 secondes sans requête perdue ; l'environnement est un cluster Kubernetes local.
+**Message clé** : sous un pic de 200 utilisateurs (protocole 5, deux exécutions) l'HPA passe de 2 à 5 pods en une minute sans erreur, et un pod supprimé en pleine charge est remplacé en 5 à 6 secondes sans requête perdue ; l'environnement est un cluster Kubernetes local.
 
 **Contenu** (3 grands nombres à côté de la capture) :
 
-- 2 à 5 réplicas prêts en 60 s.
-- Pod supprimé remplacé en 4,9 s, 0 échec sur 533 requêtes.
-- 0 réponse 5xx sur 20 235 requêtes.
+- 2 à 5 réplicas prêts en 60 s et 59 s.
+- Pod supprimé remplacé en 4,9 s et 6,0 s, 0 requête perdue (533 et 642 requêtes).
+- 0 réponse 5xx sur 20 235 et 19 831 requêtes.
 
-**Visuel** : [`grafana-pic-catalog-service.png`](../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/grafana-pic-catalog-service.png) (débit, latence p95, taux d'erreur, réplicas), les trois chiffres à droite en grand. **À remplacer par la nouvelle capture (axe du panneau « Taux d'erreur » corrigé)** quand le chef l'aura refaite ; le chemin reste le même.
+**Visuel** : [`grafana-pic-catalog-service.png`](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png) de la seconde exécution (débit, latence p95, taux d'erreur, réplicas, CPU), les trois chiffres à droite en grand.
 
 **Chiffres et sources** :
 
 | Chiffre | Source |
 | --- | --- |
-| 2 à 5 réplicas prêts en 60 s (200 utilisateurs) | [index des expérimentations](../04-experimentations/README.md) |
-| Pod remplacé en 4,9 s, 0 échec sur 533 requêtes | [index des expérimentations](../04-experimentations/README.md) |
-| Retour à 2 pods en 325 s | [index des expérimentations](../04-experimentations/README.md) |
-| 0 réponse 5xx sur 20 235 requêtes | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
+| 2 à 5 réplicas prêts en 60 s (200 utilisateurs), 06/11 ; 59 s le 11/11 | [index des expérimentations](../04-experimentations/README.md), [protocole 5, seconde exécution](../04-experimentations/05-charge-disponibilite/protocole.md#seconde-exécution-11112026--répétabilité) |
+| Pod remplacé en 4,9 s, 0 échec sur 533 requêtes (06/11) ; 6,0 s, 0 échec sur 642 (11/11) | [index des expérimentations](../04-experimentations/README.md), [résumé du 11/11](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/resume.md) |
+| Retour à 2 pods en 325 s (06/11) et 328 s (11/11) | [index des expérimentations](../04-experimentations/README.md), [résumé du 11/11](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/resume.md) |
+| 0 réponse 5xx sur 20 235 requêtes (06/11) ; 0 sur 19 831 (11/11) | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8), [résumé du 11/11](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/resume.md) |
 | Auto-réparation sans charge : 7,1 s | [protocole 4](../04-experimentations/04-deploiement/protocole.md) |
 | En direct : 300 utilisateurs simulés | [script de la démonstration](demo/script-demo.md) |
 | ADR acceptée sous réserve de la validation de l'intervenant, repli Oracle OKE Always Free | [ADR 0006](../02-architecture/adr/0006-kubernetes-local-k3d-argocd.md) |
 
 **Critères** : 5 (disponibilité et montée en charge démontrées, honnêteté sur le cluster local), 1 (protocole 5).
 
-**Notes orales** : « Ce que vous avez vu en direct est mesuré dans le protocole cinq. Le protocole mesure deux cents utilisateurs ; en direct, j'en lance trois cents, pour être sûr d'atteindre cinq réplicas à froid. Sous le pic du protocole, le HPA a fait passer le catalogue de deux à cinq pods en soixante secondes. Un pod supprimé en pleine charge a été remplacé en moins de cinq secondes, sans requête perdue sur les cinq cent trente-trois envoyées. Sur tout le pic, vingt mille requêtes, zéro erreur serveur. Soyons honnêtes sur l'environnement : c'est un cluster Kubernetes local, pas un service géré. Je l'ai choisi pour son coût nul et sa reproductibilité. Si un environnement managé est exigé, le repli prévu est Oracle OKE, mais je ne l'ai pas testé. Je ne démontre pas de panne de nœud : sans règle de placement, le résultat serait aléatoire. C'est une limite écrite. »
+**Notes orales** : « Ce que vous avez vu en direct est mesuré dans le protocole cinq, rejoué deux fois. Le protocole mesure deux cents utilisateurs ; en direct, j'en lance trois cents, pour être sûr d'atteindre cinq réplicas à froid. Sous le pic du protocole, le HPA a fait passer le catalogue de deux à cinq pods en une minute, les deux fois. Un pod supprimé en pleine charge a été remplacé en cinq à six secondes, sans requête perdue. Sur chaque pic, environ vingt mille requêtes, zéro erreur serveur. Soyons honnêtes sur l'environnement : c'est un cluster Kubernetes local, pas un service géré. Je l'ai choisi pour son coût nul et sa reproductibilité. Si un environnement managé est exigé, le repli prévu est Oracle OKE, mais je ne l'ai pas testé. Je ne démontre pas de panne de nœud : sans règle de placement, le résultat serait aléatoire. C'est une limite écrite. »
 
 **Transition** : « Ces mesures s'inscrivent dans cinq indicateurs de qualité suivis à chaque version. »
 
@@ -566,11 +566,11 @@ Ces diapositives ne sont pas présentées. Elles servent à répondre aux questi
 
 **Question visée** : « Comment avez-vous mesuré, et sur quelle durée ? »
 
-**Visuel** : [chronologie du protocole 5](../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/resume.md) (tableau d'événements) et, pour le retour à 2 pods, la capture [`grafana-retour-catalog-service.png`](../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/grafana-retour-catalog-service.png).
+**Visuel** : tableau comparatif des deux exécutions (chronologies du [06/11](../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/resume.md) et du [11/11](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/resume.md)) et, pour le retour à 2 pods, la capture [`grafana-retour-catalog-service.png`](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-retour-catalog-service.png) du 11/11.
 
 **Source** : [protocole 5](../04-experimentations/05-charge-disponibilite/protocole.md) (8 rubriques : environnement, étapes, mesures, difficultés, limites, décision).
 
-**À dire** : une seule exécution de référence par scénario, sur le même Mac que le cluster ; l'HPA ne descend qu'après sa fenêtre de stabilisation (protection contre les yoyos), ce qui explique le retour à 2 pods en 325 s.
+**À dire** : deux exécutions du même protocole (06/11 et 11/11), sur le même Mac que le cluster, aux conclusions identiques ; l'HPA ne descend qu'après sa fenêtre de stabilisation de 5 minutes (protection contre les yoyos), ce qui explique le retour à 2 pods en 325 et 328 s.
 
 ### Annexe A4 — Flux et STRIDE du POC
 

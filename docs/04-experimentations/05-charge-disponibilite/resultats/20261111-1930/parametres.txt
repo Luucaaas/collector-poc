@@ -1,0 +1,4 @@
+Paramètres : charge nominale 50 utilisateurs pendant 240 s (montée de 1 par seconde), 
+pic de 200 utilisateurs (montée de 5 par seconde), attente maximale des 5 réplicas 420 s,
+maintien de 60 s à 5 réplicas puis de 60 s après le retour, observation de la réduction 900 s au plus.
+Exécution du 11/11/2026 19:30, commit e724741, images sha-5975ca0.

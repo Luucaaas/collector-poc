@@ -1,6 +1,6 @@
 # Protocole d'expérimentation 5 — Montée en charge de l'HPA et disponibilité sous charge
 
-Exécution de référence : **06/11/2026 11:32 à 11:46** (`run.sh` du commit `9f04231`, code de sortie 0), dossier [`resultats/20261106-1132/`](resultats/20261106-1132/). Les chiffres ci-dessous viennent de son [`resume.md`](resultats/20261106-1132/resume.md) et des relevés bruts du même dossier. Les captures Grafana ont été prises ensuite par `captures.sh` (voir §6). Ce qui a changé après l'exécution est listé en fin de §4.
+Exécution de référence : **06/11/2026 11:32 à 11:46** (`run.sh` du commit `9f04231`, code de sortie 0), dossier [`resultats/20261106-1132/`](resultats/20261106-1132/). Les chiffres ci-dessous viennent de son [`resume.md`](resultats/20261106-1132/resume.md) et des relevés bruts du même dossier. Les captures Grafana ont été prises ensuite par `captures.sh` (voir §6). Ce qui a changé après l'exécution est listé en fin de §4. Une seconde exécution, le 11/11/2026, confirme ces résultats (§5, « Seconde exécution »).
 
 ## 1. Objectif et question posée
 
@@ -115,6 +115,25 @@ Côté services (Prometheus, de la charge nominale à l'arrêt) : 0 réponse 5xx
 
 Le pic (200 utilisateurs) est **hors I3** : ses chiffres sont informatifs. Le p95 de la montée (84 et 127 ms) est plus élevé que celui du plateau à 5 réplicas (13 et 16 ms) : tant que l'HPA n'a pas ajouté de réplicas, deux pods se partagent toute la charge.
 
+### Seconde exécution (11/11/2026) : répétabilité
+
+Le protocole a été rejoué sans modification le **11/11/2026 de 19:30 à 19:44** (`run.sh` du commit `e724741`, images `sha-5975ca0`, code de sortie 0), dossier [`resultats/20261111-1930/`](resultats/20261111-1930/), chiffres de son [`resume.md`](resultats/20261111-1930/resume.md). But : vérifier que les résultats de référence se reproduisent, et prendre des captures Grafana avec l'échelle corrigée du panneau « Taux d'erreur » (voir §6).
+
+| Mesure | 06/11 (référence) | 11/11 |
+| --- | --- | --- |
+| 3 réplicas prêts | +17 s | +49 s |
+| 5 réplicas demandés (prêts) | +56 s (+60 s) | +59 s (+59 s) |
+| Pod de remplacement prêt | 4,9 s | 6,0 s |
+| Tous les réplicas de nouveau prêts | 6,2 s | 7,5 s |
+| Requêtes pendant la suppression, échecs | 533, 0 | 642, 0 |
+| Échecs de -5 s à +60 s autour de la suppression | 0 | 0 |
+| Retour à 2 pods après l'arrêt | 325 s | 328 s |
+| CPU moyenne maximale de `catalog-service` | 186 % | 157 % |
+| p95 à 50 utilisateurs (liste, publication) | 20 ms, 23 ms | 10 ms, 14 ms |
+| Réponses 5xx côté services | 0 sur 20 235 | 0 sur 19 831 |
+
+Les conclusions sont les mêmes : 5 réplicas prêts en une minute environ, remplacement d'un pod en quelques secondes sans échec, aucune réponse 5xx, retour à 2 pods après la fenêtre de stabilisation de 5 minutes. Les écarts (passage à 3 réplicas plus tardif, mais 3 et 4 demandés ensemble à +43 s ; latences plus basses) restent dans la variabilité attendue d'une exécution unique sur le même Mac que le cluster (§7). Les captures du 11/11 (`grafana-pic-*` et `grafana-retour-*` du dossier) sont celles du support de soutenance.
+
 ### Captures Grafana
 
 Prises après l'exécution (plage absolue, Prometheus garde 2 h) dans [`resultats/20261106-1132/`](resultats/20261106-1132/) : `grafana-pic-catalog-service.png` et `grafana-pic-notification-service.png` (de 1 min avant le pic à 15 s après l'arrêt), `grafana-retour-catalog-service.png` et `grafana-retour-notification-service.png` (de 1 min avant la charge à 30 s après le retour à 2 réplicas). Elles montrent débit, p95, réplicas (souhaités et prêts) et CPU par pod. Les 4xx visibles vers 11:33 sur la capture de `notification-service` sont une seule requête sans jeton, la vérification `smoke.sh` du début de l'exécution (« route protégée sans jeton », 401 attendu ; journal du pod : `missing_token` à 11:32:53), vue sur deux points de la fenêtre de calcul du débit. Le tableau de bord de `notification-service` ne montre pas de trafic HTTP de charge : ce service ne reçoit que la préparation de l'exécution ; il consomme les événements, d'où la CPU visible.
@@ -126,6 +145,7 @@ Prises après l'exécution (plage absolue, Prometheus garde 2 h) dans [`resultat
 - **Événements d'exécutions précédentes mélangés** : `kubectl get events` garde 1 h d'événements ; `run.sh` les filtre par heure absolue (pour l'exécution de référence, le fichier a été régénéré après coup avec cette même commande).
 - **Grafana tué par manque de mémoire pendant les captures.** Le conteneur `grafana` a une limite de 384 Mi et en consomme 290 à 350 Mi au repos ; l'ouverture d'un tableau de bord par un navigateur le dépasse : `OOMKilled`, redémarrages (4 au total pendant la mise au point), un passage en `CrashLoopBackOff`, panneaux « No data » et « no available server » sur les premières captures. Rien n'a été modifié sur le cluster. Contournement : `captures.sh` accepte un motif pour reprendre seulement les captures manquantes ; sur l'exécution de référence, 3 captures sur 4 ont réussi au premier passage (la 4e a tué Grafana), la dernière a été reprise après son redémarrage. Les captures versionnées sont complètes (vérifiées à la vue). **Correction appliquée après l'exécution** (06/11/2026, chef) : limite de Grafana relevée à 768 Mi et requête à 320 Mi dans `deploy/infra/monitoring/kube-prometheus-stack.yaml` (environ 384 Mi de plus sur le budget de la phase 3). Vérification : 4 captures de suite sans redémarrage, pic mesuré à 470 Mi (`kubectl top`), au-dessus de l'ancienne limite.
 - **Connexion à Grafana par script** : poser le mot de passe par `evaluate` ne suffisait pas (formulaire React : « Password is required »). Solution : appeler l'accesseur natif de `value` de `HTMLInputElement` puis envoyer l'événement `input`. La page de connexion n'est jamais photographiée ; le mode `kiosk` masque le menu.
+- **Échelle du panneau « Taux d'erreur » à 10 000 %** : sur une série toujours nulle, l'échelle automatique de Grafana étirait l'axe jusqu'à 10 000 %, ce qui rendait la capture de référence trompeuse à première vue. **Correction** (11/11/2026, commit `e724741`) : `axisSoftMax` à 0,02 dans `deploy/infra/monitoring/dashboards/collector-service.json` (axe de 0 à 2 % par défaut, élargi automatiquement si le taux dépasse 2 %), appliquée par `deploy.sh monitoring`. Les captures de la seconde exécution l'utilisent.
 - **Mesure du remplacement** : pendant 6 s l'ancien pod reste listé (arrêt du conteneur) ; le script mesure donc séparément sa disparition, le premier pod prêt absent de la liste d'avant, et le retour au nombre de réplicas prêts.
 
 ## 7. Limites de l'expérimentation

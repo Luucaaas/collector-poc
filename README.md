@@ -59,6 +59,7 @@ node --version                      # doit afficher v22.x (sinon, mettre node@22
 ```
 
 - **`mkcert -install`, à lancer une seule fois par vous** : il installe l'autorité de certification locale dans le Mac et demande votre mot de passe. Aucun script du dépôt ne le lance. Sans lui, le navigateur refuse le certificat des adresses `*.127.0.0.1.sslip.io`.
+- **Recommandé : déclarer les 4 hôtes dans `/etc/hosts`** (mot de passe demandé), pour ne dépendre ni d'Internet ni du réseau : `sslip.io` est un DNS public, et un réseau à DNS64 (partage de connexion d'un iPhone, par exemple) fait échouer le navigateur (`ERR_CONNECTION_RESET`) alors que `curl` passe. Commande et explication : liste « La veille » de [`docs/07-soutenance/demo/script-demo.md`](docs/07-soutenance/demo/script-demo.md#la-veille) ; `preparer.sh` contrôle ce point.
 
 ## Déployer sur le cluster local
 

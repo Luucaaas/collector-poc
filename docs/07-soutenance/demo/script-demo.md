@@ -209,6 +209,11 @@ docs/07-soutenance/demo/donnees-demo.sh    # relançable sans doublon
 docs/07-soutenance/demo/preparer.sh        # doit finir par « PRÊT »
 ```
 
+- [ ] **Les 4 hôtes déclarés dans `/etc/hosts`** (une seule fois, par toi, mot de passe demandé) :
+  ```bash
+  sudo sh -c 'printf "127.0.0.1 app.127.0.0.1.sslip.io api.127.0.0.1.sslip.io auth.127.0.0.1.sslip.io grafana.127.0.0.1.sslip.io\n::1 app.127.0.0.1.sslip.io api.127.0.0.1.sslip.io auth.127.0.0.1.sslip.io grafana.127.0.0.1.sslip.io\n" >> /etc/hosts'
+  ```
+  Sans cela, la démonstration dépend du réseau de la salle. Sur un réseau à DNS64 (partage de connexion d'un iPhone, certains Wi-Fi), Chrome et Safari reçoivent aussi une adresse IPv6 de passerelle (`64:ff9b::7f00:1`), l'essaient en premier, et la connexion est coupée (`ERR_CONNECTION_RESET`) alors que `curl` et `smoke.sh` passent. Sans Internet, `sslip.io` ne répond plus du tout. Constaté le 12/11/2026 sur un partage de connexion ; `preparer.sh` le détecte (ligne « Le navigateur ne joindra pas le cluster »).
 - [ ] Cluster neuf créé, `donnees-demo.sh` lancé, `preparer.sh` répond « PRÊT ».
 - [ ] **Ne plus lancer** de test de charge ni de parcours Playwright après (ils polluent le catalogue). Pour répéter la démonstration, recréer le cluster après.
 - [ ] Mac branché sur secteur, mise à jour système et notifications désactivées (mode Ne pas déranger).
@@ -243,7 +248,7 @@ docs/07-soutenance/demo/preparer.sh        # doit finir par « PRÊT »
 
 | Outil | Rôle |
 | --- | --- |
-| [`preparer.sh`](preparer.sh) | Vérifie que tout est prêt (Docker, cluster, `smoke.sh`, Grafana, Keycloak, Locust, Playwright, HPA, pods, CI de `main`, catalogue propre) sans rien modifier ; `--rapide` saute `smoke.sh`, `--veille [heures]` empêche la mise en veille |
+| [`preparer.sh`](preparer.sh) | Vérifie que tout est prêt (Docker, cluster, noms des hôtes tels que le navigateur les résout, `smoke.sh`, Grafana, Keycloak, Locust, Playwright, HPA, pods, CI de `main`, catalogue propre) sans rien modifier ; `--rapide` saute `smoke.sh`, `--veille [heures]` empêche la mise en veille |
 | [`donnees-demo.sh`](donnees-demo.sh) | Crée le jeu de données propre par l'API (vrai flux de connexion PKCE), sans doublon si relancé |
 | [`mot-de-passe.sh`](mot-de-passe.sh) | Copie un mot de passe de démo dans le presse-papiers sans l'afficher, puis le vide |
 | [`pic-charge.sh`](pic-charge.sh) | Pic de charge, suivi à l'écran, suppression d'un pod, bilan (moins de 2 minutes) enregistré dans `resultats/pic-<date>.txt` |

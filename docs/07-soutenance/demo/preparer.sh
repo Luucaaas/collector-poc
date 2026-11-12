@@ -74,7 +74,36 @@ if $K get pods >/dev/null 2>&1; then
   ok "Version déployée : ${tag}"
 fi
 
-# 4. Test de fumée, Grafana, Keycloak, application
+# 4. Résolution des noms par le Mac (celle qu'utilisent Chrome et Safari, pas celle de curl).
+# Un réseau à DNS64 (partage de connexion d'un iPhone, certains Wi-Fi) répond aussi une adresse IPv6
+# de passerelle (64:ff9b::7f00:1) que le navigateur essaie en premier : connexion coupée
+# (ERR_CONNECTION_RESET) alors que curl et smoke.sh passent. Sans Internet, sslip.io ne répond pas.
+# Parade : déclarer les 4 hôtes dans /etc/hosts (127.0.0.1 et ::1, le cluster écoute sur les deux).
+HOTES="app.127.0.0.1.sslip.io api.127.0.0.1.sslip.io auth.127.0.0.1.sslip.io grafana.127.0.0.1.sslip.io"
+REMEDE_HOSTS="sudo sh -c 'printf \"127.0.0.1 ${HOTES}\\n::1 ${HOTES}\\n\" >> /etc/hosts' (par toi, mot de passe demandé)"
+HOSTS_FILE="${HOSTS_FILE:-/etc/hosts}"
+# declare_dans_hosts <ip> <nom> : vrai si une ligne non commentée associe ce nom à cette adresse.
+declare_dans_hosts() {
+  awk -v ip="$1" -v nom="$2" '{ sub(/#.*/, "") } $1 == ip { for (i = 2; i <= NF; i++) if ($i == nom) t = 1 }
+    END { exit !t }' "$HOSTS_FILE" 2>/dev/null
+}
+declares=0; mauvais_noms=""
+for h in $HOTES; do
+  declare_dans_hosts 127.0.0.1 "$h" && declare_dans_hosts ::1 "$h" && declares=$((declares + 1))
+  adresses="$(dscacheutil -q host -a name "$h" 2>/dev/null | awk '/^ip(v6)?_address:/ {print $2}' | sort -u | tr '\n' ' ')"
+  autres="$(tr ' ' '\n' <<< "$adresses" | grep -vE '^(127\.0\.0\.1|::1)?$' | tr '\n' ' ' || true)"
+  if [[ -z "${adresses// /}" ]]; then mauvais_noms="${mauvais_noms}${h} (non résolu) "
+  elif [[ -n "${autres// /}" ]]; then mauvais_noms="${mauvais_noms}${h} (aussi ${autres% }) "; fi
+done
+if [[ -n "$mauvais_noms" ]]; then
+  manque "Le navigateur ne joindra pas le cluster : ${mauvais_noms}" "$REMEDE_HOSTS"
+elif [[ $declares -eq 4 ]]; then
+  ok "Les 4 hôtes sont déclarés dans /etc/hosts : la démo ne dépend ni du réseau ni d'Internet"
+else
+  alerte "Hôtes résolus par sslip.io : il faut Internet et un réseau sans DNS64" "$REMEDE_HOSTS"
+fi
+
+# 5. Test de fumée, Grafana, Keycloak, application
 if [[ $RAPIDE -eq 1 ]]; then
   alerte "smoke.sh sauté (--rapide)" "lancer deploy/local/smoke.sh"
 else
@@ -94,7 +123,7 @@ fi
   && ok "Grafana joignable (https://grafana.127.0.0.1.sslip.io)" \
   || manque "Grafana ne répond pas" "deploy/local/deploy.sh monitoring"
 
-# 5. Mots de passe : présents, et celui de Grafana accepté (sans l'afficher)
+# 6. Mots de passe : présents, et celui de Grafana accepté (sans l'afficher)
 if [[ -f "$ENV_FILE" ]]; then
   absents=""
   for cle in ADMIN_PASSWORD ALICE_PASSWORD BOB_PASSWORD CHLOE_PASSWORD GRAFANA_ADMIN_PASSWORD; do
@@ -112,7 +141,7 @@ else
   manque "deploy/local/.env introuvable" "deploy/local/deploy.sh infra"
 fi
 
-# 6. Outils : Locust (uv), Chromium de Playwright, autorité mkcert
+# 7. Outils : Locust (uv), Chromium de Playwright, autorité mkcert
 if [[ -x "${ROOT}/tests/load/.venv/bin/locust" ]]; then ok "Environnement uv de tests/load : Locust présent"
 else manque "Locust absent" "cd tests/load && uv sync"; fi
 if [[ -x "${ROOT}/frontend/node_modules/.bin/playwright" ]] && ls -d "${HOME}"/Library/Caches/ms-playwright/chromium-* >/dev/null 2>&1; then
@@ -120,7 +149,7 @@ if [[ -x "${ROOT}/frontend/node_modules/.bin/playwright" ]] && ls -d "${HOME}"/L
 else manque "Playwright ou Chromium absent" "cd frontend && npm ci && npx playwright install chromium"; fi
 [[ -f "$(mkcert -CAROOT 2>/dev/null)/rootCA.pem" ]] && ok "Autorité mkcert présente" || manque "Autorité mkcert absente" "mkcert -install (par toi)"
 
-# 7. Catalogue propre : seulement le jeu de la démo
+# 8. Catalogue propre : seulement le jeu de la démo
 cats="$(curl -s --max-time 10 "${API}/catalog/api/v1/categories" 2>/dev/null | python3 -c '
 import json, sys
 try:
@@ -138,7 +167,7 @@ else
   manque "Le catalogue contient autre chose que le jeu de la démo" "refaire un cluster neuf puis donnees-demo.sh (script-demo.md, « La veille »)"
 fi
 
-# 8. Dernier run de la CI sur main
+# 9. Dernier run de la CI sur main
 if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then
   for wf in backend frontend; do
     ligne="$(gh run list --workflow "${wf}.yml" --branch main --limit 1 --json status,conclusion,headSha --jq '.[0] | "\(.status) \(.conclusion) \(.headSha[0:7])"' 2>/dev/null || true)"
@@ -153,7 +182,7 @@ else
   alerte "gh absent ou non connecté : état de la CI non vérifié" "gh auth login (par toi)"
 fi
 
-# 9. Mise en veille
+# 10. Mise en veille
 if [[ $VEILLE -eq 1 ]]; then
   caffeinate -dis -t $((HEURES * 3600)) >/dev/null 2>&1 &
   echo "Veille empêchée pendant ${HEURES} h (caffeinate, processus $!). Pour l'arrêter : kill $!"

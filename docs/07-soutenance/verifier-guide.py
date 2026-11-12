@@ -34,6 +34,8 @@ CHECKED_FILES = [
     ROOT / "docs/07-soutenance/README.md",
     ROOT / "docs/07-soutenance/guide-jury.md",
     ROOT / "docs/07-soutenance/support.md",
+    ROOT / "docs/07-soutenance/questions.md",
+    ROOT / "docs/07-soutenance/glossaire.md",
 ]
 
 # Liens entrants : (document qui cite, ancre du README qu'il vise).
@@ -507,6 +509,71 @@ def check_support_counts(failures: list[str]) -> int:
     return 2
 
 
+# Chiffres de questions.md : (texte tel qu'écrit dans questions.md ou glossaire.md, texte tel qu'écrit
+# dans le fichier source, fichier source). Même normalisation que FIGURES.
+QUESTIONS_FIGURES: list[tuple[str, str, str]] = [
+    ('9,995 s sans opérateur contre 54,164 s', '9,995 s', 'docs/02-architecture/adr/0008-infrastructure-images-officielles.md'),
+    ('9,995 s sans opérateur contre 54,164 s', '54,164 s', 'docs/02-architecture/adr/0008-infrastructure-images-officielles.md'),
+    ('64 Mi de mémoire en moins', 'La mémoire baisse de 64 Mi', 'docs/02-architecture/adr/0008-infrastructure-images-officielles.md'),
+    ('1 message relivré sur 1 000', '1 message relivré sur 1 000', 'docs/04-experimentations/README.md'),
+    ('un seul appel JWKS pour 216 requêtes', '1 seul appel JWKS pour 216 requêtes', 'docs/04-experimentations/README.md'),
+    ('0,4800 s lus pour 200 ms', '0,4800 s', 'docs/04-experimentations/README.md'),
+    ('0,2474 s avec des bornes serrées', '0,2474 s', 'docs/04-experimentations/README.md'),
+    ('Keycloak : 581 Mi', '581 Mi', 'docs/04-experimentations/README.md'),
+    ('RabbitMQ : 135 Mi', '135 Mi', 'docs/04-experimentations/README.md'),
+    ('0,095 s', '0,095 s', 'docs/01-qualite/indicateurs.md'),
+    ('Lignes 99,06 % et 98,47 %', '99,06 %', 'docs/01-qualite/indicateurs.md'),
+    ('branches 94,17 % et 91,49 %', '91,49 %', 'docs/01-qualite/indicateurs.md'),
+    ('72 à 75 %', '72–75 %', 'docs/01-qualite/indicateurs.md'),
+    ('Run 42034154273', '42034154273', 'docs/01-qualite/conformite-pipeline.md'),
+    ('42037655092', '42037655092', 'docs/01-qualite/conformite-pipeline.md'),
+    ('201 lignes (89 CVE)', '201 (89 CVE)', 'docs/06-securite/rapport-scans.md'),
+    ('25 constats', '25 constats qualifiés', 'docs/06-securite/README.md'),
+    ('21 hypothèses', 'H-S01 à H-S18 et H-P01 à H-P03', 'docs/06-securite/plan-remediation.md'),
+    ('de 4 800 à 7 200 €', 'de 4 800 à 7 200 €', 'docs/05-competences/plan-formation.md'),
+    ('12 j-h', '12 j-h', 'docs/05-competences/plan-formation.md'),
+    ('29 à court terme (64 j)', '| Court terme (0 à 3 mois) | 29 | 64 j |', 'docs/06-securite/plan-remediation.md'),
+    ('de 36 à 57 s', '57 s', 'docs/07-soutenance/demo/script-demo.md'),
+    ('redéploiement du tag existant : 19 s', '19 s', 'docs/07-soutenance/demo/script-demo.md'),
+    ('R-48 : criticité de 20 à 8', '20 → 8', 'docs/06-securite/plan-remediation.md'),
+    ('R-01 : de 15 à 10', '15 → 10', 'docs/06-securite/plan-remediation.md'),
+    ('100m CPU et 128 Mi demandés, 500m et 256 Mi', 'memory: 128Mi', 'deploy/helm/collector-service/values.yaml'),
+]
+
+
+def check_questions(failures: list[str]) -> int:
+    """questions.md : au moins 40 questions complètes ; glossaire.md : au moins 40 termes ; chiffres recoupés."""
+    questions = ROOT / "docs/07-soutenance/questions.md"
+    glossary = ROOT / "docs/07-soutenance/glossaire.md"
+    qtext = questions.read_text(encoding="utf-8")
+    gtext = glossary.read_text(encoding="utf-8")
+    blocks = re.split(r"^### (?=Q\d+\.)", qtext, flags=re.M)[1:]
+    if len(blocks) < 40:
+        failures.append(f"questions.md : {len(blocks)} questions, au moins 40 attendues")
+    for block in blocks:
+        title = block.splitlines()[0]
+        for label in ("**Critères**", "**À dire.**", "**Chiffres", "**À montrer", "**Limite à reconnaître"):
+            if label not in block:
+                failures.append(f"questions.md : « {title} » sans le champ {label}")
+    numbers = re.findall(r"^### (Q\d+)\.", qtext, re.M)
+    if numbers != [f"Q{i}" for i in range(1, len(numbers) + 1)]:
+        failures.append("questions.md : numérotation des questions non continue")
+    for number in range(1, 11):
+        if not re.search(rf"\*\*Critères\*\* : [^\n]*\b{number}\b", qtext):
+            failures.append(f"questions.md : aucune question ne porte sur le critère {number}")
+    terms = [r for r in gtext.splitlines() if r.startswith("| **")]
+    if len(terms) < 40:
+        failures.append(f"glossaire.md : {len(terms)} termes, au moins 40 attendus")
+    both = normalize(qtext + gtext)
+    for in_text, in_source, source in QUESTIONS_FIGURES:
+        path = ROOT / source
+        if normalize(in_text) not in both:
+            failures.append(f"questions et glossaire : « {in_text} » absent")
+        if not path.exists() or normalize(in_source) not in normalize(path.read_text(encoding="utf-8")):
+            failures.append(f"questions et glossaire : « {in_source} » introuvable dans {source}")
+    return len(blocks) + len(terms) + len(QUESTIONS_FIGURES)
+
+
 def check_privacy(failures: list[str]) -> None:
     pattern = "/" + "Users" + "/"  # écrit en deux morceaux pour ne pas se contenir lui-même
     for file in CHECKED_FILES:
@@ -522,6 +589,7 @@ def main() -> int:
     n_counts = check_counts(failures)
     n_support = check_support_figures(failures)
     n_structure = check_support_structure(failures) + check_support_counts(failures)
+    n_questions = check_questions(failures)
     check_privacy(failures)
     print(f"Liens relatifs contrôlés : {n_links}")
     print(f"Liens entrants contrôlés : {n_incoming}")
@@ -529,6 +597,7 @@ def main() -> int:
     print(f"Comptages recoupés dans le dépôt : {n_counts}")
     print(f"Support : chiffres recoupés avec leur source : {n_support}")
     print(f"Support : contrôles de structure (minutage, champs, critères, annexes) : {n_structure}")
+    print(f"Questions, glossaire : contrôles (questions, termes, chiffres) : {n_questions}")
     if failures:
         print(f"\n{len(failures)} échec(s) :")
         for failure in failures:

@@ -4,7 +4,7 @@
 
 ## Phase en cours
 
-**Phase 10 en cours depuis le 11/11/2026** (soutenance), découpage validé par Lucas : P10-01 README et guide du jury, P10-02 démo de 6 min outillée, P10-03 contenu du support puis diaporama (chef), P10-04 questions probables et glossaire. Vidéo de secours et répétitions : Lucas.
+**Phase 10 terminée le 12/11/2026** (soutenance) pour la part du chef et des agents : README et guide du jury (P10-01), démo de 6 min outillée (P10-02), support de 20 min et diaporama de 23 diapositives (P10-03, https://claude.ai/artifact/MdhpZcHvTz1qiuib1BMHoU, privé), 68 questions probables et glossaire de 79 termes (P10-04), protocole 5 rejoué le 11/11. **Restent à Lucas** : vidéo de secours, 2 ou 3 répétitions minutées, réponse à « avez-vous réalisé ce POC seul, avec quels outils ? », relecture des références juridiques « à confirmer » et des montants des échelles d'impact, acceptation des risques résiduels R-01, R-30 et R-34, cluster reconstruit la veille (liste « La veille » de `docs/07-soutenance/demo/script-demo.md`).
 
 Phase 9 terminée le 11/11/2026 : audit, corrections (`sha-1be69a1`), 62 risques, plan de 58 actions.
 
@@ -63,22 +63,23 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P9-04 | Plan de remédiation priorisé | developpeur | `phase-9/plan-remediation` | fusionnée |
 | P10-01 | README complet et guide du jury | developpeur | `phase-10/readme-guide` | fusionnée |
 | P10-02 | Démo de 6 min outillée | developpeur | `phase-10/demo` | fusionnée |
-| P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | fusionnée (diaporama en cours par le chef) |
-| P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | en cours |
+| P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | fusionnée (diaporama terminé par le chef) |
+| P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P10-04 confiée au développeur (brief dans `docs/suivi/taches/P10-04.md`, branche locale `phase-10/questions`). Le chef termine le diaporama (https://claude.ai/artifact/MdhpZcHvTz1qiuib1BMHoU) : diapositive 8 et annexe A3 avec la nouvelle exécution du protocole 5 (`resultats/20261111-1930`, captures Grafana à l'axe corrigé), puis commit de ces résultats. Ensuite : audit de P10-04, fusion, clôture de la phase 10 (cluster neuf et données de démo pour la soutenance, liste de ce qui reste à Lucas).
+Aucune tâche d'agent en cours. Préparation de la soutenance par Lucas (liste ci-dessus). La veille de la soutenance : suivre la liste « La veille » de `docs/07-soutenance/demo/script-demo.md` (cluster neuf, `deploy.sh all <tag>`, données de démo, `preparer.sh --veille 3` jusqu'à « PRÊT ») ; 15 minutes avant, pousser le commit vide prévu par le script. Le cluster actuel (`sha-5975ca0`) contient des données du protocole 5 (catégorie « Charge … ») : ne pas l'utiliser tel quel pour la démo.
 
 ## Décisions en attente
 
 | Sujet | Qui décide | Remarque |
 | --- | --- | --- |
 | Acceptation du cluster local k3d pour le critère 5 | Lucas (question à l'intervenant) | Sinon migration vers Oracle OKE Always Free |
+| Réponse à « avez-vous réalisé ce POC seul, avec quels outils ? » | Lucas | Le chef ne la rédige pas : question d'honnêteté personnelle, à préparer avant les répétitions |
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
 
-11/11/2026 19:38 — P10-03 fusionnée (`5109f04`) ; axe du panneau Grafana corrigé (`e724741`) ; diaporama en construction ; brief de P10-04 écrit.
+12/11/2026 13:38 — P10-04 fusionnée (`cff5795`) après un aller-retour d'audit ; documents d'architecture alignés sur le code (`9144f03`) ; protocole 5 rejoué et support mis à jour (`cfc22f8`) ; diaporama terminé ; **phase 10 terminée** pour la part du chef.

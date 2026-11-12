@@ -179,7 +179,7 @@ flowchart LR
 ```
 
 - **Exchange `article.events` de type `topic`.** Chaque consommateur déclare sa propre file et la lie avec le motif `article.*` : chaque file reçoit une copie de chaque événement (*publish/subscribe*).
-- **Point d'extension.** Pour brancher l'outil anti-fraude, interne ou acheté (EF-25), il suffit de lier une nouvelle file à l'exchange. `catalog-service` n'est pas modifié. On le démontre pendant la soutenance avec une file temporaire.
+- **Point d'extension.** Pour brancher l'outil anti-fraude, interne ou acheté (EF-25), il suffit de lier une nouvelle file à l'exchange. `catalog-service` n'est pas modifié. C'est prouvé par le test d'intégration `services/catalog-service/tests/test_rabbitmq.py` : une file exclusive liée à `article.events` (clé `article.*`) reçoit les deux événements sans modification ni redéploiement du catalogue.
 - **Fiabilité dans le POC.** Exchange et file durables, messages persistants (`delivery_mode = 2`), confirmation de publication par le broker. Côté consommateur : acquittement après la validation de la transaction en base, `prefetch = 10`. Un message dont le traitement échoue est remis en file une fois, puis rejeté et journalisé.
 - **Propriétés AMQP.** `message_id = event_id`, `type = event_type`, `content_type = application/json` et l'en-tête `x-correlation-id`.
 

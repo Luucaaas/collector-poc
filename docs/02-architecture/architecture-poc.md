@@ -217,7 +217,7 @@ Points clés de ce parcours :
 - **Publication juste après le commit.** C'est la solution la plus simple, mais elle a une fenêtre de risque : si RabbitMQ est indisponible entre le commit et la publication, l'article est bien publié mais l'événement est perdu. L'erreur est journalisée. La cible ferme cette fenêtre avec l'outbox (section 8).
 - **Acquittement après le commit.** `notification-service` n'acquitte le message qu'une fois les notifications enregistrées : s'il tombe pendant le traitement, RabbitMQ relivre le message. La contrainte d'unicité évite alors les doublons.
 - **Point d'extension.** Un outil anti-fraude, interne ou acheté, recevra les mêmes événements en liant sa propre file à l'exchange, sans modification de `catalog-service` (EF-25).
-- **Dans le POC, l'acheteur récupère ses notifications par interrogation périodique** (toutes les 10 s). Dans la cible, la notification sera poussée en temps réel par WebSocket ou *Server-Sent Events*.
+- **Dans le POC, l'acheteur récupère ses notifications à la demande**, par le bouton « Actualiser » de la page des centres d'intérêt (aucun rafraîchissement automatique). Dans la cible, la notification sera poussée en temps réel par WebSocket ou *Server-Sent Events*.
 
 Le parcours de modification de prix (US-04) suit le même schéma : la ligne de `price_history` et le nouveau prix sont écrits dans la même transaction, puis `article.price_changed` est publié.
 

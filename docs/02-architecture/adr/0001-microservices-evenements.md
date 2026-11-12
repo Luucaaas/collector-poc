@@ -60,7 +60,7 @@ Comment structurer l'application pour ajouter des fonctionnalités sans modifier
 - Les tests d'acceptation de US-05 montrent qu'une publication déclenche la notification des acheteurs intéressés, en moins de 2 s.
 - La contrainte d'unicité `(user_id, source_event_id)` garantit qu'un message relivré ne produit pas de seconde notification.
 - L'utilisateur PostgreSQL de `notification-service` ne peut pas se connecter à `catalog_db` : l'isolation des données est vérifiée.
-- Pendant la démo, une file temporaire liée à `article.events` reçoit les événements sans redéploiement du catalogue.
+- Une file supplémentaire liée à `article.events` reçoit les événements sans modification ni redéploiement du catalogue : prouvé par le test d'intégration `services/catalog-service/tests/test_rabbitmq.py` (une démonstration en soutenance était envisagée, elle n'a pas été retenue dans la démo de 6 minutes).
 
 ## Avantages et inconvénients des options
 

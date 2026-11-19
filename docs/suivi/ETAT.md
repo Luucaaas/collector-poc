@@ -72,7 +72,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Aucune tâche d'agent en cours. P11-01 (pipeline en anglais) et P11-02 (nginx 1.30.7 dans l'image du front) fusionnées le 19/11/2026 ; contrôler les deux workflows du commit poussé et ajouter la mesure de CI d'I4 du front dans `indicateurs.md`. Le reste du code existant a encore des commentaires en français : ne le traduire qu'avec l'accord de Lucas. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec un tag dont les trois images existent.
+Aucune tâche d'agent en cours. P11-01 (pipeline en anglais) et P11-02 (nginx 1.30.7 dans l'image du front) fusionnées le 19/11/2026 ; les deux workflows de `88ca4fe` sont verts (runs 44532229824 et 44532229953), les trois images existent au tag `sha-88ca4fe`. Le reste du code existant a encore des commentaires en français : ne le traduire qu'avec l'accord de Lucas. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec un tag dont les trois images existent.
 
 ## Décisions en attente
 
@@ -83,6 +83,8 @@ Aucune tâche d'agent en cours. P11-01 (pipeline en anglais) et P11-02 (nginx 1.
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+19/11/2026 14:26 — CI verte sur `88ca4fe` (backend et frontend) : Trivy 0 vulnérabilité sur l'image du front (amd64 et arm64), mesure ajoutée à `indicateurs.md`.
 
 19/11/2026 14:18 — P11-02 fusionnée (deux audits NON CONFORME sur la documentation, tranchée par le chef) : nginx 1.30.7 et ses 4 modules installés depuis nginx.org dans l'image du front.
 

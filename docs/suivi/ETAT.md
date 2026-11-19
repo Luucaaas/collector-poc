@@ -67,12 +67,17 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | fusionnée |
 | P11-01 | Pipeline CI/CD en anglais | developpeur | `phase-11/ci-english` | fusionnée |
 | P11-02 | Image du front : nginx 1.30.7 (6 CVE) | developpeur | `phase-11/nginx-1-30-7` | fusionnée |
+| P11-03 | Services backend en anglais | developpeur | `phase-11/en-services` | en cours |
+| P11-04 | Front en anglais (code, pas l'interface) | developpeur | `phase-11/en-frontend` | en cours |
+| P11-05 | Déploiement en anglais | developpeur | `phase-11/en-deploy` | en cours |
+| P11-06 | Tests d'acceptation et de charge en anglais | developpeur | `phase-11/en-tests` | en cours |
+| P11-07 | Scripts de la documentation en anglais | developpeur | `phase-11/en-docs-scripts` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Aucune tâche d'agent en cours. P11-01 (pipeline en anglais) et P11-02 (nginx 1.30.7 dans l'image du front) fusionnées le 19/11/2026 ; les deux workflows de `88ca4fe` sont verts (runs 44532229824 et 44532229953), les trois images existent au tag `sha-88ca4fe`. Le reste du code existant a encore des commentaires en français : ne le traduire qu'avec l'accord de Lucas. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec un tag dont les trois images existent.
+P11-03 à P11-07 en cours (demande de Lucas du 19/11/2026 : tout le code en anglais), en parallèle sur 5 branches : services, front, déploiement, tests d'acceptation et de charge, scripts de `docs/`. Puis audit de chaque branche, fusion une par une (conflits possibles sur les documents qui citent des sorties et sur `verifier-plan.py`), tests et vérificateurs sur `main`, push et contrôle de la CI. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec un tag dont les trois images existent.
 
 ## Décisions en attente
 
@@ -83,6 +88,8 @@ Aucune tâche d'agent en cours. P11-01 (pipeline en anglais) et P11-02 (nginx 1.
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+19/11/2026 14:28 — P11-03 à P11-07 ouvertes : traduction du reste du code en anglais, en 5 zones.
 
 19/11/2026 14:26 — CI verte sur `88ca4fe` (backend et frontend) : Trivy 0 vulnérabilité sur l'image du front (amd64 et arm64), mesure ajoutée à `indicateurs.md`.
 

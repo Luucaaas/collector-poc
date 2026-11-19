@@ -100,7 +100,7 @@ deploy/k8s               manifests complémentaires (Secret TLS mkcert, Ingress)
 
 ## Conventions
 
-- Documentation, README et messages de commit **en français**. Code et identifiants en anglais.
+- Documentation, README et messages de commit **en français**. **Tout le code en anglais** : identifiants, commentaires, noms d'étapes des workflows, messages des scripts de CI (demande de Lucas du 19/11/2026). Les textes de l'interface du front restent en français. Pour traduire de l'existant, garder chaque ligne à son numéro quand la doc y renvoie (`fichier:ligne`, `verifier-plan.py`).
 - Chaque service expose `/health/live`, `/health/ready` et `/metrics`, et écrit des logs JSON avec un identifiant de corrélation.
 - Écrire les tests en même temps que le code. Pas de fonctionnalité sans test.
 - Aucun secret dans le repo : `.env.example` versionné, `.env` ignoré. Secrets Kubernetes pour le cluster.

@@ -65,13 +65,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P10-02 | Démo de 6 min outillée | developpeur | `phase-10/demo` | fusionnée |
 | P10-03 | Contenu du support et diaporama | developpeur, chef | `phase-10/support` | fusionnée (diaporama terminé par le chef) |
 | P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | fusionnée |
-| P11-01 | Pipeline CI/CD en anglais | developpeur | `phase-11/ci-english` | en cours |
+| P11-01 | Pipeline CI/CD en anglais | developpeur | `phase-11/ci-english` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P11-01 (demande de Lucas du 19/11/2026 : code toujours en anglais) : traduction ligne pour ligne des deux workflows, confiée au développeur ; puis audit, fusion, push et contrôle du run de CI. Ensuite, aucune tâche d'agent en cours. Préparation de la soutenance par Lucas (liste ci-dessus). La veille de la soutenance : suivre la liste « La veille » de `docs/07-soutenance/demo/script-demo.md` (cluster neuf, `deploy.sh all <tag>`, données de démo, `preparer.sh --veille 3` jusqu'à « PRÊT ») ; 15 minutes avant, pousser le commit vide prévu par le script. Le cluster actuel (`sha-5975ca0`) contient des données du protocole 5 (catégorie « Charge … ») : ne pas l'utiliser tel quel pour la démo.
+Aucune tâche d'agent en cours (P11-01 fusionnée le 19/11/2026 : pipeline en anglais). Le reste du code existant (services, scripts, tests) a encore des commentaires en français : ne le traduire qu'avec l'accord de Lucas. Préparation de la soutenance par Lucas (liste ci-dessus). La veille de la soutenance : suivre la liste « La veille » de `docs/07-soutenance/demo/script-demo.md` (cluster neuf, `deploy.sh all <tag>`, données de démo, `preparer.sh --veille 3` jusqu'à « PRÊT ») ; 15 minutes avant, pousser le commit vide prévu par le script. Le cluster actuel (`sha-5975ca0`) contient des données du protocole 5 (catégorie « Charge … ») : ne pas l'utiliser tel quel pour la démo.
 
 ## Décisions en attente
 
@@ -82,6 +82,8 @@ P11-01 (demande de Lucas du 19/11/2026 : code toujours en anglais) : traduction 
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+19/11/2026 13:43 — P11-01 fusionnée (audit CONFORME, 5 écarts de forme corrigés par le chef) : workflows `backend.yml` et `frontend.yml` en anglais ligne pour ligne, table de correspondance dans `conformite-pipeline.md` §7.
 
 19/11/2026 13:38 — P11-01 ouverte (pipeline CI/CD en anglais).
 

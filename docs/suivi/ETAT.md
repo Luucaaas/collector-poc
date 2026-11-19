@@ -77,7 +77,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-P11-03 à P11-07 en cours (demande de Lucas du 19/11/2026 : tout le code en anglais), en parallèle sur 5 branches : services, front, déploiement, tests d'acceptation et de charge, scripts de `docs/`. Puis audit de chaque branche, fusion une par une (conflits possibles sur les documents qui citent des sorties et sur `verifier-plan.py`), tests et vérificateurs sur `main`, push et contrôle de la CI. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec un tag dont les trois images existent.
+Reprise de P11-03 à P11-07 (traduction du code en anglais), interrompue le 19/11/2026 par la limite d'usage. P11-04 (front) terminée par le développeur : branche `phase-11/en-frontend`, commit `92b920c`, dans le worktree `.claude/worktrees/agent-a0e2c84654073299b`, à auditer. P11-03, P11-05, P11-06 et P11-07 arrêtées en cours de travail, modifications non commitées dans leurs worktrees `.claude/worktrees/agent-a2a4fe5a273d7d9f9` (services), `agent-a0f40509a7e4849c3` (deploy), `agent-a3f34f0913593aac6` (tests), `agent-a01f067fcd97af430` (scripts de docs) : relancer chaque développeur dans son worktree en lui demandant de vérifier `git status` et de reprendre depuis son état, puis audit, fusion une par une, tests et vérificateurs sur `main`, push et CI.
 
 ## Décisions en attente
 

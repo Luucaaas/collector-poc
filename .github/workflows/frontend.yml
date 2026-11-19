@@ -1,5 +1,5 @@
-# CI du front de Collector. Contrat : docs/01-qualite/cicd.md (sections 1 à 3, ligne `frontend`).
-# Mêmes déclencheurs, concurrence, permissions et durcissement que backend.yml (voir ses commentaires).
+# Collector front-end CI. Contract: docs/01-qualite/cicd.md (sections 1 to 3, `frontend` row).
+# Same triggers, concurrency, permissions and hardening as backend.yml (see its comments).
 name: frontend
 
 on:
@@ -8,19 +8,19 @@ on:
   pull_request:
     branches: [main]
 
-# Une seule exécution par workflow et par ref. Sur une branche de tâche, la plus récente annule
-# l'ancienne ; sur main, elle attend : annuler un publish en cours laisserait une publication partielle.
+# One run per workflow and per ref. On a task branch the newest run cancels the older one;
+# on main it queues: cancelling a publish in progress would leave a partial publication.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-# Moindre privilège : lecture seule du dépôt. Le job publish élargit lui-même (packages: write).
+# Least privilege: read-only access to the repository. The publish job widens it itself (packages: write).
 permissions:
   contents: read
 
 env:
-  # Trivy : binaire de la release officielle, vérifié par sa somme SHA-256 (voir le job frontend).
-  # Ni trivy-action ni setup-trivy (compromis en mars 2026, GHSA-69fq-xp46-6x23).
+  # Trivy: binary from the official release, verified by its SHA-256 checksum (see the frontend job).
+  # Neither trivy-action nor setup-trivy (compromised in March 2026, GHSA-69fq-xp46-6x23).
   TRIVY_VERSION: "0.76.0"
   TRIVY_SHA256: e24b1c51293c1b15e4ba8d45bbc7891ba053f90278ec2698f3562c993e145fe7
 
@@ -41,28 +41,28 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Installer les dépendances
+      - name: Install dependencies
         run: npm ci
-      - name: ESLint (aucun avertissement toléré)
+      - name: ESLint (no warnings tolerated)
         run: npm run lint
       - name: Vitest
         run: npm test
-      # Trivy analyse l'image nginx, qui ne contient plus les paquets npm (seulement dist/) :
-      # seul npm audit voit les dépendances embarquées dans le bundle. Les dépendances de
-      # développement (outillage) sont hors du seuil.
-      - name: npm audit (dépendances embarquées, HIGH et plus)
+      # Trivy scans the nginx image, which no longer contains the npm packages (only dist/):
+      # only npm audit sees the dependencies bundled into the build. Development dependencies
+      # (tooling) are outside the threshold.
+      - name: npm audit (bundled dependencies, HIGH and above)
         run: npm audit --omit=dev --audit-level=high
-      # Image amd64 seule, chargée dans le Docker local (rien n'est publié ici). Le build de
-      # l'image exécute `npm run build` (tsc puis vite build).
-      - name: Construire l'image
+      # amd64 image only, loaded into the local Docker (nothing is published here). The image
+      # build runs `npm run build` (tsc then vite build).
+      - name: Build the image
         run: >-
           docker build
           --build-arg GIT_SHA=${{ github.sha }}
           --tag "$IMAGE"
           .
-      - name: Afficher les labels OCI
+      - name: Show OCI labels
         run: docker inspect --format '{{ json .Config.Labels }}' "$IMAGE"
-      - name: Installer Trivy (release officielle, somme SHA-256 vérifiée)
+      - name: Install Trivy (official release, SHA-256 checksum verified)
         run: |
           set -euo pipefail
           archive="trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
@@ -72,7 +72,7 @@ jobs:
           mkdir "$RUNNER_TEMP/trivy"
           tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/trivy" trivy
           echo "$RUNNER_TEMP/trivy" >> "$GITHUB_PATH"
-      - name: Trivy (paquets de l'OS, secrets)
+      - name: Trivy (OS packages, secrets)
         run: >-
           trivy image
           --scanners vuln,secret
@@ -81,8 +81,8 @@ jobs:
           --exit-code 1
           "$IMAGE"
 
-  # Publication : uniquement sur main, après un pipeline entièrement vert (needs).
-  # La condition event_name évite qu'une pull request ne publie (secrets et jeton restreints).
+  # Publication: main only, after a fully green pipeline (needs).
+  # The event_name condition keeps a pull request from publishing (restricted secrets and token).
   publish:
     needs: frontend
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -96,16 +96,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # QEMU émule arm64 sur l'exécuteur amd64 ; Buildx produit un manifeste multi-architecture.
+      # QEMU emulates arm64 on the amd64 runner; Buildx produces a multi-architecture manifest.
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Connexion à GHCR (GITHUB_TOKEN, aucun secret personnel)
+      - name: Log in to GHCR (GITHUB_TOKEN, no personal secret)
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Tags et labels OCI
+      - name: Tags and OCI labels
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
@@ -113,11 +113,11 @@ jobs:
           tags: |
             type=sha,format=short,prefix=sha-
             type=raw,value=main
-      # Publier par digest, scanner, puis étiqueter : l'index multi-architecture est poussé SANS tag
-      # (push-by-digest). Aucune image non scannée ne reçoit donc de tag, et c'est exactement le
-      # digest publié, arm64 compris, que Trivy analyse. Si un scan échoue, le digest sans tag reste
-      # sur GHCR (inoffensif : deploy.sh ne déploie que par tag, puis par digest).
-      - name: Construire et pousser par digest (amd64 + arm64, sans tag)
+      # Publish by digest, scan, then tag: the multi-architecture index is pushed WITHOUT a tag
+      # (push-by-digest). No unscanned image therefore receives a tag, and Trivy analyses exactly
+      # the published digest, arm64 included. If a scan fails, the untagged digest stays on GHCR
+      # (harmless: deploy.sh only deploys by tag, then by digest).
+      - name: Build and push by digest (amd64 + arm64, no tag)
         id: push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -128,7 +128,7 @@ jobs:
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
-      - name: Installer Trivy (release officielle, somme SHA-256 vérifiée)
+      - name: Install Trivy (official release, SHA-256 checksum verified)
         run: |
           set -euo pipefail
           archive="trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
@@ -138,8 +138,8 @@ jobs:
           mkdir "$RUNNER_TEMP/trivy"
           tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/trivy" trivy
           echo "$RUNNER_TEMP/trivy" >> "$GITHUB_PATH"
-      # Trivy lit les identifiants écrits par docker/login-action (~/.docker/config.json).
-      - name: Trivy sur le digest publié (amd64)
+      # Trivy reads the credentials written by docker/login-action (~/.docker/config.json).
+      - name: Trivy on the published digest (amd64)
         env:
           DIGEST: ${{ steps.push.outputs.digest }}
         run: >-
@@ -150,7 +150,7 @@ jobs:
           --ignore-unfixed
           --exit-code 1
           "${IMAGE}@${DIGEST}"
-      - name: Trivy sur le digest publié (arm64)
+      - name: Trivy on the published digest (arm64)
         env:
           DIGEST: ${{ steps.push.outputs.digest }}
         run: >-
@@ -161,8 +161,8 @@ jobs:
           --ignore-unfixed
           --exit-code 1
           "${IMAGE}@${DIGEST}"
-      # Les deux scans sont passés : les tags sont posés sur le digest scanné (aucune reconstruction).
-      - name: Étiqueter le digest (sha-<7> et main)
+      # Both scans passed: the tags are set on the scanned digest (no rebuild).
+      - name: Tag the digest (sha-<7> and main)
         env:
           DIGEST: ${{ steps.push.outputs.digest }}
           TAGS: ${{ steps.meta.outputs.tags }}
@@ -174,31 +174,31 @@ jobs:
           done <<< "$TAGS"
           docker buildx imagetools create "${args[@]}" "${IMAGE}@${DIGEST}"
           docker buildx imagetools inspect "${IMAGE}@${DIGEST}"
-          # Garde-fou : chaque tag doit désigner exactement le digest scanné (pas un nouvel index).
+          # Guard: each tag must point to exactly the scanned digest (not a new index).
           while read -r tag; do
             [ -n "$tag" ] || continue
             tagged="$(docker buildx imagetools inspect "$tag" --format '{{json .Manifest}}' | jq -r '.digest')"
             if [ "$tagged" != "$DIGEST" ]; then
-              echo "::error::$tag désigne $tagged au lieu du digest scanné $DIGEST"
+              echo "::error::$tag points to $tagged instead of the scanned digest $DIGEST"
               exit 1
             fi
-            echo "$tag -> $tagged (digest scanné)"
+            echo "$tag -> $tagged (scanned digest)"
           done <<< "$TAGS"
-      # Traçabilité (cicd.md, section 4) : le digest est la seule référence immuable.
-      - name: Résumé (image, tags, digest, scans)
+      # Traceability (cicd.md, section 4): the digest is the only immutable reference.
+      - name: Summary (image, tags, digest, scans)
         env:
           DIGEST: ${{ steps.push.outputs.digest }}
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           {
-            echo "### Image publiée : ${IMAGE}"
+            echo "### Published image: ${IMAGE}"
             echo
-            echo "- Digest : \`${DIGEST}\`"
-            echo "- Commit : \`${GITHUB_SHA}\`"
-            echo "- Plateformes : linux/amd64, linux/arm64"
-            echo "- Trivy (CRITICAL, HIGH corrigeables, secrets) : amd64 réussi, arm64 réussi (sinon les tags ne seraient pas posés)"
-            echo "- Tags :"
+            echo "- Digest: \`${DIGEST}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Platforms: linux/amd64, linux/arm64"
+            echo "- Trivy (CRITICAL, HIGH fixable, secrets): amd64 passed, arm64 passed (otherwise the tags would not be set)"
+            echo "- Tags:"
             while read -r tag; do echo "  - \`${tag}\`"; done <<< "$TAGS"
             echo
-            echo "Référence immuable : \`${IMAGE}@${DIGEST}\`"
+            echo "Immutable reference: \`${IMAGE}@${DIGEST}\`"
           } >> "$GITHUB_STEP_SUMMARY"

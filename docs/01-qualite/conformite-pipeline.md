@@ -149,10 +149,58 @@ Les références `frontend.yml:<ligne>` désignent [`.github/workflows/frontend.
 | Trivy bloque | Code de sortie 1 | F-TRIVY : brotli-libs CVE-2026-111497 (CRITICAL), curl, libexpat, zlib (HIGH) sur la base nginx publiée le 19/10/2026 ; corrigé par `apk upgrade` (écart E15) |
 | **`publish`** : `needs: frontend`, condition `main` et `push` | `frontend.yml:86-88` | FV : `publish` sauté sur la branche |
 | `publish` : QEMU, Buildx, connexion par `GITHUB_TOKEN`, metadata (tags calculés), index amd64 + arm64 poussé **par digest, sans tag**, cache `gha` | `frontend.yml:100-130` | Run [42187473293](https://github.com/Luucaaas/collector-poc/actions/runs/42187473293) sur `main` (commit `cd5751f`, 06/11/2026), job `publish` de 7 min 47 s : index `sha256:cf281c7c86c1b7a935ad71d10abb8e865fb5c83b374ef45781d1b989ff12736c`, plateformes linux/amd64 et linux/arm64 (`docker buildx imagetools inspect ghcr.io/luucaaas/frontend:sha-cd5751f`) ; paquet public (lecture anonyme du manifeste : HTTP 200) |
-| `publish` : Trivy sur le digest publié, amd64 puis arm64, mêmes options bloquantes | `frontend.yml:142-152` (amd64), `153-163` (arm64) | Run [42187473293](https://github.com/Luucaaas/collector-poc/actions/runs/42187473293) : `ghcr.io/luucaaas/frontend@sha256:cf281c7c…` analysé deux fois, 70 paquets Alpine, 0 vulnérabilité CRITICAL ou HIGH corrigeable pour chaque plateforme |
+| `publish` : Trivy on the published digest, amd64 puis arm64, mêmes options bloquantes | `frontend.yml:142-152` (amd64), `153-163` (arm64) | Run [42187473293](https://github.com/Luucaaas/collector-poc/actions/runs/42187473293) : `ghcr.io/luucaaas/frontend@sha256:cf281c7c…` analysé deux fois, 70 paquets Alpine, 0 vulnérabilité CRITICAL ou HIGH corrigeable pour chaque plateforme |
 | `publish` : étiquetage `sha-<7>` et `main` par `docker buildx imagetools create`, seulement si les deux scans passent (tags passés par `env`), puis garde-fou : chaque tag doit désigner le digest scanné, sinon échec | `frontend.yml:165-186` | Run [42187473293](https://github.com/Luucaaas/collector-poc/actions/runs/42187473293) : `ghcr.io/luucaaas/frontend:main` et `:sha-cd5751f` → `sha256:cf281c7c…` (digest scanné), garde-fou passé ; sur la branche, `publish` est sauté (FV) |
 | Digest, tags et résultat des scans dans `GITHUB_STEP_SUMMARY`, valeurs passées par `env` | `frontend.yml:188-204` | Résumé du run [42187473293](https://github.com/Luucaaas/collector-poc/actions/runs/42187473293) |
 
 Note sur la concurrence : un push de la branche annule le run précédent de la même ref (backend 42184897635, `cancelled`).
 
 Écarts : **E15** `apk upgrade --no-cache` dans l'image finale (voir `cicd.md`, précisions ; contenu dépendant des dépôts Alpine, le digest publié fait foi). **E16** `npm audit --omit=dev --audit-level=high` ajouté au contrat. **E18** `publish` du front en « publier par digest, scanner, puis étiqueter » (le backend scanne l'amd64 avant `publish` et reconstruit ensuite ; voir `cicd.md`, « Pourquoi Trivy avant toute étiquette »). **E17** `actionlint` n'est pas installé sur le poste : le workflow n'a pas été analysé par cet outil, sa validité est établie par l'exécution réelle sur GitHub (runs ci-dessus). Les 10 vulnérabilités modérées de la chaîne ESLint (outillage de développement, `minimatch`) sont hors seuil et notées sans mise à jour forcée.
+
+## 7. Noms des étapes traduits en anglais le 19/11/2026
+
+Le 19/11/2026 (tâche P11-01), les deux workflows ont été traduits en anglais (commentaires, valeurs `name:` des étapes, messages `echo` et résumé du job), **ligne pour ligne** : `backend.yml` compte toujours 316 lignes et `frontend.yml` 204, donc toutes les références `backend.yml:<ligne>` et `frontend.yml:<ligne>` de ce document restent exactes. Le comportement est inchangé : identifiants et `name:` des jobs, noms des artefacts, `id:`, conditions `if:` et SHA des actions n'ont pas bougé.
+
+Les runs cités avant cette date (par exemple 42184897635, 42187473293, 42219458005) affichent les **noms français** ; leurs citations de journaux ci-dessus sont conservées telles qu'observées. Les runs suivants affichent les noms anglais ci-dessous.
+
+| Nom français (runs antérieurs) | Nom anglais (depuis le 19/11/2026) | Workflow |
+| --- | --- | --- |
+| Installer les dépendances | Install dependencies | backend, frontend |
+| Ruff (analyse) | Ruff (lint) | backend |
+| mypy (strict, code du service) | mypy (strict, service code) | backend |
+| pytest (couverture minimale 80 %) | pytest (minimum coverage 80%) | backend |
+| Publier coverage.xml | Upload coverage.xml | backend |
+| Publier junit.xml | Upload junit.xml | backend (`test`, `acceptance`) |
+| Récupérer coverage.xml | Download coverage.xml | backend |
+| Rapport reçu | Check coverage.xml | backend |
+| Analyse SonarCloud | SonarCloud analysis | backend |
+| Construire l'image | Build the image | backend, frontend |
+| Afficher les labels OCI | Show OCI labels | backend, frontend |
+| Installer Trivy (release officielle, somme SHA-256 vérifiée) | Install Trivy (official release, SHA-256 checksum verified) | backend (1 fois), frontend (2 fois) |
+| Trivy (dépendances, paquets de l'OS, secrets) | Trivy (dependencies, OS packages, secrets) | backend |
+| Trivy (paquets de l'OS, secrets) | Trivy (OS packages, secrets) | frontend |
+| Exporter l'image | Export the image | backend |
+| Publier l'image (artefact) | Upload the image (artifact) | backend |
+| Récupérer les images | Download the images | backend |
+| Charger les images | Load the images | backend |
+| Installer les dépendances des tests | Install the test dependencies | backend |
+| Ruff (analyse, tests d'acceptation) | Ruff (lint, acceptance tests) | backend |
+| Ruff (format, tests d'acceptation) | Ruff (format, acceptance tests) | backend |
+| mypy (strict, tests d'acceptation) | mypy (strict, acceptance tests) | backend |
+| Démarrer la pile (docker compose) | Start the stack (docker compose) | backend |
+| pytest (17 critères d'acceptation) | pytest (17 acceptance criteria) | backend |
+| Journaux des conteneurs | Container logs | backend |
+| Arrêter la pile | Stop the stack | backend |
+| Connexion à GHCR (GITHUB_TOKEN, aucun secret personnel) | Log in to GHCR (GITHUB_TOKEN, no personal secret) | backend, frontend |
+| Tags et labels OCI | Tags and OCI labels | backend, frontend |
+| Construire et publier (amd64 + arm64) | Build and publish (amd64 + arm64) | backend |
+| Résumé (image, tags, digest) | Summary (image, tags, digest) | backend |
+| ESLint (aucun avertissement toléré) | ESLint (no warnings tolerated) | frontend |
+| npm audit (dépendances embarquées, HIGH et plus) | npm audit (bundled dependencies, HIGH and above) | frontend |
+| Construire et pousser par digest (amd64 + arm64, sans tag) | Build and push by digest (amd64 + arm64, no tag) | frontend |
+| Trivy sur le digest publié (amd64) | Trivy on the published digest (amd64) | frontend |
+| Trivy sur le digest publié (arm64) | Trivy on the published digest (arm64) | frontend |
+| Étiqueter le digest (sha-<7> et main) | Tag the digest (sha-<7> and main) | frontend |
+| Résumé (image, tags, digest, scans) | Summary (image, tags, digest, scans) | frontend |
+
+Inchangés : « Vitest » (frontend), « Ruff (format) » et les noms des étapes sans texte français. Le résumé du job (`GITHUB_STEP_SUMMARY`) s'intitule désormais « Published image » (au lieu de « Image publiée »), avec les lignes « Digest », « Commit », « Platforms », « Tags » et « Immutable reference ». Le message d'erreur du garde-fou (`frontend.yml:182`) devient « ... points to ... instead of the scanned digest ... ». Dans le texte de ce document, les noms français entre guillemets désignent les étapes telles qu'elles apparaissent dans les journaux des runs cités.

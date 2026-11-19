@@ -362,7 +362,7 @@ ASSERTIONS = [
     ),
     ("deploy/helm/collector-service/templates/ingress.yaml", 29, r"stsSeconds"),
     ("services/catalog-service/Dockerfile", 31, r"USER 10001"),
-    ("frontend/Dockerfile", 34, r"USER 101"),
+    ("frontend/Dockerfile", 36, r"USER 101"),
     (".gitignore", 22, r"^\.env$"),
     ("deploy/local/deploy.sh", 69, r"umask 077"),
     ("deploy/local/deploy.sh", 140, r"--from-file=POSTGRES_PASSWORD"),

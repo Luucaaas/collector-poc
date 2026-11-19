@@ -59,7 +59,7 @@ Un prix identique au prix actuel n'est pas envoyé à l'API : l'interface dit qu
 
 ## Image Docker (nginx)
 
-`frontend/Dockerfile` (multi-stage) construit `dist/` sur `node:22.23.4-alpine3.24` (`npm ci --ignore-scripts`, `npm run build`), puis le sert avec `nginxinc/nginx-unprivileged` : utilisateur 101, port **8080**, bases épinglées par digest, `apk upgrade` pour les CVE de la base (voir `docs/01-qualite/cicd.md`). `/healthz` répond 200 (sondes). `index.html` et `config.json` ne sont jamais mis en cache ; `assets/` l'est un an.
+`frontend/Dockerfile` (multi-stage) construit `dist/` sur `node:22.23.4-alpine3.24` (`npm ci --ignore-scripts`, `npm run build`), puis le sert avec `nginxinc/nginx-unprivileged` : utilisateur 101, port **8080**, bases épinglées par digest, `apk upgrade` pour les CVE de la base, puis `nginx` 1.30.7 et ses 4 modules installés depuis nginx.org (même clé que la base ; voir `docs/01-qualite/cicd.md`, la limite L25 et `docs/06-securite/rapport-scans.md` section 11). `/healthz` répond 200 (sondes). `index.html` et `config.json` ne sont jamais mis en cache ; `assets/` l'est un an.
 
 Les en-têtes de sécurité (CSP, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS) viennent des modèles `nginx/*.template`, traités par `envsubst` au démarrage. Les origines de l'API et de Keycloak ne sont pas dans l'image : variable `CSP_CONNECT_SRC` (adresses séparées par un espace, sans joker ; défaut = celles du cluster local). `style-src` garde `'unsafe-inline'` car MUI (Emotion) injecte des styles : limite connue.
 

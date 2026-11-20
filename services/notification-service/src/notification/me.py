@@ -1,6 +1,6 @@
-"""Routes `/me/*` de l'acheteur (US-05) : centres d'intérêt, préférences et notifications.
+"""`/me/*` routes of the buyer (US-05): interests, preferences and notifications.
 
-L'utilisateur est toujours celui du jeton (`sub`) : aucun identifiant d'utilisateur dans l'URL.
+The user is always the one of the token (`sub`): no user identifier in the URL.
 """
 
 import uuid
@@ -28,8 +28,8 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 class InterestsBody(ApiModel):
-    # Borne technique sur la liste brute ; la limite métier (20 distinctes) est vérifiée après
-    # dédoublonnage.
+    # Technical bound on the raw list; the business limit (20 distinct) is checked after
+    # deduplication.
     category_ids: Annotated[list[uuid.UUID], Field(max_length=MAX_RAW_IDS)]
 
 
@@ -78,17 +78,17 @@ async def get_interests(user: BuyerDep, session: SessionDep) -> InterestsOut:
 
 @router.put("/interests")
 async def put_interests(body: InterestsBody, user: BuyerDep, session: SessionDep) -> InterestsOut:
-    """Remplace la liste entière. Le format des identifiants est vérifié, pas leur existence :
-    ce service ne connaît pas les catégories et n'appelle pas le catalogue (ADR 0001)."""
-    category_ids = list(dict.fromkeys(body.category_ids))  # dédoublonnés, ordre conservé
+    """Replaces the whole list. The format of the identifiers is checked, not their existence:
+    this service does not know the categories and does not call the catalog (ADR 0001)."""
+    category_ids = list(dict.fromkeys(body.category_ids))  # deduplicated, order kept
     if len(category_ids) > MAX_INTERESTS:
         raise ProblemError(
             422,
             detail=f"Au plus {MAX_INTERESTS} catégories distinctes.",
             errors=[{"field": "category_ids", "code": "TOO_MANY_CATEGORIES"}],
         )
-    # Deux remplacements simultanés du même utilisateur sont sérialisés : le résultat est celui de
-    # l'un des deux, jamais un mélange ni une violation de clé primaire.
+    # Two simultaneous replacements by the same user are serialized: the result is that of
+    # one of the two, never a mix nor a primary key violation.
     await session.execute(
         text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"), {"user_id": user.sub}
     )
@@ -106,7 +106,7 @@ async def put_interests(body: InterestsBody, user: BuyerDep, session: SessionDep
 @router.get("/preferences")
 async def get_preferences(user: BuyerDep, session: SessionDep) -> PreferencesOut:
     preference = await session.get(Preference, user.sub)
-    if preference is None:  # aucune préférence enregistrée : les deux types sont actifs
+    if preference is None:  # no preference saved: both types are active
         return PreferencesOut(new_article=True, price_changed=True)
     return PreferencesOut(
         new_article=preference.new_article, price_changed=preference.price_changed
@@ -144,7 +144,7 @@ async def get_notifications(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> NotificationList:
-    """Notifications de l'utilisateur seulement, de la plus récente à la plus ancienne."""
+    """Notifications of the user only, from the most recent to the oldest."""
     total = await session.scalar(
         select(func.count()).select_from(Notification).where(Notification.user_id == user.sub)
     )

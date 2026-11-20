@@ -1,7 +1,7 @@
-"""Validation locale des JWT émis par Keycloak (contrats.md §1.2), sans appel par requête.
+"""Local validation of the JWTs issued by Keycloak (contrats.md §1.2), without a call per request.
 
-Reprise de l'expérimentation 2, avec les corrections de sa synthèse : type de `realm_access` vérifié
-(401 et non 500), JWKS mal formé (503 et non 500), titre unique pour tous les 401.
+Taken from experiment 2, with the fixes of its synthesis: type of `realm_access` checked
+(401 rather than 500), malformed JWKS (503 rather than 500), single title for all 401s.
 """
 
 import asyncio
@@ -22,10 +22,10 @@ logger = structlog.get_logger()
 
 
 class JwksCache:
-    """Clés publiques du realm, récupérées par l'URL interne puis gardées en mémoire (TTL).
+    """Public keys of the realm, fetched from the internal URL then kept in memory (TTL).
 
-    Un `kid` inconnu déclenche un rechargement, au plus un par `min_refetch` secondes : un attaquant
-    qui fabrique des `kid` ne peut pas faire appeler Keycloak à chaque requête.
+    An unknown `kid` triggers a reload, at most one per `min_refetch` seconds: an attacker
+    who forges `kid` values cannot make Keycloak be called on every request.
     """
 
     def __init__(
@@ -47,8 +47,8 @@ class JwksCache:
         self._transport = transport
         self._clock = clock
         self._keys: dict[str, jwt.PyJWK] = {}
-        self._fetched_at: float | None = None  # dernier chargement réussi
-        self._attempted_at: float | None = None  # dernière tentative, réussie ou non
+        self._fetched_at: float | None = None  # last successful load
+        self._attempted_at: float | None = None  # last attempt, successful or not
         self._lock = asyncio.Lock()
 
     async def get(self, kid: str) -> jwt.PyJWK:
@@ -61,8 +61,8 @@ class JwksCache:
                 if self._may_attempt(now):
                     await self._refresh(reason, now)
                 elif not self._usable(now):
-                    # Pas de clé utilisable et une tentative trop récente : on ne rappelle pas
-                    # Keycloak à chaque requête.
+                    # No usable key and an attempt that is too recent: Keycloak is not called
+                    # again on every request.
                     raise self._unavailable()
             key = self._keys.get(kid) if self._usable(self._clock()) else None
             if key is None:
@@ -73,7 +73,7 @@ class JwksCache:
         return self._fetched_at is not None and self._clock() - self._fetched_at <= self._ttl
 
     def _usable(self, now: float) -> bool:
-        """Des clés existent et ne sont pas plus vieilles que TTL + `max_stale`."""
+        """Keys exist and are not older than TTL + `max_stale`."""
         return (
             self._fetched_at is not None and now - self._fetched_at <= self._ttl + self._max_stale
         )
@@ -95,8 +95,8 @@ class JwksCache:
         return ProblemError(503, title="Service d'identité indisponible", reason="jwks_unavailable")
 
     async def _refresh(self, reason: str, now: float) -> None:
-        """Tente un rechargement ; en cas d'échec, garde les clés précédentes si elles restent
-        utilisables (TTL + `max_stale`), sinon répond 503."""
+        """Tries a reload; on failure, keeps the previous keys if they are still
+        usable (TTL + `max_stale`), otherwise answers 503."""
         self._attempted_at = now
         try:
             await self._fetch(reason)
@@ -113,7 +113,7 @@ class JwksCache:
                 response = await client.get(self._url)
                 response.raise_for_status()
             keys = self._parse(response.json())
-        except Exception as error:  # toute panne du JWKS donne 503, jamais 500
+        except Exception as error:  # any JWKS failure gives 503, never 500
             logger.error(
                 "jwks_fetch_failed", url=self._url, reason=reason, error=type(error).__name__
             )
@@ -140,8 +140,8 @@ class CurrentUser:
 
 
 def extract_roles(claims: dict[str, Any]) -> frozenset[str]:
-    """Rôles de `realm_access.roles`. Absent : aucun rôle. Présent mais mal formé : 401, car le
-    jeton est signé mais ne respecte pas le format attendu du realm."""
+    """Roles of `realm_access.roles`. Absent: no role. Present but malformed: 401, because the
+    token is signed but does not follow the realm's expected format."""
     realm_access = claims.get("realm_access")
     if realm_access is None:
         return frozenset()
@@ -161,7 +161,7 @@ class TokenVerifier:
 
     async def verify(self, token: str) -> CurrentUser:
         try:
-            header = jwt.get_unverified_header(token)  # sert uniquement à choisir la clé (`kid`)
+            header = jwt.get_unverified_header(token)  # only used to choose the key (`kid`)
             if header.get("alg") != ALGORITHM:
                 raise unauthenticated("invalid_algorithm")
             kid = header.get("kid")
@@ -195,7 +195,7 @@ class TokenVerifier:
 
 
 async def get_current_user(request: Request) -> CurrentUser:
-    """Dépendance : utilisateur du jeton Bearer, ou 401."""
+    """Dependency: user of the Bearer token, or 401."""
     scheme, _, token = request.headers.get("Authorization", "").partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise unauthenticated("missing_token")
@@ -206,7 +206,7 @@ async def get_current_user(request: Request) -> CurrentUser:
 
 
 async def get_optional_user(request: Request) -> CurrentUser | None:
-    """Dépendance des routes publiques : `None` sans jeton ; un jeton invalide reste un 401."""
+    """Dependency of the public routes: `None` without a token; an invalid token stays a 401."""
     if "Authorization" not in request.headers:
         return None
     return await get_current_user(request)
@@ -217,7 +217,7 @@ CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 
 def require_role(role: str) -> Callable[[CurrentUser], Awaitable[CurrentUser]]:
-    """Dépendance : l'utilisateur doit avoir `role`, sinon 403."""
+    """Dependency: the user must have `role`, otherwise 403."""
 
     async def check(user: CurrentUserDep) -> CurrentUser:
         if role not in user.roles:

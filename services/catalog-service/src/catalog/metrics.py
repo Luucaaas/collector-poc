@@ -1,9 +1,9 @@
-"""Métriques Prometheus (`/metrics`).
+"""Prometheus metrics (`/metrics`).
 
-Bornes de l'histogramme de durée : 0,3 s et 0,5 s sont exactement les seuils de l'indicateur I3, ce
-qui permet de vérifier le seuil sans interpolation. Avec les bornes par défaut de la bibliothèque
-(0,1 / 0,5 / 1 s), un p95 réel de 200 ms est lu à 480 ms (+140 %), contre 247 ms (+23,7 %) avec des
-bornes serrées (protocole d'expérimentation 3, §5 et §7).
+Histogram duration buckets: 0.3 s and 0.5 s are exactly the thresholds of indicator I3, which
+makes it possible to check the threshold without interpolation. With the library's default
+buckets (0.1 / 0.5 / 1 s), a real p95 of 200 ms is read as 480 ms (+140 %), against 247 ms
+(+23.7 %) with tight buckets (experiment protocol 3, §5 and §7).
 """
 
 from fastapi import FastAPI
@@ -14,22 +14,22 @@ LATENCY_BUCKETS = (0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 2.5)
 
 
 class BusinessMetrics:
-    """Compteurs métier (contrats.md §2.3), dans le registre de l'application."""
+    """Business counters (contrats.md §2.3), in the application's registry."""
 
     def __init__(self, registry: CollectorRegistry) -> None:
         self.articles_published = Counter(
-            "articles_published_total", "Articles publiés", registry=registry
+            "articles_published_total", "Published articles", registry=registry
         )
         self.articles_rejected = Counter(
-            "articles_rejected_total", "Articles rejetés, par motif", ["reason"], registry=registry
+            "articles_rejected_total", "Rejected articles, by reason", ["reason"], registry=registry
         )
         self.price_changes = Counter(
-            "price_changes_total", "Modifications de prix effectives", registry=registry
+            "price_changes_total", "Effective price changes", registry=registry
         )
 
 
 def setup_metrics(app: FastAPI) -> None:
-    # Un registre par application : `create_app()` peut être appelée plusieurs fois (tests).
+    # One registry per application: `create_app()` can be called several times (tests).
     registry = CollectorRegistry()
     app.state.business_metrics = BusinessMetrics(registry)
     instrumentator = Instrumentator(excluded_handlers=["/metrics", "/health/.*"], registry=registry)

@@ -1,4 +1,4 @@
-"""Tables `interests`, `preferences` et `notifications` (contrats.md §4.2).
+"""Tables `interests`, `preferences` and `notifications` (contrats.md §4.2).
 
 Revision ID: 0001
 Revises:
@@ -27,7 +27,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("user_id", "category_id"),
     )
-    # Recherche des destinataires d'un événement : tous les acheteurs d'une catégorie.
+    # Lookup of an event's recipients: all the buyers of a category.
     op.create_index("ix_interests_category_id", "interests", ["category_id"])
     op.create_table(
         "preferences",
@@ -60,6 +60,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("notifications")  # supprime aussi ses index
+    op.drop_table("notifications")  # also drops its indexes
     op.drop_table("preferences")
     op.drop_table("interests")

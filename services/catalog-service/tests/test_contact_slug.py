@@ -1,4 +1,4 @@
-"""Tests unitaires du contrôle des coordonnées (RM-02) et de la dérivation du slug (RM-06)."""
+"""Unit tests of the contact details check (RM-02) and of the slug derivation (RM-06)."""
 
 import pytest
 
@@ -14,7 +14,7 @@ from catalog.slug import slugify
         "JEAN@EXAMPLE.COM",
     ],
 )
-def test_emails_detectes(text: str) -> None:
+def test_emails_detected(text: str) -> None:
     assert contact_reasons(text) == [CONTACT_EMAIL]
 
 
@@ -54,7 +54,7 @@ def test_emails_detectes(text: str) -> None:
         "+33(0)612345678",
     ],
 )
-def test_telephones_detectes(text: str) -> None:
+def test_phones_detected(text: str) -> None:
     assert contact_reasons(text) == [CONTACT_PHONE]
 
 
@@ -85,25 +85,25 @@ def test_telephones_detectes(text: str) -> None:
         "",
     ],
 )
-def test_faux_positifs_evites(text: str) -> None:
+def test_false_positives_avoided(text: str) -> None:
     assert contact_reasons(text) == []
 
 
-def test_email_et_telephone_donnent_les_deux_motifs_dans_l_ordre() -> None:
+def test_email_and_phone_give_both_reasons_in_order() -> None:
     assert contact_reasons("06 12 34 56 78 ou a@b.fr") == [CONTACT_EMAIL, CONTACT_PHONE]
 
 
-def test_telephone_en_chiffres_unicode_detecte() -> None:
-    # Le second chiffre peut être un chiffre non ASCII reconnu par \d (ici ٦, six arabe-indien).
+def test_phone_in_unicode_digits_detected() -> None:
+    # The second digit can be a non-ASCII digit recognised by \d (here ٦, Arabic-Indic six).
     assert contact_reasons("Appelez le 0٦12345678") == [CONTACT_PHONE]
 
 
-def test_plusieurs_textes_et_valeurs_absentes() -> None:
+def test_several_texts_and_missing_values() -> None:
     assert contact_reasons("Titre propre", None, "mon@mail.fr") == [CONTACT_EMAIL]
     assert contact_reasons(None) == []
 
 
-def test_formes_obfusquees_hors_perimetre() -> None:
+def test_obfuscated_forms_out_of_scope() -> None:
     assert contact_reasons("zéro six douze trente-quatre", "jean arobase example point com") == []
     assert contact_reasons("jean @ example.com") == []
 

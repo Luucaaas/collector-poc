@@ -1,8 +1,8 @@
-"""Middleware ASGI : identifiant de corrélation, journal d'accès et filet de sécurité des 500.
+"""ASGI middleware: correlation identifier, access log and safety net for 500s.
 
-Écrit en ASGI pur (et non `BaseHTTPMiddleware`) pour que les variables de contexte de structlog
-restent visibles dans les routes et les gestionnaires d'erreurs, et pour attraper aussi les
-exceptions inattendues : la réponse 500 porte alors elle aussi `X-Request-ID`.
+Written as pure ASGI (and not `BaseHTTPMiddleware`) so that structlog's context variables
+stay visible in the routes and the error handlers, and to also catch unexpected
+exceptions: the 500 response then carries `X-Request-ID` as well.
 """
 
 import re
@@ -19,14 +19,14 @@ from catalog.errors import problem_response
 
 REQUEST_ID_HEADER = "X-Request-ID"
 _VALID_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,128}")
-_QUIET_PATHS = ("/health", "/metrics")  # sondes et collecte : journalisées en DEBUG seulement
+_QUIET_PATHS = ("/health", "/metrics")  # probes and scraping: logged at DEBUG only
 
 logger = structlog.get_logger()
 
 
 def resolve_request_id(value: str | None) -> str:
-    """Reprend l'identifiant fourni s'il est valide (au plus 128 caractères de `[A-Za-z0-9._-]`),
-    sinon en génère un : une valeur arbitraire ne doit pas entrer dans les journaux."""
+    """Takes the supplied identifier if it is valid (at most 128 characters of `[A-Za-z0-9._-]`),
+    otherwise generates one: an arbitrary value must not enter the logs."""
     if value is not None and _VALID_REQUEST_ID.fullmatch(value):
         return value
     return str(uuid.uuid4())

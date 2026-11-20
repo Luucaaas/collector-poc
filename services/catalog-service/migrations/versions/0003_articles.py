@@ -1,4 +1,4 @@
-"""Tables `articles`, `article_photos` et `price_history` (contrats.md §4.1).
+"""Tables `articles`, `article_photos` and `price_history` (contrats.md §4.1).
 
 Revision ID: 0003
 Revises: 0002

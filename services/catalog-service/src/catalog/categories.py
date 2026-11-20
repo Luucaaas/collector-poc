@@ -1,4 +1,4 @@
-"""Catégories (US-01) : liste publique, création réservée à l'admin."""
+"""Categories (US-01): public list, creation reserved to the admin."""
 
 import uuid
 from datetime import datetime
@@ -19,7 +19,7 @@ from catalog.slug import slugify
 
 router = APIRouter(prefix="/api/v1/categories", tags=["catégories"])
 
-SLUG_MAX_LENGTH = 120  # 60 caractères à 2 lettres (« œ » : « oe ») ; au-delà (« ﬃ » : « ffi »), 422
+SLUG_MAX_LENGTH = 120  # 60 characters of 2 letters (« œ »: « oe »); beyond (« ﬃ »: « ffi »), 422
 
 CategoryName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=60)]
 
@@ -44,7 +44,7 @@ class CategoryList(BaseModel):
 
 @router.get("")
 async def list_categories(session: Annotated[AsyncSession, Depends(get_session)]) -> CategoryList:
-    """Liste publique, triée par nom."""
+    """Public list, sorted by name."""
     rows = (await session.scalars(select(Category).order_by(func.lower(Category.name)))).all()
     return CategoryList(items=[CategoryOut.model_validate(row) for row in rows], total=len(rows))
 
@@ -56,7 +56,7 @@ async def create_category(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> CategoryOut:
     slug = slugify(payload.name)
-    if not slug or len(slug) > SLUG_MAX_LENGTH:  # aucun slug exploitable, ou trop long
+    if not slug or len(slug) > SLUG_MAX_LENGTH:  # no usable slug, or too long
         raise ProblemError(
             422,
             detail="Le nom doit donner un identifiant d'URL valide (lettres ou chiffres).",

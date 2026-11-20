@@ -1,14 +1,14 @@
-"""Consommateur RabbitMQ (contrats.md §3.1) : file durable `notification.article-events` liée à
-l'exchange `article.events` par `article.*`.
+"""RabbitMQ consumer (contrats.md §3.1): durable queue `notification.article-events` bound to
+the `article.events` exchange by `article.*`.
 
-Garanties du POC :
-- acquittement **après** le commit de la transaction (livraison « au moins une fois ») ;
-- un message dont le traitement échoue est remis en file une fois, puis rejeté sans remise et
-  journalisé (`message_rejected`) ; un message invalide est rejeté dès la première fois ;
-- le service démarre et reste prêt sans RabbitMQ : la connexion est tentée en tâche de fond, puis
-  `aio-pika` se reconnecte seul aux pannes suivantes.
+POC guarantees:
+- acknowledgement **after** the transaction commit ("at least once" delivery);
+- a message whose processing fails is requeued once, then rejected without requeue and
+  logged (`message_rejected`); an invalid message is rejected the first time;
+- the service starts and stays ready without RabbitMQ: the connection is attempted in the
+  background, then `aio-pika` reconnects by itself to later outages.
 
-Règle d'échec mesurée dans l'expérimentation 1 (scénario C).
+Failure rule measured in experiment 1 (scenario C).
 """
 
 import asyncio
@@ -39,8 +39,8 @@ logger = structlog.get_logger()
 
 
 class EventProcessor:
-    """Traite un événement valide : une transaction, un commit. Séparé du transport pour être
-    testé sans broker."""
+    """Processes a valid event: one transaction, one commit. Separate from the transport so it can
+    be tested without a broker."""
 
     def __init__(
         self,
@@ -50,14 +50,14 @@ class EventProcessor:
     ) -> None:
         self._session_factory = session_factory
         self._metrics = metrics
-        self._clock = clock  # injectable : les tests fixent l'instant de fin du traitement
+        self._clock = clock  # injectable: the tests fix the instant the processing ends
 
     async def process(self, event: Event) -> int:
-        """Renvoie le nombre de notifications créées par cet appel."""
+        """Returns the number of notifications created by this call."""
         async with self._session_factory() as session:
             notified = await create_notifications(session, event)
             await session.commit()
-        # Les compteurs ne bougent qu'après le commit : un échec ne les fausse pas.
+        # The counters only move after the commit: a failure does not skew them.
         if notified:
             self._metrics.notifications_created.labels(type=notification_type(event)).inc(
                 len(notified)
@@ -66,16 +66,16 @@ class EventProcessor:
         return len(notified)
 
     def _observe_delay(self, event: Event) -> None:
-        """Délai ENF-14, observé une fois par événement ayant créé des notifications. Un délai
-        négatif (horloges décalées entre les services) est ramené à 0 et signalé dans les logs :
-        plus simple qu'un compteur dédié, et l'anomalie reste visible sans créer de série.
+        """ENF-14 delay, observed once per event that created notifications. A negative
+        delay (clocks out of sync between services) is brought back to 0 and reported in the logs:
+        simpler than a dedicated counter, and the anomaly stays visible without creating a series.
 
-        Appelée après le commit : une erreur de mesure ne doit jamais faire échouer (donc remettre
-        en file) un événement déjà traité, elle est seulement journalisée.
+        Called after the commit: a measurement error must never make an already processed event
+        fail (and so be requeued), it is only logged.
         """
         try:
             occurred_at = event.occurred_at
-            if occurred_at.tzinfo is None:  # le contrat impose l'UTC (`Z`) : sans fuseau, UTC
+            if occurred_at.tzinfo is None:  # the contract requires UTC (`Z`): without a zone, UTC
                 occurred_at = occurred_at.replace(tzinfo=UTC)
             delay = (self._clock() - occurred_at).total_seconds()
             if delay < 0:
@@ -108,7 +108,7 @@ class ArticleEventConsumer:
         self.connected = asyncio.Event()
 
     async def start(self) -> None:
-        """Lance la connexion en tâche de fond et rend la main aussitôt."""
+        """Starts the connection in the background and returns immediately."""
         self._task = asyncio.create_task(self._connect_until_ready(), name="amqp-consumer")
 
     async def close(self) -> None:
@@ -129,8 +129,8 @@ class ArticleEventConsumer:
             try:
                 await self._connect()
             except Exception as error:
-                # Une seule alerte du service, puis du DEBUG ; aiormq écrit en plus sa propre ligne
-                # ERROR (en JSON) à chaque tentative tant que le broker est absent.
+                # A single service warning, then DEBUG; aiormq also writes its own ERROR
+                # line (as JSON) at each attempt while the broker is absent.
                 if attempts == 1:
                     logger.warning("amqp_unavailable", error=type(error).__name__)
                 else:
@@ -160,13 +160,13 @@ class ArticleEventConsumer:
         logger.info("amqp_consumer_started", queue=QUEUE, prefetch=self._prefetch)
 
     async def handle(self, message: AbstractIncomingMessage) -> None:
-        """Traite un message puis l'acquitte. Ne lève jamais : une exception non gérée dans le
-        rappel ne doit pas arrêter la consommation."""
+        """Processes a message then acknowledges it. Never raises: an unhandled exception in the
+        callback must not stop the consumption."""
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(message_id=message.message_id)
         try:
             await self._handle(message)
-        except Exception as error:  # l'acquittement lui-même a échoué (connexion coupée)
+        except Exception as error:  # the acknowledgement itself failed (connection cut)
             logger.error("message_settle_failed", error=type(error).__name__)
         finally:
             structlog.contextvars.clear_contextvars()
@@ -184,8 +184,8 @@ class ArticleEventConsumer:
             correlation_id=event.correlation_id, event_id=str(event.event_id)
         )
         if isinstance(event, UnknownTypeEvent):
-            # Lecteur tolérant (contrats.md §3.3) : un futur type lié par `article.*` n'est pas une
-            # erreur. Compteur sur `unknown` : le type reçu ne doit pas créer de séries à volonté.
+            # Tolerant reader (contrats.md §3.3): a future type bound by `article.*` is not an
+            # error. Counter on `unknown`: the received type must not create series at will.
             logger.info("event_ignored", event_type=event.event_type)
             self._count("unknown", "ignored")
             await message.ack()
@@ -209,7 +209,7 @@ class ArticleEventConsumer:
                 self._count(event.event_type, "requeued")
                 await message.nack(requeue=True)
             return
-        await message.ack()  # après le commit
+        await message.ack()  # after the commit
         self._count(event.event_type, "processed")
         logger.info("event_processed", event_type=event.event_type, notifications=created)
 

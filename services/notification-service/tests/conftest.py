@@ -1,4 +1,4 @@
-"""Fixtures communes. Les clés RSA sont générées à l'exécution des tests et jamais versionnées."""
+"""Shared fixtures. The RSA keys are generated when the tests run and never versioned."""
 
 import json
 import os
@@ -29,7 +29,7 @@ KID = "test-key-1"
 
 
 class TestKey:
-    """Une paire RSA de test et son JWK public."""
+    """A test RSA pair and its public JWK."""
 
     __test__ = False
 
@@ -48,7 +48,7 @@ def key() -> TestKey:
 
 @pytest.fixture(scope="session")
 def other_key() -> TestKey:
-    """Clé que le JWKS ne publie pas, même `kid` possible."""
+    """Key that the JWKS does not publish, same possible `kid`."""
     return TestKey("other-key")
 
 
@@ -57,7 +57,7 @@ class ProbeBody(ApiModel):
 
 
 def make_probe_router() -> APIRouter:
-    """Routes de test protégées : ajoutées par les tests seulement, jamais dans l'application."""
+    """Protected test routes: added by the tests only, never in the application."""
     router = APIRouter(prefix="/api/v1/_probe")
 
     @router.get("/me")
@@ -80,13 +80,13 @@ def make_probe_router() -> APIRouter:
 
 
 class JwksServer:
-    """Faux Keycloak : sert le JWKS courant et compte les appels."""
+    """Fake Keycloak: serves the current JWKS and counts the calls."""
 
     def __init__(self, *keys: TestKey) -> None:
         self.keys = list(keys)
         self.calls = 0
         self.fail = False
-        self.body: Any = None  # si non nul, remplace le JWKS (corps mal formé)
+        self.body: Any = None  # if not None, replaces the JWKS (malformed body)
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         self.calls += 1
@@ -105,7 +105,7 @@ def jwks_server(key: TestKey) -> JwksServer:
 def build_settings(database_url: str = "postgresql+psycopg://u:p@127.0.0.1:1/db") -> Settings:
     return Settings(
         database_url=database_url,
-        # Inatteignable : les tests injectent un faux producteur ou démarrent un vrai broker.
+        # Unreachable: the tests inject a fake producer or start a real broker.
         rabbitmq_url="amqp://guest:guest@127.0.0.1:1/",
         issuer=ISSUER,
         jwks_url=JWKS_URL,
@@ -172,12 +172,12 @@ def bearer(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-POSTGRES_IMAGE = "postgres:18.4-alpine"  # version retenue pour le POC (ADR 0008)
+POSTGRES_IMAGE = "postgres:18.4-alpine"  # version chosen for the POC (ADR 0008)
 
 
 @pytest.fixture(scope="session")
 def migrated_database_url() -> Iterator[str]:
-    """Un PostgreSQL réel pour toute la session de tests, schéma créé par Alembic (`head`)."""
+    """A real PostgreSQL for the whole test session, schema created by Alembic (`head`)."""
     with PostgresContainer(POSTGRES_IMAGE, driver="psycopg") as container:
         url = container.get_connection_url()
         previous = os.environ.get("DATABASE_URL")
@@ -194,7 +194,7 @@ def migrated_database_url() -> Iterator[str]:
 
 @pytest.fixture
 def db_url(migrated_database_url: str) -> Iterator[str]:
-    """Base vidée avant chaque test."""
+    """Database emptied before each test."""
     engine = create_engine(migrated_database_url)
     with engine.begin() as connection:
         connection.execute(text("TRUNCATE notifications, preferences, interests"))
@@ -203,7 +203,7 @@ def db_url(migrated_database_url: str) -> Iterator[str]:
 
 
 class NoConsumer:
-    """Faux consommateur : les tests d'API n'ont pas besoin de RabbitMQ."""
+    """Fake consumer: the API tests do not need RabbitMQ."""
 
     async def start(self) -> None:
         pass
@@ -216,7 +216,7 @@ class NoConsumer:
 async def db_client(  # type: ignore[no-untyped-def]
     db_url: str, jwks_server: JwksServer
 ):
-    """Client HTTP sur l'application complète, avec PostgreSQL réel, faux JWKS et sans broker."""
+    """HTTP client on the complete application, with real PostgreSQL, fake JWKS and no broker."""
     application = create_app(build_settings(db_url))
     application.state.consumer = NoConsumer()
     jwks = JwksCache(JWKS_URL, 600, 30, transport=httpx.MockTransport(jwks_server.handler))
@@ -230,5 +230,5 @@ async def db_client(  # type: ignore[no-untyped-def]
 
 
 def roles_headers(make_token: Callable[..., str], sub: str, *roles: str) -> dict[str, str]:
-    """En-tête Bearer d'un utilisateur de démonstration (alice, bob, chloe, admin)."""
+    """Bearer header of a demo user (alice, bob, chloe, admin)."""
     return bearer(make_token(sub=sub, realm_access={"roles": list(roles)}))

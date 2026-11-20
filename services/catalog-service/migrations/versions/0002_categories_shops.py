@@ -1,4 +1,4 @@
-"""Tables `categories` et `shops` (contrats.md §4.1).
+"""Tables `categories` and `shops` (contrats.md §4.1).
 
 Revision ID: 0002
 Revises: 0001
@@ -45,5 +45,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("shops")  # supprime aussi ses index
+    op.drop_table("shops")  # also drops its indexes
     op.drop_table("categories")

@@ -1,17 +1,17 @@
-"""Détection des coordonnées (RM-02) : module pur, sans I/O, réutilisé par les articles (P4-03).
+"""Contact details detection (RM-02): pure module, no I/O, reused by the articles (P4-03).
 
-Les formes obfusquées (« zéro six… », « arobase », « jean @ example.com ») et le texte des images
-sont hors du POC.
+Obfuscated forms (« zéro six… », « arobase », « jean @ example.com ») and the text of images
+are out of the POC.
 
-Méthode pour les téléphones : on retire d'abord les dates (jj.mm.aaaa), puis on cherche des suites
-de chiffres et de séparateurs (espaces, y compris insécables et fines, point, tiret, barre oblique,
-parenthèses), même collées à des lettres (« tel0612345678 »). Une suite est un numéro :
-- national : 10 chiffres consécutifs, pris à une frontière de groupe, commençant par 0 puis un
-  chiffre de 1 à 9, quels que soient le découpage et les séparateurs (« 06 1234 5678 »,
-  « 06.12 34-56 78 », « 0 6 1 2 3 4 5 6 7 8 ») ;
-- international : préfixe `+` ou `00`, puis 9 à 15 chiffres (« +12 000 000 exemplaires » et
-  « Série 00 1234 5678 » n'en sont pas).
-Limite : un numéro collé à d'autres chiffres sans séparateur (« 106 12 34 56 78 ») n'est pas lu.
+Method for phone numbers: dates (dd.mm.yyyy) are removed first, then we look for runs
+of digits and separators (spaces, including non-breaking and thin ones, dot, hyphen, slash,
+parentheses), even stuck to letters (« tel0612345678 »). A run is a number if it is:
+- national: 10 consecutive digits, taken at a group boundary, starting with 0 then a
+  digit from 1 to 9, whatever the splitting and the separators (« 06 1234 5678 »,
+  « 06.12 34-56 78 », « 0 6 1 2 3 4 5 6 7 8 »);
+- international: prefix `+` or `00`, then 9 to 15 digits (« +12 000 000 copies » and
+  « Series 00 1234 5678 » are not).
+Limit: a number stuck to other digits without a separator (« 106 12 34 56 78 ») is not read.
 """
 
 import re
@@ -20,26 +20,26 @@ from itertools import accumulate
 CONTACT_EMAIL = "CONTACT_EMAIL"
 CONTACT_PHONE = "CONTACT_PHONE"
 
-# Le motif part de l'« @ » : la partie locale n'a besoin que d'un caractère valide avant lui (un
-# lookbehind d'un seul caractère). Une partie locale répétée au début du motif relançait, à chaque
-# position d'une longue suite sans « @ », un balayage jusqu'à la fin (coût quadratique, règle Sonar
-# python:S8786). La détection est la même : une adresse existe si et seulement si un « @ » est
-# précédé d'un caractère de la partie locale et suivi d'un domaine à au moins un point.
+# The pattern starts at the « @ »: the local part only needs one valid character before it (a
+# single-character lookbehind). A local part repeated at the start of the pattern restarted, at each
+# position of a long run without « @ », a scan to the end (quadratic cost, Sonar rule
+# python:S8786). Detection is the same: an address exists if and only if an « @ » is
+# preceded by a character of the local part and followed by a domain with at least one dot.
 _EMAIL = re.compile(r"(?<=[\w.+-])@[\w-]+(?:\.[\w-]+)+")
 
-# Date jj.mm.aaaa (séparateur constant) : suivie d'une heure (« 05.11.2024 14h »), elle donnerait
-# 10 chiffres commençant par 0.
+# Date dd.mm.yyyy (constant separator): followed by a time (« 05.11.2024 14h »), it would give
+# 10 digits starting with 0.
 _DATE = re.compile(r"(?<!\d)\d{1,2}([./-])\d{1,2}\1(?:19|20)\d{2}(?!\d)")
-# Second chiffre différent de 0, tout chiffre Unicode compris (comme `\d` dans _CANDIDATE) : un
-# numéro écrit en chiffres arabes-indiens (« 0٦12345678 ») reste détecté.
+# Second digit different from 0, any Unicode digit included (like `\d` in _CANDIDATE): a
+# number written in Arabic-Indic digits (« 0٦12345678 ») is still detected.
 _NATIONAL_START = re.compile(r"0(?=(?!0)\d)")
 _CANDIDATE = re.compile(r"\+?\(?\d[\d\s.\-/()]*\d")
 
 
 def _is_national(groups: list[str]) -> bool:
-    # Équivalent linéaire de « à partir de chaque groupe, accumuler des groupes jusqu'à au moins
-    # 10 chiffres, et tester si on en a exactement 10 commençant par 0 puis 1 à 9 » : un numéro
-    # commence à une frontière de groupe où l'on trouve « 0 » puis 1 à 9, et finit à une frontière.
+    # Linear equivalent of « from each group, accumulate groups up to at least
+    # 10 digits, and test whether we have exactly 10 starting with 0 then 1 to 9 »: a number
+    # starts at a group boundary where we find « 0 » then 1 to 9, and ends at a boundary.
     digits = "".join(groups)
     ends = set(accumulate(map(len, groups)))
     boundaries = ends | {0}
@@ -69,7 +69,7 @@ def _has_phone(text: str) -> bool:
 
 
 def contact_reasons(*texts: str | None) -> list[str]:
-    """Motifs trouvés dans les textes : `CONTACT_EMAIL` puis `CONTACT_PHONE`, sans doublon."""
+    """Reasons found in the texts: `CONTACT_EMAIL` then `CONTACT_PHONE`, without duplicates."""
     present = [text for text in texts if text]
     reasons: list[str] = []
     if any(_has_email(text) for text in present):

@@ -1,4 +1,4 @@
-"""Fabrique d'événements conformes au contrat (contrats.md §3.4 et §3.5)."""
+"""Factory of events compliant with the contract (contrats.md §3.4 and §3.5)."""
 
 import uuid
 from typing import Any
@@ -37,7 +37,7 @@ def published_event(
             "currency": "EUR",
         },
     }
-    assert_conforms(event)  # les événements de test respectent le contrat, sinon le test ment
+    assert_conforms(event)  # the test events follow the contract, otherwise the test lies
     return event
 
 

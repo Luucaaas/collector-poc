@@ -1,8 +1,8 @@
-"""Événements d'intégration (contrats.md §3) : enveloppe et publication sur RabbitMQ.
+"""Integration events (contrats.md §3): envelope and publication on RabbitMQ.
 
-Garantie du POC (limite L2) : l'événement est publié juste après le commit, avec confirmation du
-broker. Si le broker reste indisponible pendant le délai accordé, l'écriture est conservée et
-l'événement est perdu (journalisé). La cible est une *transactional outbox*.
+POC guarantee (limit L2): the event is published right after the commit, with confirmation from the
+broker. If the broker stays unavailable during the allowed time, the write is kept and
+the event is lost (logged). The target is a *transactional outbox*.
 """
 
 import asyncio
@@ -26,7 +26,7 @@ logger = structlog.get_logger()
 
 
 def format_instant(moment: datetime) -> str:
-    """Date-heure UTC au format RFC 3339 (`2026-11-02T14:05:00.123456Z`)."""
+    """UTC date-time in RFC 3339 format (`2026-11-02T14:05:00.123456Z`)."""
     return moment.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
@@ -51,7 +51,7 @@ class Event:
 
 
 def build_event(event_type: str, occurred_at: datetime, data: dict[str, Any]) -> Event:
-    """`correlation_id` est le `X-Request-ID` de la requête en cours (contexte structlog)."""
+    """`correlation_id` is the `X-Request-ID` of the current request (structlog context)."""
     correlation_id = structlog.contextvars.get_contextvars().get("correlation_id")
     return Event(
         event_id=uuid.uuid4(),
@@ -68,15 +68,15 @@ class EventPublisher(Protocol):
     async def close(self) -> None: ...
 
     async def publish(self, event: Event) -> bool:
-        """Publie l'événement ; renvoie `False` (sans lever) si le broker ne l'a pas confirmé."""
+        """Publishes the event; returns `False` (without raising) if the broker did not confirm."""
         ...
 
 
 class RabbitPublisher:
-    """Producteur aio-pika : connexion robuste, exchange durable, messages persistants, confirmés.
+    """aio-pika producer: robust connection, durable exchange, persistent confirmed messages.
 
-    Le service démarre même si RabbitMQ est absent : la connexion est alors tentée à chaque
-    publication, dans la limite de `budget_seconds`. Une fois établie, aio-pika se reconnecte seul.
+    The service starts even if RabbitMQ is absent: the connection is then attempted on each
+    publication, within `budget_seconds`. Once established, aio-pika reconnects by itself.
     """
 
     def __init__(

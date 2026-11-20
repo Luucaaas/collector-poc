@@ -1,7 +1,7 @@
-"""Schémas JSON des événements, recopiés de `docs/02-architecture/contrats.md` §3.4 et §3.5.
+"""JSON schemas of the events, copied from `docs/02-architecture/contrats.md` §3.4 and §3.5.
 
-Ils sont recopiés (et non lus dans le Markdown) pour que le test échoue si le code s'écarte du
-contrat, et que modifier le contrat oblige à relire les tests.
+They are copied (and not read from the Markdown) so that the test fails if the code drifts from
+the contract, and so that changing the contract forces a review of the tests.
 """
 
 from datetime import datetime
@@ -100,8 +100,8 @@ SCHEMAS = {"article.published": ARTICLE_PUBLISHED, "article.price_changed": ARTI
 
 
 def assert_conforms(envelope: dict[str, Any]) -> None:
-    """Valide l'enveloppe par son schéma, formats `uuid` compris, et la date-heure à part
-    (`date-time` demande une dépendance supplémentaire pour être vérifié par jsonschema)."""
+    """Validates the envelope against its schema, `uuid` formats included, and the date-time
+    separately (`date-time` needs an extra dependency for jsonschema to check it)."""
     validator = Draft202012Validator(
         SCHEMAS[envelope["event_type"]], format_checker=Draft202012Validator.FORMAT_CHECKER
     )

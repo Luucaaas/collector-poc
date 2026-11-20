@@ -1,4 +1,4 @@
-"""Accès PostgreSQL : SQLAlchemy 2.0 asynchrone avec psycopg 3, une session par requête."""
+"""PostgreSQL access: asynchronous SQLAlchemy 2.0 with psycopg 3, one session per request."""
 
 from collections.abc import AsyncIterator
 
@@ -13,7 +13,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
-    """Base des modèles, ajoutés par P4-02 ; `migrations/env.py` s'appuie sur ses métadonnées."""
+    """Base of the models, added by P4-02; `migrations/env.py` relies on its metadata."""
 
 
 def create_engine(url: str, connect_timeout: int) -> AsyncEngine:
@@ -23,7 +23,7 @@ def create_engine(url: str, connect_timeout: int) -> AsyncEngine:
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
-    """Dépendance : une session par requête, fermée à la fin."""
+    """Dependency: one session per request, closed at the end."""
     session_factory: async_sessionmaker[AsyncSession] = request.app.state.session_factory
     async with session_factory() as session:
         yield session

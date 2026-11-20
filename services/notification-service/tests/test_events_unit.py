@@ -1,4 +1,4 @@
-"""Tests unitaires : validation des événements et construction du contenu des notifications."""
+"""Unit tests: event validation and building of the notification content."""
 
 import copy
 import json
@@ -22,7 +22,7 @@ def body(event: dict[str, Any]) -> bytes:
     return json.dumps(event).encode()
 
 
-def test_evenement_publie_valide_est_accepte() -> None:
+def test_valid_published_event_is_accepted() -> None:
     event = parse_event(body(published_event(title="Boba Fett Kenner 1979", price="120.00")))
     assert isinstance(event, PublishedEvent)
     assert str(event.data.category_id) == FIGURINES
@@ -30,28 +30,28 @@ def test_evenement_publie_valide_est_accepte() -> None:
     assert event.correlation_id == "corr-published"
 
 
-def test_evenement_de_prix_valide_est_accepte() -> None:
+def test_valid_price_event_is_accepted() -> None:
     event = parse_event(body(price_changed_event()))
     assert isinstance(event, PriceChangedEvent)
     assert (event.data.old_price, event.data.new_price) == ("120.00", "95.00")
 
 
-def test_un_champ_inconnu_dans_data_est_ignore() -> None:
+def test_an_unknown_field_in_data_is_ignored() -> None:
     raw = published_event()
-    raw["data"]["nouveau_champ"] = "futur"
+    raw["data"]["new_field"] = "future"
     assert isinstance(parse_event(body(raw)), PublishedEvent)
 
 
-def test_un_champ_inconnu_dans_l_enveloppe_est_ignore() -> None:
+def test_an_unknown_field_in_the_envelope_is_ignored() -> None:
     for raw in (published_event(), price_changed_event()):
-        raw["trace_id"] = "futur"
+        raw["trace_id"] = "future"
         assert isinstance(parse_event(body(raw)), PublishedEvent | PriceChangedEvent)
 
 
-def test_un_type_inconnu_bien_forme_est_reconnu_comme_tel() -> None:
+def test_a_well_formed_unknown_type_is_recognised_as_such() -> None:
     raw = published_event()
     raw["event_type"] = "article.deleted"
-    raw["schema_version"] = 3  # sans importance : aucune lecture n'est tentée
+    raw["schema_version"] = 3  # irrelevant: no read is attempted
     event = parse_event(body(raw))
     assert isinstance(event, UnknownTypeEvent)
     assert event.event_type == "article.deleted"
@@ -59,7 +59,7 @@ def test_un_type_inconnu_bien_forme_est_reconnu_comme_tel() -> None:
 
 
 @pytest.mark.parametrize("field", ["event_id", "occurred_at", "correlation_id", "data"])
-def test_un_type_inconnu_a_enveloppe_incomplete_est_invalide(field: str) -> None:
+def test_an_unknown_type_with_an_incomplete_envelope_is_invalid(field: str) -> None:
     raw = published_event()
     raw["event_type"] = "article.deleted"
     del raw[field]
@@ -67,14 +67,14 @@ def test_un_type_inconnu_a_enveloppe_incomplete_est_invalide(field: str) -> None
         parse_event(body(raw))
 
 
-def test_un_type_connu_sans_event_type_lisible_est_invalide() -> None:
+def test_a_known_type_without_a_readable_event_type_is_invalid() -> None:
     raw = published_event()
     del raw["event_type"]
     with pytest.raises(InvalidEvent):
         parse_event(body(raw))
 
 
-def test_le_contenu_d_un_nouvel_article_porte_titre_et_prix() -> None:
+def test_the_content_of_a_new_article_carries_title_and_price() -> None:
     event = parse_event(body(published_event(title="Boba Fett Kenner 1979", price="120.00")))
     assert notification_type(event) == "NEW_ARTICLE"
     assert build_content(event) == {
@@ -84,7 +84,7 @@ def test_le_contenu_d_un_nouvel_article_porte_titre_et_prix() -> None:
     }
 
 
-def test_le_contenu_d_un_changement_de_prix_porte_l_ancien_et_le_nouveau_prix() -> None:
+def test_the_content_of_a_price_change_carries_the_old_and_the_new_price() -> None:
     event = parse_event(body(price_changed_event(old_price="120.00", new_price="95.00")))
     assert notification_type(event) == "PRICE_CHANGED"
     assert build_content(event) == {
@@ -116,44 +116,44 @@ def _mutations() -> list[tuple[str, Any]]:
 
     return [
         ("event_id absent", drop("event_id")),
-        ("event_id pas un uuid", set_("abc", "event_id")),
+        ("event_id not a uuid", set_("abc", "event_id")),
         ("version 2", set_(2, "schema_version")),
-        ("version booléenne", set_(True, "schema_version")),
-        ("version en texte", set_("1", "schema_version")),
-        ("producer inconnu", set_("autre-service", "producer")),
-        ("date sous forme de nombre", set_(1762164000, "occurred_at")),
-        ("date illisible", set_("hier", "occurred_at")),
-        ("correlation_id vide", set_("", "correlation_id")),
-        ("correlation_id trop long", set_("x" * 129, "correlation_id")),
+        ("boolean version", set_(True, "schema_version")),
+        ("text version", set_("1", "schema_version")),
+        ("unknown producer", set_("other-service", "producer")),
+        ("date as a number", set_(1762164000, "occurred_at")),
+        ("unreadable date", set_("yesterday", "occurred_at")),
+        ("empty correlation_id", set_("", "correlation_id")),
+        ("correlation_id too long", set_("x" * 129, "correlation_id")),
         ("data absent", drop("data")),
         ("category_id absent", drop("data", "category_id")),
-        ("category_id pas un uuid", set_("baskets", "data", "category_id")),
-        ("seller_id vide", set_("", "data", "seller_id")),
-        ("titre trop court", set_("Boba", "data", "title")),
-        ("titre trop long", set_("x" * 121, "data", "title")),
-        ("prix nul", set_("0.00", "data", "price")),
-        ("prix à une décimale", set_("12.5", "data", "price")),
-        ("prix négatif", set_("-1.00", "data", "price")),
-        ("prix en nombre", set_(120.0, "data", "price")),
-        ("devise en minuscules", set_("eur", "data", "currency")),
+        ("category_id not a uuid", set_("baskets", "data", "category_id")),
+        ("empty seller_id", set_("", "data", "seller_id")),
+        ("title too short", set_("Boba", "data", "title")),
+        ("title too long", set_("x" * 121, "data", "title")),
+        ("zero price", set_("0.00", "data", "price")),
+        ("price with one decimal", set_("12.5", "data", "price")),
+        ("negative price", set_("-1.00", "data", "price")),
+        ("price as a number", set_(120.0, "data", "price")),
+        ("lowercase currency", set_("eur", "data", "currency")),
     ]
 
 
 @pytest.mark.parametrize(("label", "mutate"), _mutations(), ids=[m[0] for m in _mutations()])
-def test_un_evenement_non_conforme_est_invalide(label: str, mutate: Any) -> None:
+def test_a_non_compliant_event_is_invalid(label: str, mutate: Any) -> None:
     raw = copy.deepcopy(published_event())
     mutate(raw)
     with pytest.raises(InvalidEvent):
         parse_event(body(raw))
 
 
-@pytest.mark.parametrize("raw", [b"", b"pas du json", b"[]", b"null", b'{"event_type": 3}', b"{}"])
-def test_un_corps_qui_n_est_pas_un_evenement_est_invalide(raw: bytes) -> None:
+@pytest.mark.parametrize("raw", [b"", b"not json", b"[]", b"null", b'{"event_type": 3}', b"{}"])
+def test_a_body_that_is_not_an_event_is_invalid(raw: bytes) -> None:
     with pytest.raises(InvalidEvent):
         parse_event(raw)
 
 
-def test_le_message_d_erreur_ne_recopie_pas_la_valeur_recue() -> None:
+def test_the_error_message_does_not_copy_the_received_value() -> None:
     raw = published_event()
     raw["data"]["price"] = "secret-12"
     with pytest.raises(InvalidEvent) as error:
@@ -162,7 +162,7 @@ def test_le_message_d_erreur_ne_recopie_pas_la_valeur_recue() -> None:
     assert "data.price" in str(error.value)
 
 
-def test_un_evenement_de_prix_exige_ancien_et_nouveau_prix() -> None:
+def test_a_price_event_requires_old_and_new_price() -> None:
     raw = price_changed_event()
     del raw["data"]["old_price"]
     with pytest.raises(InvalidEvent):

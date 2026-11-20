@@ -1,6 +1,6 @@
-"""Acceptation de US-05 côté API (CA1 et CA4) et règles de `/me/*`, sur un vrai PostgreSQL.
+"""US-05 acceptance on the API side (AC1 and AC4) and `/me/*` rules, on a real PostgreSQL.
 
-CA2 et CA3 traversent RabbitMQ : ils sont dans `test_rabbitmq.py`.
+AC2 and AC3 go through RabbitMQ: they are in `test_rabbitmq.py`.
 """
 
 import asyncio
@@ -33,7 +33,7 @@ def bob(make_token: TokenFactory) -> dict[str, str]:
 
 
 def seed_notifications(db_url: str, user_id: str, count: int, **overrides: Any) -> list[str]:
-    """Insère `count` notifications, de la plus ancienne à la plus récente (une par minute)."""
+    """Inserts `count` notifications, from the oldest to the most recent (one per minute)."""
     ids = []
     engine = create_engine(db_url)
     with engine.begin() as connection:
@@ -63,10 +63,10 @@ def seed_notifications(db_url: str, user_id: str, count: int, **overrides: Any) 
     return ids
 
 
-# --- US-05, critères d'acceptation ------------------------------------------------------------
+# --- US-05, acceptance criteria ---------------------------------------------------------------
 
 
-async def test_us05_ca1_chloe_declare_ses_interets_et_desactive_les_prix(
+async def test_us05_ca1_chloe_declares_her_interests_and_disables_prices(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     headers = chloe(make_token)
@@ -86,7 +86,7 @@ async def test_us05_ca1_chloe_declare_ses_interets_et_desactive_les_prix(
 
 
 @pytest.mark.parametrize("path", [INTERESTS, PREFERENCES, NOTIFICATIONS])
-async def test_us05_ca4_sans_jeton_401_et_sans_role_buyer_403(
+async def test_us05_ca4_no_token_401_and_no_buyer_role_403(
     db_client: httpx.AsyncClient, make_token: TokenFactory, path: str
 ) -> None:
     assert (await db_client.get(path)).status_code == 401
@@ -95,7 +95,7 @@ async def test_us05_ca4_sans_jeton_401_et_sans_role_buyer_403(
     assert forbidden.headers["content-type"].startswith("application/problem+json")
 
 
-async def test_us05_ca4_ecritures_sans_jeton_401_et_sans_role_buyer_403(
+async def test_us05_ca4_writes_no_token_401_and_no_buyer_role_403(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     for path, body in (
@@ -106,7 +106,7 @@ async def test_us05_ca4_ecritures_sans_jeton_401_et_sans_role_buyer_403(
         assert (await db_client.put(path, json=body, headers=bob(make_token))).status_code == 403
 
 
-async def test_us05_ca4_alice_ne_voit_que_ses_propres_notifications(
+async def test_us05_ca4_alice_only_sees_her_own_notifications(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     chloe_ids = seed_notifications(db_url, "chloe", 3)
@@ -118,10 +118,10 @@ async def test_us05_ca4_alice_ne_voit_que_ses_propres_notifications(
         assert {item["id"] for item in body["items"]} == set(expected)
 
 
-# --- Règles de /me/interests et /me/preferences ------------------------------------------------
+# --- Rules of /me/interests and /me/preferences ------------------------------------------------
 
 
-async def test_sans_interets_la_liste_est_vide(
+async def test_without_interests_the_list_is_empty(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.get(INTERESTS, headers=chloe(make_token))
@@ -129,7 +129,7 @@ async def test_sans_interets_la_liste_est_vide(
     assert response.json() == {"category_ids": []}
 
 
-async def test_put_interests_remplace_la_liste_entiere(
+async def test_put_interests_replaces_the_whole_list(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     headers = chloe(make_token)
@@ -141,7 +141,7 @@ async def test_put_interests_remplace_la_liste_entiere(
     assert cleared.json() == {"category_ids": []}
 
 
-async def test_put_interests_dedoublonne_les_identifiants(
+async def test_put_interests_deduplicates_the_identifiers(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.put(
@@ -153,7 +153,7 @@ async def test_put_interests_dedoublonne_les_identifiants(
     assert response.json() == {"category_ids": [FIGURINES]}
 
 
-async def test_vingt_categories_distinctes_sont_acceptees_vingt_et_une_donnent_422(
+async def test_twenty_distinct_categories_are_accepted_twenty_one_give_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     headers = chloe(make_token)
@@ -164,12 +164,12 @@ async def test_vingt_categories_distinctes_sont_acceptees_vingt_et_une_donnent_4
     assert refused.status_code == 422
     assert refused.headers["content-type"].startswith("application/problem+json")
     assert refused.json()["errors"] == [{"field": "category_ids", "code": "TOO_MANY_CATEGORIES"}]
-    # la liste précédente n'est pas touchée par un remplacement refusé
+    # the previous list is not touched by a rejected replacement
     stored = (await db_client.get(INTERESTS, headers=headers)).json()["category_ids"]
     assert sorted(stored) == sorted(ids[:20])
 
 
-async def test_21_identifiants_dont_un_doublon_font_20_categories_et_sont_acceptes(
+async def test_21_identifiers_with_one_duplicate_make_20_categories_and_are_accepted(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     ids = [str(uuid.uuid4()) for _ in range(20)]
@@ -180,7 +180,7 @@ async def test_21_identifiants_dont_un_doublon_font_20_categories_et_sont_accept
     assert sorted(response.json()["category_ids"]) == sorted(ids)
 
 
-async def test_une_liste_brute_demesuree_donne_422(
+async def test_an_oversized_raw_list_gives_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     ids = [str(uuid.uuid4())] * 201
@@ -191,23 +191,23 @@ async def test_une_liste_brute_demesuree_donne_422(
 @pytest.mark.parametrize(
     "body",
     [
-        {"category_ids": ["pas-un-uuid"]},
+        {"category_ids": ["not-a-uuid"]},
         {"category_ids": "x"},
-        {"category_ids": [FIGURINES], "autre": 1},
+        {"category_ids": [FIGURINES], "other": 1},
         {},
     ],
 )
-async def test_put_interests_refuse_un_corps_invalide(
+async def test_put_interests_rejects_an_invalid_body(
     db_client: httpx.AsyncClient, make_token: TokenFactory, body: dict[str, Any]
 ) -> None:
     response = await db_client.put(INTERESTS, json=body, headers=chloe(make_token))
     assert response.status_code == 422
 
 
-async def test_une_categorie_inconnue_du_catalogue_est_acceptee(
+async def test_a_category_unknown_to_the_catalog_is_accepted(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
-    """Le format est vérifié, pas l'existence : le service n'appelle pas le catalogue."""
+    """The format is checked, not the existence: the service does not call the catalog."""
     unknown = str(uuid.uuid4())
     response = await db_client.put(
         INTERESTS, json={"category_ids": [unknown]}, headers=chloe(make_token)
@@ -215,7 +215,7 @@ async def test_une_categorie_inconnue_du_catalogue_est_acceptee(
     assert response.json() == {"category_ids": [unknown]}
 
 
-async def test_preferences_par_defaut_les_deux_types_sont_actifs(
+async def test_default_preferences_both_types_are_active(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.get(PREFERENCES, headers=chloe(make_token))
@@ -223,7 +223,7 @@ async def test_preferences_par_defaut_les_deux_types_sont_actifs(
     assert response.json() == {"new_article": True, "price_changed": True}
 
 
-async def test_put_preferences_est_idempotent_et_modifiable(
+async def test_put_preferences_is_idempotent_and_editable(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     headers = chloe(make_token)
@@ -242,19 +242,19 @@ async def test_put_preferences_est_idempotent_et_modifiable(
     "body",
     [
         {"new_article": True},
-        {"new_article": "oui", "price_changed": True},
+        {"new_article": "yes", "price_changed": True},
         {"new_article": 1, "price_changed": True},
         {"new_article": True, "price_changed": True, "email": True},
     ],
 )
-async def test_put_preferences_refuse_un_corps_invalide(
+async def test_put_preferences_rejects_an_invalid_body(
     db_client: httpx.AsyncClient, make_token: TokenFactory, body: dict[str, Any]
 ) -> None:
     response = await db_client.put(PREFERENCES, json=body, headers=chloe(make_token))
     assert response.status_code == 422
 
 
-async def test_interets_et_preferences_sont_propres_a_chaque_acheteur(
+async def test_interests_and_preferences_are_specific_to_each_buyer(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     await db_client.put(INTERESTS, json={"category_ids": [FIGURINES]}, headers=chloe(make_token))
@@ -270,7 +270,7 @@ async def test_interets_et_preferences_sont_propres_a_chaque_acheteur(
     }
 
 
-async def test_deux_remplacements_simultanes_ne_donnent_pas_d_erreur(
+async def test_two_simultaneous_replacements_give_no_error(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     headers = chloe(make_token)
@@ -289,7 +289,7 @@ async def test_deux_remplacements_simultanes_ne_donnent_pas_d_erreur(
 # --- GET /me/notifications ---------------------------------------------------------------------
 
 
-async def test_notifications_vides_pour_un_nouvel_acheteur(
+async def test_empty_notifications_for_a_new_buyer(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.get(NOTIFICATIONS, headers=chloe(make_token))
@@ -297,10 +297,10 @@ async def test_notifications_vides_pour_un_nouvel_acheteur(
     assert response.json() == {"items": [], "total": 0}
 
 
-async def test_notifications_de_la_plus_recente_a_la_plus_ancienne_avec_pagination(
+async def test_notifications_from_most_recent_to_oldest_with_pagination(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
-    ids = seed_notifications(db_url, "chloe", 5)  # ids[4] est la plus récente
+    ids = seed_notifications(db_url, "chloe", 5)  # ids[4] is the most recent
     headers = chloe(make_token)
 
     page_1 = (await db_client.get(NOTIFICATIONS, params={"limit": 2}, headers=headers)).json()
@@ -320,14 +320,14 @@ async def test_notifications_de_la_plus_recente_a_la_plus_ancienne_avec_paginati
 
 
 @pytest.mark.parametrize("params", [{"limit": 0}, {"limit": 101}, {"offset": -1}, {"limit": "x"}])
-async def test_pagination_invalide_donne_422(
+async def test_invalid_pagination_gives_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory, params: dict[str, Any]
 ) -> None:
     response = await db_client.get(NOTIFICATIONS, params=params, headers=chloe(make_token))
     assert response.status_code == 422
 
 
-async def test_une_notification_expose_type_article_contenu_et_date(
+async def test_a_notification_exposes_type_article_content_and_date(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     (notification_id,) = seed_notifications(db_url, "chloe", 1)

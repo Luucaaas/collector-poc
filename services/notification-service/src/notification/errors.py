@@ -1,4 +1,4 @@
-"""Erreurs au format RFC 9457 (`application/problem+json`), contrats.md §1.3."""
+"""Errors in RFC 9457 format (`application/problem+json`), contrats.md §1.3."""
 
 from collections.abc import Sequence
 from http import HTTPStatus
@@ -37,10 +37,10 @@ _SLUGS = {
 
 
 class ProblemError(Exception):
-    """Erreur applicative renvoyée telle quelle au client.
+    """Application error returned as is to the client.
 
-    `reason` n'est écrit que dans les journaux, jamais dans la réponse : pour un 401, la raison du
-    rejet (signature, `iss`, expiration, etc.) ne doit pas aider un attaquant.
+    `reason` is only written in the logs, never in the response: for a 401, the reason for the
+    rejection (signature, `iss`, expiry, etc.) must not help an attacker.
     """
 
     def __init__(
@@ -63,7 +63,7 @@ class ProblemError(Exception):
 
 
 def unauthenticated(reason: str) -> ProblemError:
-    """Titre unique pour tous les 401 ; la raison reste dans les journaux."""
+    """Single title for all 401s; the reason stays in the logs."""
     return ProblemError(401, reason=reason, headers={"WWW-Authenticate": "Bearer"})
 
 
@@ -106,7 +106,7 @@ def problem_response(
 
 
 def validation_errors(errors: Sequence[Any]) -> list[dict[str, str]]:
-    """Convertit les erreurs Pydantic en `{field, code}`, sans jamais recopier la valeur reçue."""
+    """Converts Pydantic errors into `{field, code}`, without ever copying the received value."""
     result = []
     for error in errors:
         location = [str(part) for part in error["loc"] if part not in ("body", "query", "path")]

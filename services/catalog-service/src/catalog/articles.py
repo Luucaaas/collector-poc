@@ -1,6 +1,6 @@
-"""Articles (US-03, US-04) : publication avec contrôle automatique, catalogue, prix et historique.
+"""Articles (US-03, US-04): publication with automatic check, catalog, price and history.
 
-Les événements sont publiés **après** le commit, jamais avant (contrats.md §3.2, limite L2).
+Events are published **after** the commit, never before (contrats.md §3.2, limit L2).
 """
 
 import re
@@ -36,26 +36,26 @@ PUBLISHED = "PUBLISHED"
 REJECTED = "REJECTED"
 MAX_PRICE = Decimal("1000000")
 _CENTS = Decimal("0.01")
-_AMOUNT = re.compile(r"\d{1,7}(?:\.\d{1,2})?")  # chaîne décimale, 2 décimales au plus
+_AMOUNT = re.compile(r"\d{1,7}(?:\.\d{1,2})?")  # decimal string, at most 2 decimals
 
 
 def _parse_amount(value: object) -> Decimal:
-    """Un montant est une chaîne décimale (`"120.00"`) : un nombre JSON est refusé (pas de flottant
-    pour l'argent)."""
+    """An amount is a decimal string (`"120.00"`): a JSON number is rejected (no float
+    for money)."""
     if not isinstance(value, str) or not _AMOUNT.fullmatch(value):
-        raise ValueError("Montant attendu : chaîne décimale, 2 décimales au plus.")
+        raise ValueError("Amount expected: decimal string, at most 2 decimals.")
     return Decimal(value).quantize(_CENTS)
 
 
 def _check_price(value: Decimal) -> Decimal:
     if not 0 < value <= MAX_PRICE:
-        raise ValueError("Le prix doit être supérieur à 0 et au plus 1 000 000.")
+        raise ValueError("The price must be greater than 0 and at most 1,000,000.")
     return value
 
 
 def _check_fee(value: Decimal) -> Decimal:
     if value > MAX_PRICE:
-        raise ValueError("Les frais de port dépassent le maximum.")
+        raise ValueError("The shipping cost exceeds the maximum.")
     return value
 
 
@@ -160,8 +160,8 @@ def _can_see_private(article: Article, user: CurrentUser | None) -> bool:
 
 
 def _deny(article: Article, user: CurrentUser | None, reason: str) -> ProblemError:
-    """Refus pour un utilisateur qui n'a pas le droit d'agir : 404 si l'article n'est pas publié
-    et qu'il ne peut pas le voir (on ne révèle pas son existence, §1.2), sinon 403."""
+    """Refusal for a user who is not allowed to act: 404 if the article is not published
+    and they cannot see it (its existence is not revealed, §1.2), otherwise 403."""
     if article.status != PUBLISHED and not _can_see_private(article, user):
         return ProblemError(404, reason="article_not_visible")
     return forbidden(reason)
@@ -196,7 +196,7 @@ async def create_article(
     if shop.owner_id != user.sub:
         raise forbidden("shop_not_owned")
 
-    # RM-02 : un article qui contient des coordonnées est conservé, au statut REJECTED.
+    # RM-02: an article that contains contact details is kept, with the REJECTED status.
     reasons = contact_reasons(payload.title, payload.description)
     moment = now()
     article = Article(
@@ -242,7 +242,7 @@ async def create_article(
                 "currency": article.currency,
             },
         )
-        await publisher.publish(event)  # après le commit ; un échec est journalisé, pas propagé
+        await publisher.publish(event)  # after the commit; a failure is logged, not propagated
     return to_out(article)
 
 
@@ -278,7 +278,7 @@ async def get_article(
 ) -> ArticleOut:
     article = await _get_article(session, article_id)
     if article.status != PUBLISHED and not _can_see_private(article, user):
-        # 404 et non 403 : on ne révèle pas l'existence d'un article non publié (§1.2).
+        # 404 and not 403: the existence of an unpublished article is not revealed (§1.2).
         raise ProblemError(404, reason="article_not_visible")
     return to_out(article)
 
@@ -292,7 +292,7 @@ async def change_price(
     publisher: PublisherDep,
     metrics: MetricsDep,
 ) -> ArticleOut:
-    # Verrou de ligne : deux modifications concurrentes s'enchaînent, l'historique reste cohérent.
+    # Row lock: two concurrent changes run one after the other, the history stays consistent.
     article = (
         await session.scalars(
             select(Article).where(Article.id == article_id).with_for_update(of=Article)
@@ -309,7 +309,7 @@ async def change_price(
             reason="article_not_published",
         )
     if payload.price == article.price:
-        return to_out(article)  # RM-04 : prix identique, ni historique ni événement
+        return to_out(article)  # RM-04: same price, neither history nor event
 
     moment = now()
     old_price = article.price

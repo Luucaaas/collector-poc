@@ -1,11 +1,11 @@
-"""Environnement Alembic : URL lue dans DATABASE_URL, connexion synchrone (psycopg 3)."""
+"""Alembic environment: URL read from DATABASE_URL, synchronous connection (psycopg 3)."""
 
 import os
 
 from alembic import context
 from sqlalchemy import create_engine
 
-from catalog import models  # noqa: F401  (enregistre les tables dans Base.metadata)
+from catalog import models  # noqa: F401  (registers the tables in Base.metadata)
 from catalog.db import Base
 
 target_metadata = Base.metadata
@@ -14,7 +14,7 @@ target_metadata = Base.metadata
 def _database_url() -> str:
     url = os.environ.get("DATABASE_URL")
     if not url:
-        raise RuntimeError("La variable d'environnement DATABASE_URL est obligatoire.")
+        raise RuntimeError("The DATABASE_URL environment variable is required.")
     return url
 
 

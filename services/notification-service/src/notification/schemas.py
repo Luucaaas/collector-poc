@@ -1,4 +1,4 @@
-"""Modèle de base des corps de requête : un champ inconnu est refusé (ENF-07)."""
+"""Base model of the request bodies: an unknown field is rejected (ENF-07)."""
 
 from pydantic import BaseModel, ConfigDict
 

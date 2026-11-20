@@ -1,4 +1,4 @@
-"""Écriture en base : une violation d'unicité devient un 409 (RFC 9457)."""
+"""Database write: a uniqueness violation becomes a 409 (RFC 9457)."""
 
 import psycopg.errors
 from sqlalchemy.exc import IntegrityError
@@ -8,8 +8,8 @@ from catalog.errors import ProblemError
 
 
 async def commit_unique(session: AsyncSession) -> None:
-    """Valide la transaction. C'est la base qui garantit l'unicité : deux requêtes concurrentes
-    avec le même nom ne peuvent pas toutes deux réussir, quel que soit l'ordre des vérifications."""
+    """Commits the transaction. The database guarantees uniqueness: two concurrent requests
+    with the same name cannot both succeed, whatever the order of the checks."""
     try:
         await session.commit()
     except IntegrityError as error:

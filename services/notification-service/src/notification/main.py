@@ -20,21 +20,21 @@ from notification.metrics import setup_metrics
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    settings = settings or Settings()  # lu dans l'environnement
+    settings = settings or Settings()  # read from the environment
     configure_logging(settings.log_level)
 
     engine = create_engine(settings.database_url, settings.db_connect_timeout_seconds)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        await application.state.consumer.start()  # rend la main même si RabbitMQ est absent
+        await application.state.consumer.start()  # returns even if RabbitMQ is absent
         try:
             yield
-        finally:  # même sortie anticipée : la fermeture n'est jamais sautée (Sonar python:S9152)
+        finally:  # even on early exit: the closing is never skipped (Sonar python:S9152)
             try:
-                await application.state.consumer.close()  # arrêt propre : le consommateur est fermé
+                await application.state.consumer.close()  # clean shutdown: the consumer is closed
             finally:
-                await engine.dispose()  # arrêt propre : les connexions sont fermées
+                await engine.dispose()  # clean shutdown: the connections are closed
 
     app = FastAPI(
         title="notification-service",
@@ -71,12 +71,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         prefetch=settings.consumer_prefetch,
         retry_seconds=settings.amqp_retry_seconds,
     )
-    # Le dernier middleware ajouté est le plus externe : CORS en dernier (Sonar python:S8414), pour
-    # que les en-têtes CORS figurent sur les réponses des routes et des gestionnaires d'erreurs
-    # (401, 403, 404, 422). La corrélation est juste en dessous : elle enveloppe les routes et les
-    # erreurs, donc X-Request-ID est posé avant le passage de CORS. Exception : une erreur 500 non
-    # gérée est produite par ServerErrorMiddleware de Starlette, placé au-dessus de tout, donc sans
-    # en-têtes CORS ; une requête préliminaire OPTIONS reçoit sa réponse de CORS, sans X-Request-ID.
+    # The last middleware added is the outermost: CORS last (Sonar python:S8414), so
+    # that the CORS headers appear on the responses of the routes and of the error handlers
+    # (401, 403, 404, 422). Correlation is just below: it wraps the routes and the
+    # errors, so X-Request-ID is set before CORS runs. Exception: an unhandled 500 error
+    # is produced by Starlette's ServerErrorMiddleware, placed above everything, hence without
+    # CORS headers; an OPTIONS preflight request gets its response from CORS, without X-Request-ID.
     app.add_middleware(CorrelationMiddleware)
     app.add_middleware(
         CORSMiddleware,

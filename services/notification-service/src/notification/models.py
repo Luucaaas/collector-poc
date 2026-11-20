@@ -1,7 +1,7 @@
-"""Modèles SQLAlchemy de notification_db (contrats.md §4.2).
+"""SQLAlchemy models of notification_db (contrats.md §4.2).
 
-`user_id` est le `sub` Keycloak et `category_id` un identifiant du catalogue : ce sont des
-identifiants opaques, sans clé étrangère (une base par service).
+`user_id` is the Keycloak `sub` and `category_id` a catalog identifier: they are
+opaque identifiers, without a foreign key (one database per service).
 """
 
 import uuid
@@ -34,8 +34,8 @@ def now() -> datetime:
 class Interest(Base):
     __tablename__ = "interests"
 
-    # La clé primaire (user_id, category_id) ne sert pas la recherche des destinataires par
-    # catégorie : index dédié, déclaré aussi dans la migration 0001.
+    # The primary key (user_id, category_id) does not serve the lookup of recipients by
+    # category: dedicated index, also declared in migration 0001.
     __table_args__ = (Index("ix_interests_category_id", "category_id"),)
 
     user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
@@ -59,7 +59,7 @@ class Preference(Base):
 class Notification(Base):
     __tablename__ = "notifications"
     __table_args__ = (
-        # RM-09 : un même événement ne produit qu'une notification par acheteur.
+        # RM-09: one event produces only one notification per buyer.
         UniqueConstraint("user_id", "source_event_id", name="uq_notifications_user_event"),
         CheckConstraint("type IN ('NEW_ARTICLE', 'PRICE_CHANGED')", name="ck_notifications_type"),
         Index("ix_notifications_user_created", "user_id", text("created_at DESC")),

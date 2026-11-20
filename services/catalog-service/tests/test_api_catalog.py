@@ -1,6 +1,6 @@
-"""Tests d'acceptation de l'API (US-01, US-02) : application complète sur un PostgreSQL réel.
+"""API acceptance tests (US-01, US-02): complete application on a real PostgreSQL.
 
-Chaque critère d'acceptation de `docs/03-backlog/user-stories.md` a son test `test_usNN_caN_...`.
+Each acceptance criterion of `docs/03-backlog/user-stories.md` has its `test_usNN_caN_...` test.
 """
 
 import asyncio
@@ -50,10 +50,10 @@ def assert_problem(response: httpx.Response, status: int, codes: list[str] | Non
         assert [error["code"] for error in body["errors"]] == codes
 
 
-# --- US-01 : créer une catégorie -------------------------------------------------------------
+# --- US-01: create a category ----------------------------------------------------------------
 
 
-async def test_us01_ca1_admin_cree_une_categorie_visible_dans_la_liste_publique(
+async def test_us01_ca1_admin_creates_a_category_visible_in_the_public_list(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.post(
@@ -65,13 +65,13 @@ async def test_us01_ca1_admin_cree_une_categorie_visible_dans_la_liste_publique(
     assert created["name"] == "Figurines Star Wars"
     assert created["created_at"].endswith("Z")
 
-    listing = await db_client.get(CATEGORIES)  # sans jeton
+    listing = await db_client.get(CATEGORIES)  # without a token
     assert listing.status_code == 200
     assert listing.json()["items"] == [created]
     assert listing.json()["total"] == 1
 
 
-async def test_us01_ca2_doublon_sans_casse_donne_409_et_nom_trop_court_422(
+async def test_us01_ca2_case_insensitive_duplicate_gives_409_and_too_short_name_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     headers = admin(make_token)
@@ -87,7 +87,7 @@ async def test_us01_ca2_doublon_sans_casse_donne_409_et_nom_trop_court_422(
     assert count(db_url, "categories") == 1
 
 
-async def test_us01_ca3_sans_jeton_401_et_vendeur_seul_403(
+async def test_us01_ca3_no_token_401_and_seller_only_403(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     anonymous = await db_client.post(CATEGORIES, json={"name": "Baskets"})
@@ -97,7 +97,7 @@ async def test_us01_ca3_sans_jeton_401_et_vendeur_seul_403(
     assert count(db_url, "categories") == 0
 
 
-async def test_categories_triees_par_nom_sans_tenir_compte_de_la_casse(
+async def test_categories_sorted_by_name_ignoring_case(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     for name in ["vinyles", "Baskets", "Cartes Pokémon"]:
@@ -106,7 +106,7 @@ async def test_categories_triees_par_nom_sans_tenir_compte_de_la_casse(
     assert names == ["Baskets", "Cartes Pokémon", "vinyles"]
 
 
-async def test_categorie_champ_inconnu_donne_422(
+async def test_category_unknown_field_gives_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.post(
@@ -115,14 +115,14 @@ async def test_categorie_champ_inconnu_donne_422(
     assert_problem(response, 422)
 
 
-async def test_categorie_nom_sans_lettre_ni_chiffre_donne_422(
+async def test_category_name_without_letter_or_digit_gives_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.post(CATEGORIES, json={"name": "!!"}, headers=admin(make_token))
     assert_problem(response, 422, ["NAME_INVALID"])
 
 
-async def test_categorie_nom_de_60_caracteres_accepte_et_61_refuse(
+async def test_category_name_of_60_characters_accepted_and_61_rejected(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     ok = await db_client.post(CATEGORIES, json={"name": "a" * 60}, headers=admin(make_token))
@@ -131,7 +131,7 @@ async def test_categorie_nom_de_60_caracteres_accepte_et_61_refuse(
     assert_problem(too_long, 422)
 
 
-async def test_categorie_de_meme_slug_donne_409(
+async def test_category_with_same_slug_gives_409(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     headers = admin(make_token)
@@ -141,14 +141,14 @@ async def test_categorie_de_meme_slug_donne_409(
     assert count(db_url, "categories") == 1
 
 
-async def test_non_authentifie_est_refuse_avant_la_validation_du_corps(
+async def test_unauthenticated_is_rejected_before_body_validation(
     db_client: httpx.AsyncClient,
 ) -> None:
-    response = await db_client.post(CATEGORIES, json={"nom": "mauvais champ"})
+    response = await db_client.post(CATEGORIES, json={"unknown": "bad field"})
     assert response.status_code == 401
 
 
-async def test_categorie_de_60_ligatures_donne_un_slug_de_120_caracteres_et_201(
+async def test_category_of_60_ligatures_gives_a_120_character_slug_and_201(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.post(CATEGORIES, json={"name": "œ" * 60}, headers=admin(make_token))
@@ -156,7 +156,7 @@ async def test_categorie_de_60_ligatures_donne_un_slug_de_120_caracteres_et_201(
     assert response.json()["slug"] == "oe" * 60
 
 
-async def test_categorie_dont_le_slug_depasse_120_caracteres_donne_422(
+async def test_category_whose_slug_exceeds_120_characters_gives_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     response = await db_client.post(CATEGORIES, json={"name": "ﬃ" * 60}, headers=admin(make_token))
@@ -164,7 +164,7 @@ async def test_categorie_dont_le_slug_depasse_120_caracteres_donne_422(
     assert count(db_url, "categories") == 0
 
 
-async def test_collision_de_slug_garde_le_code_name_already_used_et_son_detail(
+async def test_slug_collision_keeps_the_name_already_used_code_and_its_detail(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     await db_client.post(CATEGORIES, json={"name": "Baskets"}, headers=admin(make_token))
@@ -175,10 +175,10 @@ async def test_collision_de_slug_garde_le_code_name_already_used_et_son_detail(
     assert response.json()["detail"] == "Nom déjà utilisé ou trop proche d'un nom existant."
 
 
-# --- US-02 : créer une boutique --------------------------------------------------------------
+# --- US-02: create a shop --------------------------------------------------------------------
 
 
-async def test_us02_ca1_vendeur_cree_une_boutique_a_son_nom_consultable_publiquement(
+async def test_us02_ca1_seller_creates_a_shop_in_their_name_publicly_viewable(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.post(
@@ -191,7 +191,7 @@ async def test_us02_ca1_vendeur_cree_une_boutique_a_son_nom_consultable_publique
     assert shop["owner_id"] == "alice-1"
     assert shop["seller_type"] == "INDIVIDUAL"
 
-    page = await db_client.get(f"{SHOPS}/{shop['id']}")  # sans jeton
+    page = await db_client.get(f"{SHOPS}/{shop['id']}")  # without a token
     assert page.status_code == 200
     assert page.json() == shop
 
@@ -204,7 +204,7 @@ async def test_us02_ca1_vendeur_cree_une_boutique_a_son_nom_consultable_publique
         ("Ou le +33 6 12 34 56 78", "CONTACT_PHONE"),
     ],
 )
-async def test_us02_ca2_coordonnees_dans_la_description_donnent_422_sans_rien_enregistrer(
+async def test_us02_ca2_contact_details_in_the_description_give_422_and_nothing_is_saved(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     db_url: str,
@@ -219,7 +219,7 @@ async def test_us02_ca2_coordonnees_dans_la_description_donnent_422_sans_rien_en
     assert count(db_url, "shops") == 0
 
 
-async def test_us02_ca3_sans_jeton_401_et_acheteur_seul_403(
+async def test_us02_ca3_no_token_401_and_buyer_only_403(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     assert_problem(await db_client.post(SHOPS, json={"name": "Jouets"}), 401)
@@ -228,7 +228,7 @@ async def test_us02_ca3_sans_jeton_401_et_acheteur_seul_403(
     assert count(db_url, "shops") == 0
 
 
-async def test_boutique_coordonnees_dans_le_nom_donnent_422(
+async def test_shop_contact_details_in_the_name_give_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     response = await db_client.post(
@@ -239,7 +239,7 @@ async def test_boutique_coordonnees_dans_le_nom_donnent_422(
     assert count(db_url, "shops") == 0
 
 
-async def test_boutique_nom_deja_utilise_sans_casse_donne_409_meme_pour_un_autre_vendeur(
+async def test_shop_name_already_used_ignoring_case_gives_409_even_for_another_seller(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     assert (
@@ -251,14 +251,14 @@ async def test_boutique_nom_deja_utilise_sans_casse_donne_409_meme_pour_un_autre
 
 
 @pytest.mark.parametrize("name", ["ab", "x" * 61])
-async def test_boutique_nom_hors_bornes_donne_422(
+async def test_shop_name_out_of_bounds_gives_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory, name: str
 ) -> None:
     response = await db_client.post(SHOPS, json={"name": name}, headers=alice(make_token))
     assert_problem(response, 422)
 
 
-async def test_boutique_champ_inconnu_donne_422_et_seller_type_n_est_pas_modifiable(
+async def test_shop_unknown_field_gives_422_and_seller_type_is_not_editable(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.post(
@@ -267,7 +267,7 @@ async def test_boutique_champ_inconnu_donne_422_et_seller_type_n_est_pas_modifia
     assert_problem(response, 422)
 
 
-async def test_boutique_owner_id_dans_le_corps_donne_422(
+async def test_shop_owner_id_in_the_body_gives_422(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     response = await db_client.post(
@@ -277,7 +277,7 @@ async def test_boutique_owner_id_dans_le_corps_donne_422(
     assert count(db_url, "shops") == 0
 
 
-async def test_boutique_description_vide_est_enregistree_null(
+async def test_shop_empty_description_is_saved_as_null(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.post(
@@ -289,12 +289,12 @@ async def test_boutique_description_vide_est_enregistree_null(
     assert page.json()["description"] is None
 
 
-async def test_boutique_inconnue_donne_404(db_client: httpx.AsyncClient) -> None:
+async def test_unknown_shop_gives_404(db_client: httpx.AsyncClient) -> None:
     response = await db_client.get(f"{SHOPS}/9c4e7f10-2b3a-4d5e-8f6a-7b8c9d0e1f23")
     assert_problem(response, 404)
 
 
-async def test_shops_me_ne_renvoie_que_les_boutiques_de_l_utilisateur(
+async def test_shops_me_only_returns_the_shops_of_the_user(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     await db_client.post(SHOPS, json={"name": "Boutique A"}, headers=alice(make_token))
@@ -310,17 +310,17 @@ async def test_shops_me_ne_renvoie_que_les_boutiques_de_l_utilisateur(
     assert nobody.json() == {"items": [], "total": 0}
 
 
-async def test_shops_me_exige_le_role_seller(
+async def test_shops_me_requires_the_seller_role(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     assert_problem(await db_client.get(f"{SHOPS}/me"), 401)
     assert_problem(await db_client.get(f"{SHOPS}/me", headers=chloe(make_token)), 403)
 
 
-# --- Garanties de la base --------------------------------------------------------------------
+# --- Database guarantees ---------------------------------------------------------------------
 
 
-async def test_deux_creations_concurrentes_du_meme_nom_donnent_un_201_et_un_409(
+async def test_two_concurrent_creations_of_the_same_name_give_one_201_and_one_409(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     headers = admin(make_token)
@@ -334,7 +334,7 @@ async def test_deux_creations_concurrentes_du_meme_nom_donnent_un_201_et_un_409(
     assert count(db_url, "categories") == 1
 
 
-async def test_deux_boutiques_concurrentes_du_meme_nom_donnent_un_201_et_un_409(
+async def test_two_concurrent_shops_of_the_same_name_give_one_201_and_one_409(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     responses = await asyncio.gather(
@@ -345,7 +345,7 @@ async def test_deux_boutiques_concurrentes_du_meme_nom_donnent_un_201_et_un_409(
     assert count(db_url, "shops") == 1
 
 
-def test_la_base_refuse_un_doublon_de_nom_et_un_type_de_vendeur_autre_qu_individual(
+def test_database_rejects_a_duplicate_name_and_a_seller_type_other_than_individual(
     db_url: str,
 ) -> None:
     engine = create_engine(db_url)
@@ -363,10 +363,10 @@ def test_la_base_refuse_un_doublon_de_nom_et_un_type_de_vendeur_autre_qu_individ
     assert count(db_url, "shops") == 1
 
 
-def test_la_base_refuse_deux_categories_de_meme_nom_meme_avec_des_slugs_differents(
+def test_database_rejects_two_categories_with_the_same_name_even_with_different_slugs(
     db_url: str,
 ) -> None:
-    """L'index `lower(name)` agit seul : le slug unique ne le masque pas."""
+    """The `lower(name)` index acts alone: the unique slug does not mask it."""
     engine = create_engine(db_url)
     insert = text(
         "INSERT INTO categories (id, name, slug) VALUES (gen_random_uuid(), :name, :slug)"

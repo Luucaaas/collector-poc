@@ -1,8 +1,8 @@
-"""Journaux JSON (structlog). `correlation_id` et `sub` viennent du contexte.
+"""JSON logs (structlog). `correlation_id` and `sub` come from the context.
 
-Les journaux d'uvicorn (démarrage, arrêt, erreurs) passent par le même rendu JSON, pour que
-`docker logs` et Loki ne reçoivent que du JSON. Le journal d'accès d'uvicorn est désactivé
-(`--no-access-log`) : le middleware de corrélation écrit déjà une ligne par requête.
+uvicorn's logs (startup, shutdown, errors) go through the same JSON rendering, so that
+`docker logs` and Loki only receive JSON. uvicorn's access log is disabled
+(`--no-access-log`): the correlation middleware already writes one line per request.
 """
 
 import logging as std_logging
@@ -24,7 +24,7 @@ def configure_logging(level: str = "INFO") -> None:
         wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
     )
 
-    # Journaux de la bibliothèque standard (uvicorn) rendus par structlog, en JSON.
+    # Standard library logs (uvicorn) rendered by structlog, as JSON.
     handler = std_logging.StreamHandler(sys.stdout)
     handler.setFormatter(
         structlog.stdlib.ProcessorFormatter(
@@ -42,8 +42,8 @@ def configure_logging(level: str = "INFO") -> None:
         logger.setLevel(numeric_level)
     std_logging.getLogger("uvicorn").addHandler(handler)
     std_logging.getLogger("uvicorn.error").propagate = True
-    # Spécifique à ce service : les journaux de la connexion AMQP (aio-pika, aiormq) passent aussi
-    # par le rendu JSON. Sinon Python les écrit en texte brut sur stderr à chaque tentative.
+    # Specific to this service: the AMQP connection logs (aio-pika, aiormq) also go
+    # through the JSON rendering. Otherwise Python writes them as plain text on stderr per attempt.
     for name in ("aio_pika", "aiormq"):
         logger = std_logging.getLogger(name)
         logger.handlers = [handler]

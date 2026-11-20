@@ -1,4 +1,4 @@
-"""Migration 0001 sur un vrai PostgreSQL : montée, contraintes appliquées, descente."""
+"""Migration 0001 on a real PostgreSQL: upgrade, constraints enforced, downgrade."""
 
 import pytest
 from alembic import command
@@ -28,7 +28,7 @@ def _indexes(url: str) -> set[str]:
     return _names(url, "SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")
 
 
-def test_migration_0001_monte_applique_les_contraintes_puis_descend(
+def test_migration_0001_upgrades_enforces_the_constraints_then_downgrades(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with PostgresContainer(POSTGRES_IMAGE, driver="psycopg") as container:
@@ -75,7 +75,7 @@ def test_migration_0001_monte_applique_les_contraintes_puis_descend(
         event = "0f8e2d4c-6b1a-4f3e-9d7c-5a4b3c2d1e0f"
         with engine.begin() as connection:
             connection.execute(insert, {"user_id": "chloe", "type": "NEW_ARTICLE", "event": event})
-            # même acheteur, même événement : refusé (RM-09) ; autre acheteur : accepté
+            # same buyer, same event: rejected (RM-09); another buyer: accepted
             connection.execute(insert, {"user_id": "dave", "type": "NEW_ARTICLE", "event": event})
         with pytest.raises(IntegrityError), engine.begin() as connection:
             connection.execute(
@@ -102,12 +102,12 @@ def test_migration_0001_monte_applique_les_contraintes_puis_descend(
         assert not TABLES & _tables(url)
         assert not {i for i in _indexes(url) if i.startswith(("ix_", "uq_"))}
 
-        command.upgrade(config, "head")  # rejouable
+        command.upgrade(config, "head")  # replayable
         assert TABLES <= _tables(url)
         command.downgrade(config, "base")
 
 
-def test_alembic_exige_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_alembic_requires_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     with pytest.raises(RuntimeError, match="DATABASE_URL"):
         command.upgrade(Config("alembic.ini"), "head")

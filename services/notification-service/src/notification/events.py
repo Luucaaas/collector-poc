@@ -1,8 +1,8 @@
-"""Événements consommés (contrats.md §3.3 à §3.5) : validation, contenu et destinataires.
+"""Consumed events (contrats.md §3.3 to §3.5): validation, content and recipients.
 
-Ce module ne dépend ni de RabbitMQ ni de FastAPI : la validation et la construction du contenu
-sont des fonctions pures. Le service n'appelle jamais `catalog-service` : l'événement transporte
-tout ce qu'il faut (catégorie, vendeur, titre, prix).
+This module depends neither on RabbitMQ nor on FastAPI: validation and content building
+are pure functions. The service never calls `catalog-service`: the event carries
+everything needed (category, seller, title, price).
 """
 
 import uuid
@@ -30,7 +30,7 @@ ARTICLE_PUBLISHED = "article.published"
 ARTICLE_PRICE_CHANGED = "article.price_changed"
 PRODUCER = "catalog-service"
 
-# Deux décimales, pas de prix nul (RM-01) ; les frais de port peuvent être nuls.
+# Two decimals, no zero price (RM-01); the shipping cost may be zero.
 Price = Annotated[str, StringConstraints(pattern=r"^(?!0+\.00$)[0-9]{1,7}\.[0-9]{2}$")]
 Amount = Annotated[str, StringConstraints(pattern=r"^[0-9]{1,7}\.[0-9]{2}$")]
 Currency = Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
@@ -39,16 +39,16 @@ UserId = Annotated[str, StringConstraints(min_length=1, max_length=128)]
 
 
 class InvalidEvent(Exception):
-    """Message qui ne respecte pas le contrat : inutile de le relivrer."""
+    """Message that does not follow the contract: no point redelivering it."""
 
 
 class _Envelope(BaseModel):
-    # Lecteur tolérant (contrats.md §3.3) : les champs inconnus sont ignorés, les champs connus
-    # restent exigés avec leur type. Les schémas stricts du contrat décrivent le producteur.
+    # Tolerant reader (contrats.md §3.3): unknown fields are ignored, known fields
+    # stay required with their type. The strict schemas of the contract describe the producer.
     model_config = ConfigDict(extra="ignore")
 
     event_id: uuid.UUID
-    schema_version: StrictInt  # entier strict : `true` ou `"1"` ne sont pas la version 1
+    schema_version: StrictInt  # strict integer: `true` or `"1"` are not version 1
     occurred_at: Annotated[datetime, Field(strict=True)]
     producer: Literal["catalog-service"]
     correlation_id: Annotated[str, StringConstraints(min_length=1, max_length=128)]
@@ -62,8 +62,8 @@ class _Envelope(BaseModel):
 
 
 class _Data(BaseModel):
-    # Champs inconnus ignorés (évolution §3.3). Le moteur `re` de Python est nécessaire : le motif
-    # du prix exclut zéro par anticipation (`(?!…)`), que le moteur par défaut ne gère pas.
+    # Unknown fields ignored (evolution §3.3). Python's `re` engine is needed: the price
+    # pattern excludes zero by lookahead (`(?!…)`), which the default engine does not handle.
     model_config = ConfigDict(extra="ignore", regex_engine="python-re")
 
 
@@ -100,11 +100,11 @@ class PriceChangedEvent(_Envelope):
 
 
 class UnknownTypeEvent(_Envelope):
-    """Enveloppe valide d'un type que ce service ne connaît pas : acquittée sans traitement."""
+    """Valid envelope of a type this service does not know: acknowledged without processing."""
 
     @field_validator("schema_version")
     @classmethod
-    def _known_version(cls, value: int) -> int:  # toute version, mais entière
+    def _known_version(cls, value: int) -> int:  # any version, but an integer
         return value
 
     producer: str  # type:ignore[assignment]
@@ -121,12 +121,12 @@ _RAW: TypeAdapter[Any] = TypeAdapter(Any)
 
 
 def parse_event(body: bytes) -> Event | UnknownTypeEvent:
-    """Valide un corps de message.
+    """Validates a message body.
 
-    - type connu : validation complète (champs requis et types) ; champs inconnus ignorés ;
-    - type inconnu, enveloppe valide : `UnknownTypeEvent` (à acquitter sans traitement) ;
-    - JSON invalide, champ requis absent ou mal typé, version inconnue : `InvalidEvent`, sans
-      recopier le contenu reçu.
+    - known type: full validation (required fields and types); unknown fields ignored;
+    - unknown type, valid envelope: `UnknownTypeEvent` (to acknowledge without processing);
+    - invalid JSON, missing or badly typed required field, unknown version: `InvalidEvent`,
+      without copying the received content.
     """
     try:
         raw = _RAW.validate_json(body)
@@ -135,7 +135,7 @@ def parse_event(body: bytes) -> Event | UnknownTypeEvent:
         model = _MODELS.get(str(raw.get("event_type")))
         if model is None:
             return UnknownTypeEvent.model_validate_json(body)
-        # `model_validate_json` reste strict sur les types JSON (un nombre n'est pas une chaîne).
+        # `model_validate_json` stays strict on JSON types (a number is not a string).
         return model.model_validate_json(body)
     except ValidationError as error:
         fields = sorted(
@@ -149,7 +149,7 @@ def notification_type(event: Event) -> str:
 
 
 def build_content(event: Event) -> dict[str, Any]:
-    """Contenu exploitable par le front, sans autre appel : titre et prix (montants en chaîne)."""
+    """Content usable by the front, without another call: title and price (amounts as strings)."""
     data = event.data
     if isinstance(data, PublishedData):
         return {"title": data.title, "price": data.price, "currency": data.currency}
@@ -162,9 +162,9 @@ def build_content(event: Event) -> dict[str, Any]:
 
 
 async def find_recipients(session: AsyncSession, event: Event) -> list[str]:
-    """Destinataires en une requête (RM-08) : acheteurs intéressés par la catégorie, dont la
-    préférence du type concerné est active (vraie si aucune préférence enregistrée), sauf le
-    vendeur de l'article."""
+    """Recipients in one query (RM-08): buyers interested in the category, whose
+    preference for the type concerned is active (true if no preference is saved), except the
+    article's seller."""
     preference = (
         Preference.new_article if isinstance(event, PublishedEvent) else Preference.price_changed
     )
@@ -182,10 +182,10 @@ async def find_recipients(session: AsyncSession, event: Event) -> list[str]:
 
 
 async def create_notifications(session: AsyncSession, event: Event) -> list[str]:
-    """Crée les notifications d'un événement dans la transaction de `session` (sans commit).
+    """Creates the notifications of an event in the transaction of `session` (without commit).
 
-    `ON CONFLICT DO NOTHING` sur `(user_id, source_event_id)` : un événement relivré ne crée rien
-    de plus (RM-09). Renvoie les acheteurs réellement notifiés par cet appel."""
+    `ON CONFLICT DO NOTHING` on `(user_id, source_event_id)`: a redelivered event creates nothing
+    more (RM-09). Returns the buyers actually notified by this call."""
     recipients = await find_recipients(session, event)
     if not recipients:
         return []

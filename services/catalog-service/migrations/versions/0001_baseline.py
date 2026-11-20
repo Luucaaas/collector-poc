@@ -1,4 +1,4 @@
-"""Migration de référence, vide : le schéma métier arrive avec P4-02.
+"""Empty baseline migration: the business schema arrives with P4-02.
 
 Revision ID: 0001
 Revises:

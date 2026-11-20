@@ -1,8 +1,8 @@
-"""Tests d'acceptation de l'API (US-03, US-04) : application complète sur un PostgreSQL réel,
-avec un faux producteur d'événements. Les événements sur un vrai RabbitMQ sont dans
+"""API acceptance tests (US-03, US-04): complete application on a real PostgreSQL,
+with a fake event producer. The events on a real RabbitMQ are in
 `test_rabbitmq.py`.
 
-Chaque critère d'acceptation de `docs/03-backlog/user-stories.md` a son test `test_usNN_caN_...`.
+Each acceptance criterion of `docs/03-backlog/user-stories.md` has its `test_usNN_caN_...` test.
 """
 
 import asyncio
@@ -104,17 +104,17 @@ async def publish_article(
     return created
 
 
-# --- US-03 : publier un article --------------------------------------------------------------
+# --- US-03: publish an article ---------------------------------------------------------------
 
 
-async def test_us03_ca1_article_conforme_publie_evenement_et_visible_dans_le_catalogue(
+async def test_us03_ca1_compliant_article_publishes_event_and_is_visible_in_the_catalog(
     db_client: httpx.AsyncClient, make_token: TokenFactory, publisher: RecordingPublisher
 ) -> None:
     category_id = await make_category(db_client, make_token)
     shop_id = await make_shop(db_client, alice(make_token))
-    autre_categorie = await make_category(db_client, make_token, "Baskets")
-    autre = await publish_article(
-        db_client, alice(make_token), shop_id, autre_categorie, title="Baskets Jordan 1985"
+    other_category = await make_category(db_client, make_token, "Baskets")
+    other_article = await publish_article(
+        db_client, alice(make_token), shop_id, other_category, title="Baskets Jordan 1985"
     )
     publisher.events.clear()
 
@@ -132,7 +132,7 @@ async def test_us03_ca1_article_conforme_publie_evenement_et_visible_dans_le_cat
     assert created["seller_id"] == "alice-1"
     assert created["created_at"].endswith("Z")
 
-    # Événement article.published, conforme au contrat et corrélé à la requête.
+    # article.published event, compliant with the contract and correlated to the request.
     assert len(publisher.events) == 1
     event = publisher.events[0]
     envelope = event.envelope()
@@ -151,18 +151,18 @@ async def test_us03_ca1_article_conforme_publie_evenement_et_visible_dans_le_cat
         "currency": "EUR",
     }
 
-    # Catalogue public (sans jeton), filtré sur la catégorie.
+    # Public catalog (without a token), filtered on the category.
     listing = await db_client.get(ARTICLES, params={"category_id": category_id})
     assert listing.status_code == 200
     assert [item["id"] for item in listing.json()["items"]] == [created["id"]]
     assert listing.json()["total"] == 1
-    assert autre["id"] not in [item["id"] for item in listing.json()["items"]]
+    assert other_article["id"] not in [item["id"] for item in listing.json()["items"]]
     detail = await db_client.get(f"{ARTICLES}/{created['id']}")
     assert detail.status_code == 200
     assert detail.json()["photo_urls"] == ["https://images.example.com/boba-1.jpg"]
 
 
-async def test_us03_ca2_coordonnees_dans_la_description_donnent_rejected_sans_evenement(
+async def test_us03_ca2_contact_details_in_the_description_give_rejected_without_event(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -187,13 +187,13 @@ async def test_us03_ca2_coordonnees_dans_la_description_donnent_rejected_sans_ev
         assert created["status"] == "REJECTED"
         assert created["rejection_reasons"] == reasons
 
-    assert publisher.events == []  # aucun événement
-    assert count(db_url, "articles") == 3  # conservés pour la traçabilité
+    assert publisher.events == []  # no event
+    assert count(db_url, "articles") == 3  # kept for traceability
     listing = await db_client.get(ARTICLES)
-    assert listing.json() == {"items": [], "total": 0}  # absents du catalogue public
+    assert listing.json() == {"items": [], "total": 0}  # absent from the public catalog
 
 
-async def test_us03_ca2_coordonnees_dans_le_titre_sont_aussi_controlees(
+async def test_us03_ca2_contact_details_in_the_title_are_also_checked(
     db_client: httpx.AsyncClient, make_token: TokenFactory, publisher: RecordingPublisher
 ) -> None:
     category_id = await make_category(db_client, make_token)
@@ -206,7 +206,7 @@ async def test_us03_ca2_coordonnees_dans_le_titre_sont_aussi_controlees(
     assert publisher.events == []
 
 
-async def test_us03_ca3_article_invalide_donne_422_et_rien_n_est_enregistre(
+async def test_us03_ca3_invalid_article_gives_422_and_nothing_is_saved(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -228,25 +228,25 @@ async def test_us03_ca3_article_invalide_donne_422_et_rien_n_est_enregistre(
         )
         assert_problem(response, 422)
 
-    inconnue = await db_client.post(
+    unknown_category = await db_client.post(
         ARTICLES, json=article_body(shop_id, str(uuid.uuid4())), headers=headers
     )
-    assert_problem(inconnue, 422, ["CATEGORY_NOT_FOUND"])
-    boutique = await db_client.post(
+    assert_problem(unknown_category, 422, ["CATEGORY_NOT_FOUND"])
+    unknown_shop = await db_client.post(
         ARTICLES, json=article_body(str(uuid.uuid4()), category_id), headers=headers
     )
-    assert_problem(boutique, 422, ["SHOP_NOT_FOUND"])
-    les_deux = await db_client.post(
+    assert_problem(unknown_shop, 422, ["SHOP_NOT_FOUND"])
+    both_unknown = await db_client.post(
         ARTICLES, json=article_body(str(uuid.uuid4()), str(uuid.uuid4())), headers=headers
     )
-    assert_problem(les_deux, 422, ["SHOP_NOT_FOUND", "CATEGORY_NOT_FOUND"])
+    assert_problem(both_unknown, 422, ["SHOP_NOT_FOUND", "CATEGORY_NOT_FOUND"])
 
     assert count(db_url, "articles") == 0
     assert count(db_url, "article_photos") == 0
     assert publisher.events == []
 
 
-async def test_us03_ca4_boutique_d_un_autre_vendeur_acheteur_et_sans_jeton(
+async def test_us03_ca4_shop_of_another_seller_buyer_and_no_token(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -256,18 +256,18 @@ async def test_us03_ca4_boutique_d_un_autre_vendeur_acheteur_et_sans_jeton(
     bob_shop = await make_shop(db_client, bob(make_token), "Boutique de Bob")
     body = article_body(bob_shop, category_id)
 
-    autre_vendeur = await db_client.post(ARTICLES, json=body, headers=alice(make_token))
-    assert_problem(autre_vendeur, 403)
-    acheteur = await db_client.post(ARTICLES, json=body, headers=chloe(make_token))
-    assert_problem(acheteur, 403)
-    sans_jeton = await db_client.post(ARTICLES, json=body)
-    assert_problem(sans_jeton, 401)
+    other_seller = await db_client.post(ARTICLES, json=body, headers=alice(make_token))
+    assert_problem(other_seller, 403)
+    buyer_response = await db_client.post(ARTICLES, json=body, headers=chloe(make_token))
+    assert_problem(buyer_response, 403)
+    no_token_response = await db_client.post(ARTICLES, json=body)
+    assert_problem(no_token_response, 401)
 
     assert count(db_url, "articles") == 0
     assert publisher.events == []
 
 
-async def test_la_publication_a_lieu_apres_le_commit(
+async def test_publication_happens_after_the_commit(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -278,7 +278,7 @@ async def test_la_publication_a_lieu_apres_le_commit(
     visibles: list[int] = []
 
     def observer(event: Event) -> None:
-        # Connexion indépendante : elle ne voit la ligne que si la transaction est validée.
+        # Independent connection: it only sees the row if the transaction is committed.
         visibles.append(count(db_url, "articles"))
 
     publisher.on_publish = observer
@@ -286,7 +286,7 @@ async def test_la_publication_a_lieu_apres_le_commit(
     assert visibles == [1]
 
 
-async def test_un_broker_indisponible_ne_change_pas_la_reponse(
+async def test_an_unavailable_broker_does_not_change_the_response(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -300,7 +300,7 @@ async def test_un_broker_indisponible_ne_change_pas_la_reponse(
     assert count(db_url, "articles") == 1
 
 
-async def test_article_rejected_invisible_pour_un_tiers_visible_du_proprietaire_et_de_l_admin(
+async def test_rejected_article_invisible_to_a_third_party_visible_to_the_owner_and_the_admin(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     category_id = await make_category(db_client, make_token)
@@ -310,21 +310,21 @@ async def test_article_rejected_invisible_pour_un_tiers_visible_du_proprietaire_
     )
     url = f"{ARTICLES}/{rejected['id']}"
 
-    assert_problem(await db_client.get(url), 404)  # anonyme
+    assert_problem(await db_client.get(url), 404)  # anonymous
     assert_problem(await db_client.get(url, headers=chloe(make_token)), 404)
     assert_problem(await db_client.get(url, headers=bob(make_token)), 404)
-    proprietaire = await db_client.get(url, headers=alice(make_token))
-    assert proprietaire.status_code == 200
-    assert proprietaire.json()["status"] == "REJECTED"
-    administrateur = await db_client.get(url, headers=admin(make_token))
-    assert administrateur.status_code == 200
-    # Un article inexistant et un article caché donnent la même réponse.
-    inconnu = await db_client.get(f"{ARTICLES}/{uuid.uuid4()}")
-    assert inconnu.status_code == 404
-    assert inconnu.json()["title"] == (await db_client.get(url)).json()["title"]
+    owner_response = await db_client.get(url, headers=alice(make_token))
+    assert owner_response.status_code == 200
+    assert owner_response.json()["status"] == "REJECTED"
+    admin_response = await db_client.get(url, headers=admin(make_token))
+    assert admin_response.status_code == 200
+    # An unknown article and a hidden article give the same response.
+    unknown_article = await db_client.get(f"{ARTICLES}/{uuid.uuid4()}")
+    assert unknown_article.status_code == 404
+    assert unknown_article.json()["title"] == (await db_client.get(url)).json()["title"]
 
 
-async def test_un_jeton_invalide_sur_une_route_publique_donne_401(
+async def test_an_invalid_token_on_a_public_route_gives_401(
     db_client: httpx.AsyncClient,
 ) -> None:
     response = await db_client.get(
@@ -333,7 +333,7 @@ async def test_un_jeton_invalide_sur_une_route_publique_donne_401(
     assert_problem(response, 401)
 
 
-async def test_catalogue_pagination_filtres_et_tri_stable(
+async def test_catalog_pagination_filters_and_stable_sort(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     figurines = await make_category(db_client, make_token, "Figurines")
@@ -349,17 +349,17 @@ async def test_catalogue_pagination_filtres_et_tri_stable(
     sneaker = await publish_article(
         db_client, bob(make_token), shop_bob, baskets, title="Baskets Jordan 1985"
     )
-    await publish_article(  # rejeté : jamais dans le catalogue
+    await publish_article(  # rejected: never in the catalog
         db_client, alice(make_token), shop_alice, figurines, description=PHONE_TEXT
     )
 
-    tout = (await db_client.get(ARTICLES)).json()
-    assert tout["total"] == 6
-    assert [item["id"] for item in tout["items"]] == [
+    all_items = (await db_client.get(ARTICLES)).json()
+    assert all_items["total"] == 6
+    assert [item["id"] for item in all_items["items"]] == [
         sneaker["id"],
         *reversed(ids),
-    ]  # récents d'abord
-    dates = [datetime.fromisoformat(item["created_at"]) for item in tout["items"]]
+    ]  # most recent first
+    dates = [datetime.fromisoformat(item["created_at"]) for item in all_items["items"]]
     assert dates == sorted(dates, reverse=True)
 
     page1 = (await db_client.get(ARTICLES, params={"limit": 2, "offset": 0})).json()
@@ -367,28 +367,28 @@ async def test_catalogue_pagination_filtres_et_tri_stable(
     page3 = (await db_client.get(ARTICLES, params={"limit": 2, "offset": 4})).json()
     assert page1["total"] == page2["total"] == page3["total"] == 6
     assert [i["id"] for p in (page1, page2, page3) for i in p["items"]] == [
-        item["id"] for item in tout["items"]
+        item["id"] for item in all_items["items"]
     ]
     assert (await db_client.get(ARTICLES, params={"offset": 50})).json() == {
         "items": [],
         "total": 6,
     }
 
-    par_categorie = (await db_client.get(ARTICLES, params={"category_id": baskets})).json()
-    assert [i["id"] for i in par_categorie["items"]] == [sneaker["id"]]
-    par_boutique = (await db_client.get(ARTICLES, params={"shop_id": shop_alice})).json()
-    assert par_boutique["total"] == 5
-    croise = (
+    by_category = (await db_client.get(ARTICLES, params={"category_id": baskets})).json()
+    assert [i["id"] for i in by_category["items"]] == [sneaker["id"]]
+    by_shop = (await db_client.get(ARTICLES, params={"shop_id": shop_alice})).json()
+    assert by_shop["total"] == 5
+    crossed = (
         await db_client.get(ARTICLES, params={"shop_id": shop_alice, "category_id": baskets})
     ).json()
-    assert croise == {"items": [], "total": 0}
+    assert crossed == {"items": [], "total": 0}
 
     for params in ({"limit": 0}, {"limit": 101}, {"offset": -1}, {"limit": "x"}):
         assert_problem(await db_client.get(ARTICLES, params=params), 422)
     assert (await db_client.get(ARTICLES, params={"limit": 100})).status_code == 200
 
 
-# --- US-04 : modifier le prix ----------------------------------------------------------------
+# --- US-04: change the price -----------------------------------------------------------------
 
 
 async def published(
@@ -400,7 +400,7 @@ async def published(
     return created, shop_id, category_id
 
 
-async def test_us04_ca1_prix_modifie_historique_et_evenement(
+async def test_us04_ca1_price_changed_history_and_event(
     db_client: httpx.AsyncClient, make_token: TokenFactory, publisher: RecordingPublisher
 ) -> None:
     created, _, category_id = await published(db_client, make_token)
@@ -443,7 +443,7 @@ async def test_us04_ca1_prix_modifie_historique_et_evenement(
     }
 
 
-async def test_us04_ca2_prix_invalide_donne_422_et_le_prix_reste(
+async def test_us04_ca2_invalid_price_gives_422_and_the_price_stays(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -452,9 +452,9 @@ async def test_us04_ca2_prix_invalide_donne_422_et_le_prix_reste(
     created, _, _ = await published(db_client, make_token)
     publisher.events.clear()
     url = f"{ARTICLES}/{created['id']}"
-    for invalide in ("0", "-10", "0.00", "abc", 95, "1000000.01", "95.123"):
+    for invalid_price in ("0", "-10", "0.00", "abc", 95, "1000000.01", "95.123"):
         response = await db_client.put(
-            f"{url}/price", json={"price": invalide}, headers=alice(make_token)
+            f"{url}/price", json={"price": invalid_price}, headers=alice(make_token)
         )
         assert_problem(response, 422)
     assert_problem(await db_client.put(f"{url}/price", json={}, headers=alice(make_token)), 422)
@@ -463,7 +463,7 @@ async def test_us04_ca2_prix_invalide_donne_422_et_le_prix_reste(
     assert publisher.events == []
 
 
-async def test_us04_ca3_autre_vendeur_403_sans_jeton_401_et_le_prix_reste(
+async def test_us04_ca3_other_seller_403_no_token_401_and_the_price_stays(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -482,7 +482,7 @@ async def test_us04_ca3_autre_vendeur_403_sans_jeton_401_et_le_prix_reste(
     assert publisher.events == []
 
 
-async def test_prix_d_un_article_inconnu_donne_404(
+async def test_price_of_an_unknown_article_gives_404(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     response = await db_client.put(
@@ -491,7 +491,7 @@ async def test_prix_d_un_article_inconnu_donne_404(
     assert_problem(response, 404)
 
 
-async def test_prix_d_un_article_rejected_donne_409(
+async def test_price_of_a_rejected_article_gives_409(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -510,7 +510,7 @@ async def test_prix_d_un_article_rejected_donne_409(
     assert publisher.events == []
 
 
-async def test_prix_identique_ne_cree_ni_ligne_ni_evenement(
+async def test_same_price_creates_neither_row_nor_event(
     db_client: httpx.AsyncClient,
     make_token: TokenFactory,
     publisher: RecordingPublisher,
@@ -526,14 +526,14 @@ async def test_prix_identique_ne_cree_ni_ligne_ni_evenement(
     assert count(db_url, "price_history") == 0
     assert publisher.events == []
 
-    # Idempotence : la même requête rejouée ne change plus rien après la première application.
+    # Idempotence: replaying the same request changes nothing after the first application.
     for _ in range(2):
         await db_client.put(url, json={"price": "95.00"}, headers=alice(make_token))
     assert count(db_url, "price_history") == 1
     assert len(publisher.events) == 1
 
 
-async def test_historique_chronologique_proprietaire_et_admin_seulement(
+async def test_chronological_history_owner_and_admin_only(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     created, _, _ = await published(db_client, make_token)
@@ -562,7 +562,7 @@ async def test_historique_chronologique_proprietaire_et_admin_seulement(
     )
 
 
-async def test_metriques_metier_exposees(
+async def test_business_metrics_exposed(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     created, shop_id, category_id = await published(db_client, make_token)
@@ -578,7 +578,7 @@ async def test_metriques_metier_exposees(
     assert "price_changes_total 1.0" in metrics
 
 
-async def test_frais_de_port_obligatoires_422_missing_et_devise_par_defaut(
+async def test_shipping_cost_required_422_missing_and_default_currency(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     category_id = await make_category(db_client, make_token)
@@ -596,7 +596,7 @@ async def test_frais_de_port_obligatoires_422_missing_et_devise_par_defaut(
     assert response.json()["currency"] == "EUR"
 
 
-async def test_tiers_sur_article_non_publie_404_sur_prix_et_historique(
+async def test_third_party_on_unpublished_article_404_on_price_and_history(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     category_id = await make_category(db_client, make_token)
@@ -607,14 +607,14 @@ async def test_tiers_sur_article_non_publie_404_sur_prix_et_historique(
     url = f"{ARTICLES}/{rejected['id']}"
     body = {"price": "95.00"}
 
-    # Un tiers (vendeur, acheteur) ne doit pas deviner l'existence de l'article.
+    # A third party (seller, buyer) must not guess the existence of the article.
     for headers in (bob(make_token), chloe(make_token)):
         assert_problem(await db_client.get(f"{url}/price-history", headers=headers), 404)
     assert_problem(await db_client.put(f"{url}/price", json=body, headers=bob(make_token)), 404)
     assert_problem(await db_client.put(f"{url}/price", json=body, headers=chloe(make_token)), 403)
-    # chloe n'a pas le rôle seller : le 403 de rôle passe avant, il ne révèle rien sur l'article.
+    # chloe lacks the seller role: the role 403 comes first, it reveals nothing about the article.
 
-    # Le propriétaire et l'admin gardent leurs droits.
+    # The owner and the admin keep their rights.
     assert (
         await db_client.get(f"{url}/price-history", headers=alice(make_token))
     ).status_code == 200
@@ -624,7 +624,7 @@ async def test_tiers_sur_article_non_publie_404_sur_prix_et_historique(
     assert_problem(await db_client.put(f"{url}/price", json=body, headers=alice(make_token)), 409)
 
 
-async def test_tiers_sur_article_publie_garde_403(
+async def test_third_party_on_published_article_keeps_403(
     db_client: httpx.AsyncClient, make_token: TokenFactory
 ) -> None:
     created, _, _ = await published(db_client, make_token)
@@ -635,7 +635,7 @@ async def test_tiers_sur_article_publie_garde_403(
     )
 
 
-async def test_deux_modifications_de_prix_simultanees_restent_coherentes(
+async def test_two_simultaneous_price_changes_stay_consistent(
     db_client: httpx.AsyncClient, make_token: TokenFactory, db_url: str
 ) -> None:
     created, _, _ = await published(db_client, make_token)
@@ -649,6 +649,6 @@ async def test_deux_modifications_de_prix_simultanees_restent_coherentes(
     items = (await db_client.get(f"{url}/price-history", headers=alice(make_token))).json()["items"]
     assert len(items) == 2
     assert items[0]["old_price"] == "120.00"
-    assert items[1]["old_price"] == items[0]["new_price"]  # chaîne ininterrompue grâce au verrou
+    assert items[1]["old_price"] == items[0]["new_price"]  # unbroken chain thanks to the lock
     assert {items[0]["new_price"], items[1]["new_price"]} == {"95.00", "100.00"}
     assert (await db_client.get(url)).json()["price"] == items[1]["new_price"]

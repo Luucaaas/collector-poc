@@ -1,4 +1,4 @@
-"""Modèles SQLAlchemy de catalog_db (contrats.md §4.1) : catégories, boutiques et articles."""
+"""SQLAlchemy models of catalog_db (contrats.md §4.1): categories, shops and articles."""
 
 import uuid
 from datetime import UTC, datetime
@@ -29,7 +29,7 @@ def now() -> datetime:
 
 class Category(Base):
     __tablename__ = "categories"
-    # L'unicité sans tenir compte de la casse est garantie par la base (index fonctionnel).
+    # Case-insensitive uniqueness is guaranteed by the database (functional index).
     __table_args__ = (Index("uq_categories_name_lower", text("lower(name)"), unique=True),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -63,7 +63,7 @@ class Article(Base):
         CheckConstraint("price > 0", name="ck_articles_price_positive"),
         CheckConstraint("shipping_fee >= 0", name="ck_articles_shipping_fee_non_negative"),
         CheckConstraint("status IN ('PUBLISHED', 'REJECTED')", name="ck_articles_status"),
-        # Index du catalogue public : filtre sur le statut et la catégorie, tri par date.
+        # Public catalog index: filter on status and category, sort by date.
         Index("ix_articles_catalog", "status", "category_id", text("created_at DESC")),
         Index("ix_articles_shop_id", "shop_id"),
     )
@@ -85,8 +85,8 @@ class Article(Base):
         DateTime(timezone=True), default=now, server_default=func.now()
     )
 
-    # Chargements par requêtes séparées (`selectin`) : pas de jointure externe, donc compatible
-    # avec `SELECT … FOR UPDATE`, et aucun chargement paresseux (interdit en asynchrone).
+    # Loading through separate queries (`selectin`): no outer join, hence compatible
+    # with `SELECT … FOR UPDATE`, and no lazy loading (forbidden in async).
     shop: Mapped[Shop] = relationship(lazy="selectin")
     photos: Mapped[list["ArticlePhoto"]] = relationship(
         lazy="selectin", order_by="ArticlePhoto.position"

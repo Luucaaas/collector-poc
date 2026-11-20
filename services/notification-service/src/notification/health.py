@@ -1,4 +1,4 @@
-"""Endpoints techniques, non préfixés et non routés par Traefik (contrats.md §1.1)."""
+"""Technical endpoints, not prefixed and not routed by Traefik (contrats.md §1.1)."""
 
 import asyncio
 
@@ -16,13 +16,13 @@ READY_TIMEOUT_SECONDS = 3
 
 @router.get("/health/live")
 async def live() -> dict[str, str]:
-    """Liveness : le processus répond, aucune dépendance."""
+    """Liveness: the process answers, no dependency."""
     return {"status": "ok"}
 
 
 @router.get("/health/ready")
 async def ready(request: Request) -> dict[str, str]:
-    """Readiness : PostgreSQL seulement. Jamais RabbitMQ, dont la reconnexion est automatique."""
+    """Readiness: PostgreSQL only. Never RabbitMQ, whose reconnection is automatic."""
     engine: AsyncEngine = request.app.state.engine
     try:
         async with asyncio.timeout(READY_TIMEOUT_SECONDS), engine.connect() as connection:

@@ -1,7 +1,7 @@
 [project]
 name = "notification-service"
 version = "0.1.0"
-description = "Service de notifications de Collector.shop : centres d'intérêt, préférences et notifications des acheteurs"
+description = "Collector.shop notification service: interests, preferences and notifications of buyers"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.142.2",
@@ -55,7 +55,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-# xunit1 : garde les propriétés (délai d'US-05 CA2) dans le rapport JUnit, comme tests/acceptance.
+# xunit1: keeps the properties (US-05 AC2 delay) in the JUnit report, like tests/acceptance.
 junit_family = "xunit1"
 
 [tool.coverage.run]

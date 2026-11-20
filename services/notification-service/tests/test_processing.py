@@ -1,5 +1,5 @@
-"""Calcul des destinataires et création des notifications (RM-08, RM-09), sur un vrai PostgreSQL,
-sans RabbitMQ : le traitement est appelé directement."""
+"""Recipients and notification creation (RM-08, RM-09), on a real PostgreSQL,
+without RabbitMQ: the processing is called directly."""
 
 import json
 from collections.abc import AsyncIterator, Callable
@@ -96,16 +96,16 @@ async def recipients(
         return await find_recipients(session, parsed(raw))
 
 
-async def test_les_acheteurs_de_la_categorie_sont_destinataires(
+async def test_the_buyers_of_the_category_are_recipients(
     db_url: str, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
     interest(db_url, "dave", FIGURINES)
-    interest(db_url, "erin", BASKETS)  # autre catégorie
+    interest(db_url, "erin", BASKETS)  # other category
     assert await recipients(session_factory, published_event()) == ["chloe", "dave"]
 
 
-async def test_le_vendeur_n_est_jamais_destinataire_de_son_article(
+async def test_the_seller_is_never_a_recipient_of_their_article(
     db_url: str, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     interest(db_url, "alice", FIGURINES)
@@ -114,7 +114,7 @@ async def test_le_vendeur_n_est_jamais_destinataire_de_son_article(
     assert await recipients(session_factory, price_changed_event(seller_id="alice")) == ["chloe"]
 
 
-async def test_sans_preference_enregistree_les_deux_types_sont_actifs(
+async def test_without_a_saved_preference_both_types_are_active(
     db_url: str, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
@@ -122,7 +122,7 @@ async def test_sans_preference_enregistree_les_deux_types_sont_actifs(
     assert await recipients(session_factory, price_changed_event()) == ["chloe"]
 
 
-async def test_la_preference_du_type_concerne_est_respectee(
+async def test_the_preference_of_the_type_concerned_is_respected(
     db_url: str, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
@@ -136,12 +136,12 @@ async def test_la_preference_du_type_concerne_est_respectee(
     assert await recipients(session_factory, price_changed_event()) == ["dave"]
 
 
-async def test_aucun_interesse_aucune_notification(db_url: str, processor: EventProcessor) -> None:
+async def test_no_interested_buyer_no_notification(db_url: str, processor: EventProcessor) -> None:
     assert await processor.process(parsed(published_event())) == 0
     assert notifications(db_url) == []
 
 
-async def test_le_traitement_cree_une_notification_par_destinataire_et_compte(
+async def test_processing_creates_one_notification_per_recipient_and_counts(
     db_url: str, processor: EventProcessor, metrics: BusinessMetrics
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
@@ -158,7 +158,7 @@ async def test_le_traitement_cree_une_notification_par_destinataire_et_compte(
     assert metrics.notifications_created.labels(type="PRICE_CHANGED")._value.get() == 2
 
 
-async def test_rm09_le_meme_evenement_traite_deux_fois_ne_cree_qu_une_notification(
+async def test_rm09_the_same_event_processed_twice_creates_only_one_notification(
     db_url: str, processor: EventProcessor, metrics: BusinessMetrics
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
@@ -169,10 +169,10 @@ async def test_rm09_le_meme_evenement_traite_deux_fois_ne_cree_qu_une_notificati
     assert metrics.notifications_created.labels(type="NEW_ARTICLE")._value.get() == 1
 
 
-async def test_un_nouvel_acheteur_apres_un_premier_traitement_est_notifie_sans_doublon(
+async def test_a_new_buyer_after_a_first_processing_is_notified_without_duplicate(
     db_url: str, processor: EventProcessor
 ) -> None:
-    """Rejeu partiel : seuls les destinataires manquants sont ajoutés."""
+    """Partial replay: only the missing recipients are added."""
     interest(db_url, "chloe", FIGURINES)
     event = parsed(published_event())
     await processor.process(event)
@@ -189,13 +189,13 @@ def delay_processor(
     metrics: BusinessMetrics,
     delay_seconds: float,
 ) -> EventProcessor:
-    """Processeur dont l'horloge indique `occurred_at` + `delay_seconds` à la fin du traitement."""
+    """Processor whose clock reads `occurred_at` + `delay_seconds` when processing ends."""
     clock: Callable[[], datetime] = lambda: OCCURRED + timedelta(seconds=delay_seconds)  # noqa: E731
     return EventProcessor(session_factory, metrics, clock)
 
 
 def delay_stats(metrics: BusinessMetrics, event_type: str) -> tuple[float, float]:
-    """(nombre d'observations, somme des délais) pour un type d'événement."""
+    """(number of observations, sum of the delays) for an event type."""
     for family in metrics.notification_delay.collect():
         count = total = 0.0
         for sample in family.samples:
@@ -213,7 +213,7 @@ def delay_stats(metrics: BusinessMetrics, event_type: str) -> tuple[float, float
     ("raw_factory", "event_type"),
     [(published_event, "article.published"), (price_changed_event, "article.price_changed")],
 )
-async def test_le_delai_est_observe_une_fois_par_evenement_avec_le_bon_type(
+async def test_the_delay_is_observed_once_per_event_with_the_right_type(
     db_url: str,
     session_factory: async_sessionmaker[AsyncSession],
     metrics: BusinessMetrics,
@@ -226,19 +226,19 @@ async def test_le_delai_est_observe_une_fois_par_evenement_avec_le_bon_type(
 
     assert await processor.process(parsed(raw_factory())) == 2
 
-    # Une observation par événement (et non par notification), délai connu : 0,75 s.
+    # One observation per event (not per notification), known delay: 0.75 s.
     assert delay_stats(metrics, event_type) == (1, pytest.approx(0.75))
     other = "article.price_changed" if event_type == "article.published" else "article.published"
     assert delay_stats(metrics, other) == (0, 0)
 
 
-async def test_aucune_observation_sans_notification_creee(
+async def test_no_observation_without_a_created_notification(
     db_url: str, session_factory: async_sessionmaker[AsyncSession], metrics: BusinessMetrics
 ) -> None:
     processor = delay_processor(session_factory, metrics, 0.5)
-    # Aucun acheteur intéressé
+    # No interested buyer
     assert await processor.process(parsed(published_event())) == 0
-    # Doublon redélivré : la seconde passe ne crée rien et n'est pas comptée
+    # Redelivered duplicate: the second pass creates nothing and is not counted
     interest(db_url, "chloe", FIGURINES)
     event = parsed(published_event())
     assert await processor.process(event) == 1
@@ -246,7 +246,7 @@ async def test_aucune_observation_sans_notification_creee(
     assert delay_stats(metrics, "article.published") == (1, pytest.approx(0.5))
 
 
-async def test_aucune_observation_si_la_transaction_echoue(
+async def test_no_observation_if_the_transaction_fails(
     db_url: str,
     session_factory: async_sessionmaker[AsyncSession],
     metrics: BusinessMetrics,
@@ -255,7 +255,7 @@ async def test_aucune_observation_si_la_transaction_echoue(
     interest(db_url, "chloe", FIGURINES)
 
     async def failing(*_: Any) -> list[str]:
-        raise RuntimeError("panne simulée")
+        raise RuntimeError("simulated failure")
 
     monkeypatch.setattr(notification.consumer, "create_notifications", failing)
     processor = delay_processor(session_factory, metrics, 0.5)
@@ -265,11 +265,11 @@ async def test_aucune_observation_si_la_transaction_echoue(
     assert notifications(db_url) == []
 
 
-async def test_un_delai_negatif_est_ramene_a_zero_et_signale(
+async def test_a_negative_delay_is_brought_back_to_zero_and_reported(
     db_url: str, session_factory: async_sessionmaker[AsyncSession], metrics: BusinessMetrics
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
-    processor = delay_processor(session_factory, metrics, -3.0)  # horloge du producteur en avance
+    processor = delay_processor(session_factory, metrics, -3.0)  # producer's clock ahead
     with structlog.testing.capture_logs() as logs:
         await processor.process(parsed(published_event()))
     assert delay_stats(metrics, "article.published") == (1, 0)
@@ -278,17 +278,17 @@ async def test_un_delai_negatif_est_ramene_a_zero_et_signale(
     ]
 
 
-async def test_aucune_observation_si_le_commit_echoue(
+async def test_no_observation_if_the_commit_fails(
     db_url: str,
     session_factory: async_sessionmaker[AsyncSession],
     metrics: BusinessMetrics,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Prouve l'ordre : l'observation vient après le commit, pas avant."""
+    """Proves the order: the observation comes after the commit, not before."""
     interest(db_url, "chloe", FIGURINES)
 
     async def failing_commit(self: AsyncSession) -> None:
-        raise RuntimeError("commit simulé en échec")
+        raise RuntimeError("simulated commit failure")
 
     monkeypatch.setattr(AsyncSession, "commit", failing_commit)
     processor = delay_processor(session_factory, metrics, 0.5)
@@ -298,25 +298,25 @@ async def test_aucune_observation_si_le_commit_echoue(
     assert metrics.notifications_created.labels(type="NEW_ARTICLE")._value.get() == 0
 
 
-async def test_un_occurred_at_naif_est_traite_comme_utc(
+async def test_a_naive_occurred_at_is_treated_as_utc(
     db_url: str, session_factory: async_sessionmaker[AsyncSession], metrics: BusinessMetrics
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
     raw = published_event()
     event = parsed(raw)
-    event.occurred_at = event.occurred_at.replace(tzinfo=None)  # contrat violé : pas de fuseau
+    event.occurred_at = event.occurred_at.replace(tzinfo=None)  # contract violated: no time zone
     processor = delay_processor(session_factory, metrics, 1.5)
     assert await processor.process(event) == 1
     assert delay_stats(metrics, "article.published") == (1, pytest.approx(1.5))
 
 
-async def test_une_erreur_de_mesure_ne_fait_pas_echouer_le_traitement(
+async def test_a_measurement_error_does_not_fail_the_processing(
     db_url: str, session_factory: async_sessionmaker[AsyncSession], metrics: BusinessMetrics
 ) -> None:
     interest(db_url, "chloe", FIGURINES)
 
     def broken_clock() -> datetime:
-        raise RuntimeError("horloge en panne")
+        raise RuntimeError("clock failure")
 
     processor = EventProcessor(session_factory, metrics, broken_clock)
     with structlog.testing.capture_logs() as logs:

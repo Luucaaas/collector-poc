@@ -1,4 +1,4 @@
-"""Boutiques (US-02) : création et liste pour un vendeur, page publique d'une boutique."""
+"""Shops (US-02): creation and list for a seller, public page of a shop."""
 
 import uuid
 from datetime import datetime
@@ -48,7 +48,7 @@ class ShopList(BaseModel):
 
 @router.post("", status_code=201)
 async def create_shop(payload: ShopCreate, user: SellerDep, session: SessionDep) -> ShopOut:
-    # RM-05 : une boutique qui contient des coordonnées est refusée, et rien n'est enregistré.
+    # RM-05: a shop that contains contact details is rejected, and nothing is saved.
     errors = [
         {"field": field, "code": code}
         for field, value in (("name", payload.name), ("description", payload.description))
@@ -60,7 +60,7 @@ async def create_shop(payload: ShopCreate, user: SellerDep, session: SessionDep)
             detail="Le nom et la description ne doivent contenir ni email ni téléphone.",
             errors=errors,
         )
-    description = payload.description or None  # une description vide est enregistrée `null`
+    description = payload.description or None  # an empty description is saved as `null`
     shop = Shop(owner_id=user.sub, name=payload.name, description=description)
     session.add(shop)
     await commit_unique(session)

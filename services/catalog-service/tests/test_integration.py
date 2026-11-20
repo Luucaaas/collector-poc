@@ -1,4 +1,4 @@
-"""Tests d'intégration contre un vrai PostgreSQL (testcontainers) : /health/ready et Alembic."""
+"""Integration tests against a real PostgreSQL (testcontainers): /health/ready and Alembic."""
 
 from collections.abc import Iterator
 from typing import Annotated
@@ -17,7 +17,7 @@ from catalog.db import get_session
 from catalog.main import create_app
 from tests.conftest import build_settings
 
-POSTGRES_IMAGE = "postgres:18.4-alpine"  # version retenue pour le POC (ADR 0008)
+POSTGRES_IMAGE = "postgres:18.4-alpine"  # version chosen for the POC (ADR 0008)
 
 
 def _container() -> PostgresContainer:
@@ -35,14 +35,14 @@ def _client(database_url: str) -> httpx.AsyncClient:
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://testserver")
 
 
-async def test_ready_donne_200_quand_postgresql_repond(postgres_url: str) -> None:
+async def test_ready_gives_200_when_postgresql_answers(postgres_url: str) -> None:
     async with _client(postgres_url) as client:
         response = await client.get("/health/ready")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-async def test_ready_donne_503_quand_la_base_est_arretee() -> None:
+async def test_ready_gives_503_when_the_database_is_stopped() -> None:
     with _container() as container:
         url = container.get_connection_url()
         async with _client(url) as client:
@@ -52,16 +52,16 @@ async def test_ready_donne_503_quand_la_base_est_arretee() -> None:
     assert response.status_code == 503
     body = response.json()
     assert body["title"] == "Base de données indisponible"
-    assert "psycopg" not in response.text  # aucun détail interne
+    assert "psycopg" not in response.text  # no internal detail
 
 
-async def test_ready_donne_503_quand_l_url_est_invalide() -> None:
+async def test_ready_gives_503_when_the_url_is_invalid() -> None:
     async with _client("postgresql+psycopg://u:p@127.0.0.1:1/db") as client:
         response = await client.get("/health/ready")
     assert response.status_code == 503
 
 
-async def test_live_ne_depend_pas_de_la_base() -> None:
+async def test_live_does_not_depend_on_the_database() -> None:
     async with _client("postgresql+psycopg://u:p@127.0.0.1:1/db") as client:
         assert (await client.get("/health/live")).status_code == 200
 
@@ -85,7 +85,7 @@ def _tables_and_indexes(url: str) -> tuple[set[str], set[str]]:
     return tables, indexes
 
 
-def test_migration_0002_monte_puis_descend(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_migration_0002_upgrades_then_downgrades(monkeypatch: pytest.MonkeyPatch) -> None:
     with _container() as container:
         url = container.get_connection_url()
         monkeypatch.setenv("DATABASE_URL", url)
@@ -112,7 +112,7 @@ def test_migration_0002_monte_puis_descend(monkeypatch: pytest.MonkeyPatch) -> N
         assert "shops" not in tables
         assert not {i for i in indexes if i.startswith(("uq_", "ix_shops"))}
 
-        command.upgrade(config, "head")  # la migration se rejoue après une descente
+        command.upgrade(config, "head")  # the migration replays after a downgrade
         engine = create_engine(url)
         with engine.connect() as connection:
             version = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -121,7 +121,7 @@ def test_migration_0002_monte_puis_descend(monkeypatch: pytest.MonkeyPatch) -> N
         command.downgrade(config, "base")
 
 
-def test_migration_0003_monte_puis_descend_et_les_contraintes_sont_appliquees(
+def test_migration_0003_upgrades_then_downgrades_and_constraints_are_enforced(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with _container() as container:
@@ -144,7 +144,7 @@ def test_migration_0003_monte_puis_descend_et_les_contraintes_sont_appliquees(
             "uq_article_photos_position",
         } <= indexes
 
-        # Les contraintes CHECK et les clés étrangères sont portées par la base.
+        # CHECK constraints and foreign keys are enforced by the database.
         engine = create_engine(url)
         with engine.begin() as connection:
             connection.execute(
@@ -188,24 +188,24 @@ def test_migration_0003_monte_puis_descend_et_les_contraintes_sont_appliquees(
         assert {"categories", "shops"} <= tables
         assert not {i for i in indexes if i.startswith(("ix_articles", "ix_price", "ix_article"))}
 
-        command.upgrade(config, "head")  # rejouable
+        command.upgrade(config, "head")  # replayable
         command.downgrade(config, "base")
 
 
-def test_alembic_exige_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_alembic_requires_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     with pytest.raises(RuntimeError, match="DATABASE_URL"):
         command.upgrade(Config("alembic.ini"), "head")
 
 
-async def test_session_par_requete_et_arret_propre_de_l_application(postgres_url: str) -> None:
+async def test_session_per_request_and_clean_application_shutdown(postgres_url: str) -> None:
     app = create_app(build_settings(postgres_url))
 
     @app.get("/_probe/db")
     async def probe(session: Annotated[AsyncSession, Depends(get_session)]) -> dict[str, int]:
         return {"value": (await session.execute(text("SELECT 42"))).scalar_one()}
 
-    async with app.router.lifespan_context(app):  # à la sortie, le pool est fermé
+    async with app.router.lifespan_context(app):  # on exit, the pool is closed
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
             response = await client.get("/_probe/db")

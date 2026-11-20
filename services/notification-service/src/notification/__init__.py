@@ -1,1 +1,1 @@
-"""notification-service : centres d'intérêt, préférences et notifications des acheteurs."""
+"""notification-service: interests, preferences and notifications of buyers."""

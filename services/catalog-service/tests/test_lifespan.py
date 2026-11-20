@@ -1,4 +1,4 @@
-"""Arrêt du lifespan : fermeture garantie même en cas d'erreur (Sonar S9152)."""
+"""Lifespan shutdown: closing is guaranteed even on error (Sonar S9152)."""
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -18,7 +18,7 @@ class _Fake:
     async def close(self) -> None:
         self.calls.append("close")
         if self.fail_on_close:
-            raise RuntimeError("fermeture en échec")
+            raise RuntimeError("closing failed")
 
 
 def _spy_dispose(monkeypatch: pytest.MonkeyPatch, calls: list[str]) -> None:
@@ -28,7 +28,7 @@ def _spy_dispose(monkeypatch: pytest.MonkeyPatch, calls: list[str]) -> None:
     monkeypatch.setattr(AsyncEngine, "dispose", dispose)
 
 
-async def test_arret_normal_ferme_puis_libere_le_pool(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_normal_shutdown_closes_then_releases_pool(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     _spy_dispose(monkeypatch, calls)
     app = create_app(build_settings())
@@ -38,7 +38,7 @@ async def test_arret_normal_ferme_puis_libere_le_pool(monkeypatch: pytest.Monkey
     assert calls == ["start", "close", "dispose"]
 
 
-async def test_sortie_en_erreur_ferme_quand_meme(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_exit_on_error_still_closes(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     _spy_dispose(monkeypatch, calls)
     app = create_app(build_settings())
@@ -49,12 +49,12 @@ async def test_sortie_en_erreur_ferme_quand_meme(monkeypatch: pytest.MonkeyPatch
     assert calls == ["start", "close", "dispose"]
 
 
-async def test_pool_libere_meme_si_la_fermeture_echoue(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pool_released_even_if_closing_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     _spy_dispose(monkeypatch, calls)
     app = create_app(build_settings())
     app.state.publisher = _Fake(calls, fail_on_close=True)
-    with pytest.raises(RuntimeError, match="fermeture en échec"):
+    with pytest.raises(RuntimeError, match="closing failed"):
         async with app.router.lifespan_context(app):
             pass
     assert calls == ["start", "close", "dispose"]

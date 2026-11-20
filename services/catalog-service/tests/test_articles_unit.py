@@ -1,4 +1,4 @@
-"""Tests unitaires des articles : validation RM-01, enveloppe des événements, schémas du contrat."""
+"""Unit tests of the articles: RM-01 validation, event envelope, contract schemas."""
 
 import uuid
 from datetime import UTC, datetime
@@ -30,13 +30,13 @@ def payload(**overrides: Any) -> dict[str, Any]:
     return body
 
 
-def test_un_article_conforme_est_valide_et_les_montants_sont_decimaux() -> None:
+def test_a_compliant_article_is_valid_and_amounts_are_decimal() -> None:
     article = ArticleCreate.model_validate(payload())
     assert article.price == Decimal("120.00")
     assert article.shipping_fee == Decimal("8.00")
 
 
-def test_la_devise_a_une_valeur_par_defaut_les_frais_de_port_sont_obligatoires() -> None:
+def test_currency_has_a_default_value_shipping_cost_is_required() -> None:
     body = payload()
     del body["currency"]
     assert ArticleCreate.model_validate(body).currency == "EUR"
@@ -46,13 +46,13 @@ def test_la_devise_a_une_valeur_par_defaut_les_frais_de_port_sont_obligatoires()
 
 
 @pytest.mark.parametrize(
-    ("overrides", "valide"),
+    ("overrides", "valid"),
     [
         ({"title": "a" * 4}, False),
         ({"title": "a" * 5}, True),
         ({"title": "a" * 120}, True),
         ({"title": "a" * 121}, False),
-        ({"title": "    ab    "}, False),  # les espaces ne comptent pas
+        ({"title": "    ab    "}, False),  # spaces do not count
         ({"description": "a" * 19}, False),
         ({"description": "a" * 20}, True),
         ({"description": "a" * 5000}, True),
@@ -63,11 +63,11 @@ def test_la_devise_a_une_valeur_par_defaut_les_frais_de_port_sont_obligatoires()
         ({"price": "-10"}, False),
         ({"price": "120"}, True),
         ({"price": "120.5"}, True),
-        ({"price": "120.505"}, False),  # 3 décimales
+        ({"price": "120.505"}, False),  # 3 decimals
         ({"price": "1000000.00"}, True),
         ({"price": "1000000.01"}, False),
         ({"price": "9999999.99"}, False),
-        ({"price": 120}, False),  # un nombre JSON n'est pas une chaîne décimale
+        ({"price": 120}, False),  # a JSON number is not a decimal string
         ({"price": 120.5}, False),
         ({"price": "1e3"}, False),
         ({"price": "12,50"}, False),
@@ -76,7 +76,7 @@ def test_la_devise_a_une_valeur_par_defaut_les_frais_de_port_sont_obligatoires()
         ({"shipping_fee": "-0.01"}, False),
         ({"shipping_fee": "8.123"}, False),
         ({"shipping_fee": 8}, False),
-        ({"shipping_fee": "1000000.00"}, True),  # borne haute des frais de port
+        ({"shipping_fee": "1000000.00"}, True),  # upper bound of the shipping cost
         ({"shipping_fee": "1000000.01"}, False),
         ({"currency": "USD"}, False),
         ({"photo_urls": []}, False),
@@ -87,21 +87,21 @@ def test_la_devise_a_une_valeur_par_defaut_les_frais_de_port_sont_obligatoires()
         ({"photo_urls": ["https://"]}, False),
         ({"photo_urls": ["https://a.example/un fichier.jpg"]}, False),
         ({"photo_urls": ["images/1.jpg"]}, False),
-        ({"shop_id": "pas-un-uuid"}, False),
-        ({"category_id": "pas-un-uuid"}, False),
-        ({"inconnu": "x"}, False),  # champ inconnu refusé (ENF-07)
+        ({"shop_id": "not-a-uuid"}, False),
+        ({"category_id": "not-a-uuid"}, False),
+        ({"unknown": "x"}, False),  # unknown field rejected (ENF-07)
     ],
 )
-def test_validation_rm01_bornes_de_chaque_champ(overrides: dict[str, Any], valide: bool) -> None:
-    if valide:
+def test_validation_rm01_bounds_of_each_field(overrides: dict[str, Any], valid: bool) -> None:
+    if valid:
         ArticleCreate.model_validate(payload(**overrides))
     else:
         with pytest.raises(PydanticValidationError):
             ArticleCreate.model_validate(payload(**overrides))
 
 
-def test_champ_obligatoire_manquant_est_refuse() -> None:
-    for champ in (
+def test_missing_required_field_is_rejected() -> None:
+    for field in (
         "shop_id",
         "category_id",
         "title",
@@ -111,12 +111,12 @@ def test_champ_obligatoire_manquant_est_refuse() -> None:
         "shipping_fee",
     ):
         body = payload()
-        del body[champ]
+        del body[field]
         with pytest.raises(PydanticValidationError):
             ArticleCreate.model_validate(body)
 
 
-# --- Enveloppe et schémas -------------------------------------------------------------------
+# --- Envelope and schemas -------------------------------------------------------------------
 
 
 def published_data() -> dict[str, Any]:
@@ -145,7 +145,7 @@ def price_changed_data() -> dict[str, Any]:
     }
 
 
-def test_enveloppe_article_published_conforme_au_schema() -> None:
+def test_article_published_envelope_matches_the_schema() -> None:
     moment = datetime(2026, 11, 2, 14, 5, 0, tzinfo=UTC)
     structlog.contextvars.bind_contextvars(correlation_id="req-42")
     try:
@@ -161,12 +161,12 @@ def test_enveloppe_article_published_conforme_au_schema() -> None:
     assert envelope["occurred_at"] == "2026-11-02T14:05:00Z"
 
 
-def test_enveloppe_article_price_changed_conforme_au_schema() -> None:
+def test_article_price_changed_envelope_matches_the_schema() -> None:
     event = build_event(ARTICLE_PRICE_CHANGED, datetime.now(UTC), price_changed_data())
     assert_conforms(event.envelope())
 
 
-def test_sans_contexte_de_requete_un_identifiant_de_correlation_est_genere() -> None:
+def test_without_request_context_a_correlation_id_is_generated() -> None:
     structlog.contextvars.clear_contextvars()
     event = build_event(ARTICLE_PUBLISHED, datetime.now(UTC), published_data())
     assert event.correlation_id
@@ -176,19 +176,19 @@ def test_sans_contexte_de_requete_un_identifiant_de_correlation_est_genere() -> 
 @pytest.mark.parametrize(
     "mutation",
     [
-        lambda e: e["data"].update(price="0.00"),  # prix nul
-        lambda e: e["data"].update(price="120"),  # pas de décimales
-        lambda e: e["data"].update(price=120.0),  # nombre au lieu de chaîne
+        lambda e: e["data"].update(price="0.00"),  # zero price
+        lambda e: e["data"].update(price="120"),  # no decimals
+        lambda e: e["data"].update(price=120.0),  # number instead of string
         lambda e: e["data"].update(title="abc"),
-        lambda e: e["data"].update(article_id="pas-un-uuid"),
+        lambda e: e["data"].update(article_id="not-a-uuid"),
         lambda e: e["data"].pop("category_id"),
-        lambda e: e.update(extra="x"),  # l'enveloppe est fermée
+        lambda e: e.update(extra="x"),  # the envelope is closed
         lambda e: e.update(schema_version=2),
-        lambda e: e.update(producer="autre"),
+        lambda e: e.update(producer="other-service"),
         lambda e: e.update(correlation_id=""),
     ],
 )
-def test_le_schema_published_refuse_les_ecarts(mutation: Any) -> None:
+def test_the_published_schema_rejects_deviations(mutation: Any) -> None:
     event = build_event(ARTICLE_PUBLISHED, datetime.now(UTC), published_data())
     envelope = event.envelope()
     mutation(envelope)
@@ -199,7 +199,7 @@ def test_le_schema_published_refuse_les_ecarts(mutation: Any) -> None:
         validator.validate(envelope)
 
 
-def test_le_schema_price_changed_refuse_un_ancien_prix_nul() -> None:
+def test_the_price_changed_schema_rejects_a_zero_old_price() -> None:
     data = price_changed_data()
     data["old_price"] = "0.00"
     envelope = build_event(ARTICLE_PRICE_CHANGED, datetime.now(UTC), data).envelope()

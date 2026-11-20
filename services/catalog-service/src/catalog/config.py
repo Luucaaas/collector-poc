@@ -1,14 +1,14 @@
-"""Configuration du service, lue dans les variables d'environnement (jamais dans le dépôt)."""
+"""Service configuration, read from the environment variables (never from the repository)."""
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Variables d'environnement du service.
+    """Environment variables of the service.
 
-    `DATABASE_URL` n'a pas de valeur par défaut : il contient un mot de passe et vient d'un Secret
-    Kubernetes (ou du `.env` local, ignoré par git).
+    `DATABASE_URL` has no default value: it contains a password and comes from a Kubernetes Secret
+    (or from the local `.env`, ignored by git).
     """
 
     model_config = SettingsConfigDict(extra="ignore")
@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     rabbitmq_url: str = Field(
         description="URL AMQP, ex. amqp://user:***@host:5672/ (Secret Kubernetes)"
     )
-    # Durée totale accordée à la publication d'un événement, réessais compris.
+    # Total time allowed for publishing an event, retries included.
     event_publish_budget_seconds: float = Field(default=5.0, gt=0)
     issuer: str = "https://auth.127.0.0.1.sslip.io/realms/collector"
     jwks_url: str = (
@@ -29,10 +29,10 @@ class Settings(BaseSettings):
     audience: str = "collector-api"
     cors_origin: str = "https://app.127.0.0.1.sslip.io"
     jwks_ttl_seconds: float = 600.0
-    # Borne basse : un délai nul ou négatif ferait rappeler Keycloak à chaque requête.
+    # Lower bound: a zero or negative delay would make Keycloak be called again on every request.
     jwks_min_refetch_seconds: float = Field(default=30.0, ge=1)
     jwks_max_stale_seconds: float = 3600.0
-    # Le verrou du cache est tenu pendant l'appel : un délai court limite l'attente des requêtes.
+    # The cache lock is held during the call: a short timeout limits how long requests wait.
     jwks_timeout_seconds: float = Field(default=2.0, gt=0)
     db_connect_timeout_seconds: int = 3
     log_level: str = "INFO"

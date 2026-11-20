@@ -1,7 +1,7 @@
-"""Publication des événements sur un vrai RabbitMQ (testcontainers, image de l'expérimentation 1).
+"""Event publication on a real RabbitMQ (testcontainers, image of experiment 1).
 
-Une file temporaire est liée à l'exchange `article.events` par `article.*`, comme le fera
-`notification-service` : c'est aussi la démonstration du point d'extension (contrats.md §3.1).
+A temporary queue is bound to the `article.events` exchange by `article.*`, as
+`notification-service` will do: also the demonstration of the extension point (contrats.md §3.1).
 """
 
 import asyncio
@@ -39,7 +39,7 @@ from tests.test_api_articles import (
     publish_article,
 )
 
-RABBITMQ_IMAGE = "rabbitmq:4.3.5-management"  # version de l'expérimentation 1
+RABBITMQ_IMAGE = "rabbitmq:4.3.5-management"  # version of experiment 1
 USER = PASSWORD = "collector-test"
 
 
@@ -109,7 +109,7 @@ async def rabbit_client(
 
 @pytest.fixture
 async def tap(broker: Broker) -> AsyncIterator[AbstractQueue]:
-    """File temporaire liée à `article.events` par `article.*` (consommateur supplémentaire)."""
+    """Temporary queue bound to `article.events` by `article.*` (additional consumer)."""
     connection = await aio_pika.connect_robust(broker.amqp_url)
     async with connection:
         channel = await connection.channel()
@@ -134,7 +134,7 @@ async def receive(
     return None
 
 
-async def test_les_deux_evenements_arrivent_avec_leurs_proprietes_amqp(
+async def test_both_events_arrive_with_their_amqp_properties(
     rabbit_client: httpx.AsyncClient, tap: AbstractQueue, make_token: TokenFactory
 ) -> None:
     category_id = await make_category(rabbit_client, make_token)
@@ -173,7 +173,7 @@ async def test_les_deux_evenements_arrivent_avec_leurs_proprietes_amqp(
     assert json.loads(second.body)["data"]["new_price"] == "95.00"
 
 
-async def test_exchange_durable_de_type_topic(
+async def test_durable_exchange_of_type_topic(
     rabbit_client: httpx.AsyncClient, broker: Broker
 ) -> None:
     async with httpx.AsyncClient(auth=(USER, PASSWORD)) as management:
@@ -183,7 +183,7 @@ async def test_exchange_durable_de_type_topic(
     assert response.json()["durable"] is True
 
 
-async def test_un_article_rejected_n_envoie_aucun_message(
+async def test_a_rejected_article_sends_no_message(
     rabbit_client: httpx.AsyncClient, tap: AbstractQueue, make_token: TokenFactory
 ) -> None:
     category_id = await make_category(rabbit_client, make_token)
@@ -196,11 +196,11 @@ async def test_un_article_rejected_n_envoie_aucun_message(
 
     message = await receive(tap)
     assert message is not None
-    assert json.loads(message.body)["data"]["article_id"] == accepted["id"]  # le seul message
+    assert json.loads(message.body)["data"]["article_id"] == accepted["id"]  # the only message
     assert await receive(tap, wait_seconds=1.0) is None
 
 
-async def test_broker_arrete_la_creation_repond_201_l_erreur_est_journalisee(
+async def test_stopped_broker_creation_answers_201_error_is_logged(
     db_url: str, jwks_server: JwksServer, make_token: TokenFactory
 ) -> None:
     container = start_broker()
@@ -210,27 +210,27 @@ async def test_broker_arrete_la_creation_repond_201_l_erreur_est_journalisee(
         async with application.router.lifespan_context(application):
             category_id = await make_category(client, make_token)
             shop_id = await make_shop(client, alice(make_token))
-            container.get_wrapped_container().stop()  # le broker disparaît en cours de route
+            container.get_wrapped_container().stop()  # the broker disappears along the way
 
             with structlog.testing.capture_logs() as logs:
                 started = time.monotonic()
                 created = await publish_article(client, alice(make_token), shop_id, category_id)
                 elapsed = time.monotonic() - started
 
-            assert created["status"] == "PUBLISHED"  # l'écriture est conservée
-            assert elapsed < 6  # la durée est bornée
+            assert created["status"] == "PUBLISHED"  # the write is kept
+            assert elapsed < 6  # the duration is bounded
             failed = [log for log in logs if log["event"] == "event_publish_failed"]
             assert len(failed) == 1
             assert failed[0]["event_type"] == "article.published"
             assert failed[0]["event_id"]
             assert (await client.get(f"{ARTICLES}/{created['id']}")).status_code == 200
-            assert (await client.get("/health/ready")).status_code == 200  # sans RabbitMQ
+            assert (await client.get("/health/ready")).status_code == 200  # without RabbitMQ
         await client.aclose()
     finally:
         container.stop()
 
 
-async def test_le_service_demarre_sans_rabbitmq_et_reste_pret(
+async def test_the_service_starts_without_rabbitmq_and_stays_ready(
     db_url: str, jwks_server: JwksServer, make_token: TokenFactory
 ) -> None:
     client = make_client(db_url, jwks_server, "amqp://u:p@127.0.0.1:1/", budget=1.0)
@@ -248,10 +248,10 @@ async def test_le_service_demarre_sans_rabbitmq_et_reste_pret(
     assert "event_publish_failed" in events
 
 
-async def test_un_broker_gele_puis_de_retour_dans_le_delai_recoit_l_evenement(
+async def test_a_frozen_broker_back_within_the_delay_receives_the_event(
     db_url: str, jwks_server: JwksServer, make_token: TokenFactory
 ) -> None:
-    """Panne brève (broker gelé, puis dégelé avant la fin du délai) : le réessai aboutit."""
+    """Short outage (broker frozen, then unfrozen before the delay ends): the retry succeeds."""
     container = start_broker()
     try:
         client = make_client(db_url, jwks_server, describe(container).amqp_url, budget=20.0)

@@ -1,1 +1,1 @@
-"""catalog-service : catégories, boutiques, articles, contrôle et historique des prix."""
+"""catalog-service: categories, shops, articles, automatic check and price history."""

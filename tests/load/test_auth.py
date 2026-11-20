@@ -1,4 +1,4 @@
-"""Tests des parties pures de la connexion : PKCE, formulaire, redirection, renouvellement."""
+"""Tests of the pure parts of the login: PKCE, form, redirect, renewal."""
 
 import base64
 import hashlib
@@ -16,7 +16,7 @@ KEYCLOAK_PAGE = """<!DOCTYPE html><html><body>
 
 
 def test_challenge_is_sha256_of_verifier_in_base64url() -> None:
-    # Vecteur de l'annexe B de la RFC 7636.
+    # Test vector from appendix B of RFC 7636.
     verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
     assert auth.challenge_for(verifier) == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
 
@@ -42,7 +42,7 @@ def test_extract_form_action_ignores_other_forms() -> None:
 
 
 def test_extract_form_action_without_form_fails() -> None:
-    with pytest.raises(ValueError, match="introuvable"):
+    with pytest.raises(ValueError, match="not found"):
         auth.extract_form_action("<html><body>Erreur</body></html>")
 
 
@@ -75,7 +75,7 @@ def test_parse_token_response_sets_expiry() -> None:
 
 def test_refresh_schedule_uses_margin() -> None:
     tokens = auth.Tokens("a", "r", expires_at=1300.0)
-    assert not auth.needs_refresh(tokens, now=1000.0)  # 300 s restantes
-    assert not auth.needs_refresh(tokens, now=1239.0)  # 61 s restantes
-    assert auth.needs_refresh(tokens, now=1240.0)  # 60 s restantes : on renouvelle
-    assert auth.needs_refresh(tokens, now=1400.0)  # déjà expiré
+    assert not auth.needs_refresh(tokens, now=1000.0)  # 300 s left
+    assert not auth.needs_refresh(tokens, now=1239.0)  # 61 s left
+    assert auth.needs_refresh(tokens, now=1240.0)  # 60 s left: renew
+    assert auth.needs_refresh(tokens, now=1400.0)  # already expired

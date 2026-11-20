@@ -1,4 +1,4 @@
-"""Test sans réseau du calcul des centres d'intérêt."""
+"""Network-free test of the interest computation."""
 
 from interests import interests_for_run
 
@@ -6,7 +6,7 @@ CATEGORIES = [
     {"id": "c1", "name": "Figurines"},
     {"id": "c2", "name": "Charge 20261106-1049"},
     {"id": "c3", "name": "Charge 20261106-1051"},
-    {"id": "c4", "name": "Chargeur de piles"},  # commence par « Charge » mais sans espace
+    {"id": "c4", "name": "Chargeur de piles"},  # starts with « Charge » but without a space
     {"id": "c5", "name": "Cartes"},
 ]
 

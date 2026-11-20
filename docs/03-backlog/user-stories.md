@@ -2,7 +2,7 @@
 
 Cinq user stories couvrent la fonctionnalité métier du POC : **un vendeur publie un article ou modifie son prix, le contrôle automatique tranche, puis un événement déclenche la notification des acheteurs intéressés.**
 
-Les identifiants EF, ENF et RM renvoient à [exigences.md](exigences.md). Chaque critère d'acceptation devient un test d'acceptation pytest (client httpx) dans [`tests/acceptance/`](../../tests/acceptance/), nommé d'après la story et le critère : `test_us03_ca2_article_avec_coordonnees_rejete`.
+Les identifiants EF, ENF et RM renvoient à [exigences.md](exigences.md). Chaque critère d'acceptation devient un test d'acceptation pytest (client httpx) dans [`tests/acceptance/`](../../tests/acceptance/), nommé d'après la story et le critère : `test_us03_ca2_article_with_contact_details_rejected`.
 
 ## Vue d'ensemble
 

@@ -1,4 +1,4 @@
-"""Outils des tests : observation des événements, attente d'une condition."""
+"""Test helpers: event observation, waiting for a condition."""
 
 import asyncio
 import json
@@ -18,11 +18,11 @@ from config import EXCHANGE
 
 
 class EventSpy:
-    """Écoute `article.events` par une file temporaire (exclusive, supprimée à la fermeture).
+    """Listens to `article.events` through a temporary queue (exclusive, deleted on close).
 
-    La file est liée avant l'action testée : tout événement publié ensuite y est copié, sans
-    gêner `notification.article-events` (chaque file reçoit sa propre copie, c'est le point
-    d'extension de l'anti-fraude). Les méthodes sont synchrones : la boucle asyncio est privée.
+    The queue is bound before the action under test: every event published afterwards is copied
+    to it, without disturbing `notification.article-events` (each queue gets its own copy, this
+    is the anti-fraud extension point). Methods are synchronous: the asyncio loop is private.
     """
 
     def __init__(self, amqp_url: str) -> None:
@@ -48,10 +48,10 @@ class EventSpy:
     def collect(
         self, wait_seconds: float, stop_when: Callable[[list[dict[str, Any]]], bool] | None = None
     ) -> list[dict[str, Any]]:
-        """Lit les événements reçus pendant `wait_seconds` (ou jusqu'à `stop_when`).
+        """Reads the events received during `wait_seconds` (or until `stop_when` is true).
 
-        Chaque élément est le corps JSON de l'événement plus `_routing_key`, `_message_id`,
-        `_type`, `_delivery_mode` et `_correlation_header` lus dans les propriétés AMQP.
+        Each item is the JSON body of the event plus `_routing_key`, `_message_id`, `_type`,
+        `_delivery_mode` and `_correlation_header` read from the AMQP properties.
         """
         return self._loop.run_until_complete(self._collect(wait_seconds, stop_when))
 
@@ -91,7 +91,7 @@ class EventSpy:
 def wait_until[T](
     probe: Callable[[], T | None], timeout: float, interval: float = 0.05
 ) -> tuple[T | None, float]:
-    """Appelle `probe` jusqu'à un résultat non vide ; renvoie (résultat, secondes écoulées)."""
+    """Calls `probe` until it returns a non-empty result; returns (result, elapsed seconds)."""
     start = time.monotonic()
     while True:
         result = probe()

@@ -1,7 +1,7 @@
-"""Configuration des tests : URL de la pile et mots de passe lus dans le `.env` de la pile.
+"""Test configuration: stack URLs and passwords read from the stack `.env` file.
 
-Tout se change par variable d'environnement ; les valeurs par défaut visent la pile locale lancée
-par `deploy/compose/up.sh`.
+Everything can be changed by environment variable; the defaults target the local stack started
+by `deploy/compose/up.sh`.
 """
 
 import os
@@ -25,7 +25,7 @@ EXCHANGE = "article.events"
 
 def read_env(path: Path = ENV_FILE) -> dict[str, str]:
     if not path.exists():
-        raise RuntimeError(f"Fichier {path} introuvable : lancer deploy/compose/up.sh d'abord.")
+        raise RuntimeError(f"File {path} not found: run deploy/compose/up.sh first.")
     values: dict[str, str] = {}
     for line in path.read_text().splitlines():
         line = line.strip()
@@ -36,7 +36,7 @@ def read_env(path: Path = ENV_FILE) -> dict[str, str]:
 
 
 def amqp_url(env: dict[str, str]) -> str:
-    """URL AMQP de l'administrateur RabbitMQ (il peut déclarer une file temporaire)."""
+    """AMQP URL of the RabbitMQ administrator (it can declare a temporary queue)."""
     explicit = os.environ.get("ACCEPTANCE_AMQP_URL")
     if explicit:
         return explicit

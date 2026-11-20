@@ -1,6 +1,6 @@
-"""Seuils de l'indicateur I3 et de l'exigence ENF-14, comparaison aux mesures et `resume.md`.
+"""Thresholds of indicator I3 and requirement ENF-14, comparison to measures and `resume.md`.
 
-Module pur : il reçoit des nombres et renvoie du texte, sans réseau ni fichier (sauf `read_*`).
+Pure module: it receives numbers and returns text, without network or files (except `read_*`).
 """
 
 import csv
@@ -8,7 +8,7 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
-# Noms des requêtes dans Locust (regroupés : pas un nom par identifiant d'article).
+# Request names in Locust (grouped: not one name per article identifier).
 READ_LIST = "GET /articles"
 READ_OTHERS = ("GET /categories", "GET /articles/{id}")
 PUBLISH = "POST /articles"
@@ -18,7 +18,7 @@ READ_P95_MS = 300.0  # ENF-12, I3
 PUBLISH_P95_MS = 500.0  # ENF-12, I3
 ERROR_RATE_PERCENT = 1.0  # ENF-13, I3
 NOTIFICATION_P95_SECONDS = 2.0  # ENF-14
-FIRST_BUCKET_SECONDS = 0.1  # première borne de notification_delay_seconds
+FIRST_BUCKET_SECONDS = 0.1  # first bound of notification_delay_seconds
 
 
 @dataclass(frozen=True)
@@ -33,24 +33,24 @@ class RequestStats:
 @dataclass(frozen=True)
 class Check:
     label: str
-    value: str  # valeur mesurée, déjà formatée ("212 ms") ou "non mesuré"
+    value: str  # measured value, already formatted ("212 ms") or "non mesuré"
     threshold: str
-    verdict: str  # "conforme", "non conforme" ou "non mesuré"
+    verdict: str  # "conforme", "non conforme" or "non mesuré"
     note: str = ""
 
 
 def fr(value: float, decimals: int = 0) -> str:
-    """Nombre au format français (virgule décimale)."""
+    """Number in French format (decimal comma)."""
     return f"{value:.{decimals}f}".replace(".", ",")
 
 
 def is_load_request(name: str) -> bool:
-    """Vrai pour une requête de charge ; faux pour la préparation et la connexion (hors seuils)."""
+    """True for a load request; false for preparation and login (outside the thresholds)."""
     return not name.startswith(PREPARATION_PREFIXES)
 
 
 def _milliseconds(value: str) -> float:
-    """Locust écrit « N/A » pour une requête qui n'a eu aucune réponse (échec de connexion)."""
+    """Locust writes « N/A » for a request that got no response (connection failure)."""
     try:
         return float(value)
     except ValueError:
@@ -58,7 +58,7 @@ def _milliseconds(value: str) -> float:
 
 
 def read_stats(path: Path) -> dict[str, RequestStats]:
-    """Lit `<préfixe>_stats.csv` de Locust (une ligne par nom de requête, plus « Aggregated »)."""
+    """Reads Locust's `<prefix>_stats.csv` (one row per request name, plus « Aggregated »)."""
     stats: dict[str, RequestStats] = {}
     with path.open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
@@ -73,10 +73,10 @@ def read_stats(path: Path) -> dict[str, RequestStats]:
 
 
 def count_5xx(path: Path) -> tuple[int, int]:
-    """Lit `<préfixe>_failures.csv` : (échecs 5xx, autres échecs) hors préparation et connexion.
+    """Reads `<prefix>_failures.csv`: (5xx failures, other failures) without preparation or login.
 
-    Les scénarios écrivent « HTTP 5xx : <code> » pour une réponse 5xx et une autre formule pour les
-    autres échecs (4xx inattendu, erreur de connexion).
+    The scenarios write « HTTP 5xx : <code> » for a 5xx response and another wording for the
+    other failures (unexpected 4xx, connection error).
     """
     server = other = 0
     with path.open(newline="", encoding="utf-8") as handle:
@@ -129,7 +129,7 @@ def build_checks(
     services_total: float | None,
     notification_p95_s: float | None,
 ) -> list[Check]:
-    """Les mesures comparées à leurs seuils, dans l'ordre du résumé."""
+    """The measures compared to their thresholds, in the order of the summary."""
     checks = [
         _latency_check("Lecture du catalogue (liste)", stats, READ_LIST, READ_P95_MS),
         _latency_check("Publication d'article", stats, PUBLISH, PUBLISH_P95_MS),
@@ -160,8 +160,8 @@ def build_checks(
     else:
         verdict = "conforme" if notification_p95_s < NOTIFICATION_P95_SECONDS else "non conforme"
         if notification_p95_s <= FIRST_BUCKET_SECONDS:
-            # Le p95 tombe dans le premier seau de l'histogramme : Prometheus interpole dans
-            # l'intervalle, la valeur exacte n'est pas connue, seulement qu'elle est sous 0,1 s.
+            # The p95 falls in the first bucket of the histogram: Prometheus interpolates within
+            # the interval, the exact value is unknown, only that it is under 0.1 s.
             value = f"moins de {fr(FIRST_BUCKET_SECONDS, 1)} s"
             note = (
                 f"Prometheus ; p95 interpolé dans le seau 0 à {fr(FIRST_BUCKET_SECONDS, 1)} s "
@@ -175,7 +175,7 @@ def build_checks(
 
 
 def informative_rows(stats: dict[str, RequestStats]) -> list[Check]:
-    """Autres lectures et changements de prix, comparés au seuil de lecture ou de publication."""
+    """Other reads and price changes, compared to the read or publish threshold."""
     rows = [
         _latency_check(f"{name} (complément)", stats, name, READ_P95_MS) for name in READ_OTHERS
     ]
@@ -198,7 +198,7 @@ def render_resume(
     environment: str,
     window: str,
 ) -> str:
-    """Rédige `resume.md` : mesures et verdicts, détail par requête, environnement."""
+    """Writes `resume.md`: measures and verdicts, per-request detail, environment."""
     failed = [c.label for c in checks if c.verdict == "non conforme"]
     unknown = [c.label for c in checks if c.verdict == "non mesuré"]
     if failed:
@@ -238,7 +238,7 @@ def render_resume(
         "| Requête | Requêtes | Échecs | Médiane (ms) | p95 (ms) |",
         "| --- | ---: | ---: | ---: | ---: |",
     ]
-    # Les lignes sans requête (préparation et connexion, remises à zéro au plateau) sont omises.
+    # Rows without requests (preparation and login, reset at the plateau) are omitted.
     for name in sorted(n for n in stats if n != "Aggregated" and stats[n].requests > 0):
         s = stats[name]
         marker = " (hors seuils)" if not is_load_request(name) else ""

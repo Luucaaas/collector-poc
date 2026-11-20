@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# Exécution de référence du test de charge sur le cluster k3d (indicateur I3 et exigence ENF-14).
+# Reference run of the load test on the k3d cluster (indicator I3 and requirement ENF-14).
 #
-#   tests/load/run.sh                      50 utilisateurs, montée de 1 par seconde, 6 minutes
-#   USERS=20 RUN_TIME=2m tests/load/run.sh essai court (variables facultatives : USERS,
+#   tests/load/run.sh                      50 users, ramp-up of 1 per second, 6 minutes
+#   USERS=20 RUN_TIME=2m tests/load/run.sh short trial (optional variables: USERS,
 #                                          SPAWN_RATE, RUN_TIME)
 #
-# Ce que fait le script, dans l'ordre :
-#   1. lit les mots de passe de admin, alice, bob et chloe dans deploy/local/.env et les donne à la
-#      seule commande Locust (affectations en préfixe de commande, pas d'export) : jamais affichés,
-#      jamais en argument de commande, jamais écrits dans un fichier ;
-#   2. vérifie que l'API et Keycloak répondent (la vérification TLS reste active : l'autorité de
-#      mkcert est fournie à Python par REQUESTS_CA_BUNDLE, rien ne la désactive) ;
-#   3. note dans resultats/<AAAAMMJJ-HHMM>/ la date, le tag et les digests lus sur les pods, l'état
-#      de l'HPA avant, pendant (toutes les 15 s) et après ;
-#   4. lance Locust sans interface (CSV et rapport HTML) ;
-#   5. interroge Prometheus (kubectl port-forward temporaire) et écrit resume.md ;
-#   6. remplace dans tout ce qui est archivé le nom de la machine par <machine> et le dossier
-#      personnel par <home> : ces fichiers sont versionnés.
-# Sur le cluster, le script ne fait que du trafic HTTP et des lectures (kubectl get, port-forward).
-# Code de sortie : 0 même si une mesure dépasse son seuil (le processus de test n'en fait pas un
-# blocage) ; resume.md et le message final le disent clairement. Autre code : le test n'a pas pu
-# se dérouler.
+# What the script does, in order:
+#   1. reads the passwords of admin, alice, bob and chloe from deploy/local/.env and gives them to
+#      the Locust command only (assignments as a command prefix, no export): never printed,
+#      never a command argument, never written to a file;
+#   2. checks that the API and Keycloak answer (TLS verification stays on: the mkcert authority
+#      is given to Python by REQUESTS_CA_BUNDLE, nothing disables it);
+#   3. records in resultats/<YYYYMMDD-HHMM>/ the date, the tag and the digests read from the pods,
+#      the HPA state before, during (every 15 s) and after;
+#   4. runs Locust headless (CSV files and HTML report);
+#   5. queries Prometheus (temporary kubectl port-forward) and writes resume.md;
+#   6. replaces in everything archived the machine name with <machine> and the home
+#      directory with <home>: these files are versioned.
+# On the cluster, the script only does HTTP traffic and reads (kubectl get, port-forward).
+# Exit code: 0 even if a measure exceeds its threshold (the test process does not make it a
+# blocker); resume.md and the final message say so clearly. Any other code: the test could not
+# run.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -35,42 +35,42 @@ SPAWN_RATE="${SPAWN_RATE:-1}"
 RUN_TIME="${RUN_TIME:-6m}"
 PROM_PORT=19091
 
-[[ -f "$ENV_FILE" ]] || { echo "deploy/local/.env introuvable : le cluster a-t-il été déployé (deploy/local/deploy.sh) ?" >&2; exit 1; }
-command -v uv >/dev/null || { echo "uv est requis (brew install uv)." >&2; exit 1; }
-command -v mkcert >/dev/null || { echo "mkcert est requis (certificat du cluster)." >&2; exit 1; }
+[[ -f "$ENV_FILE" ]] || { echo "deploy/local/.env not found: was the cluster deployed (deploy/local/deploy.sh)?" >&2; exit 1; }
+command -v uv >/dev/null || { echo "uv is required (brew install uv)." >&2; exit 1; }
+command -v mkcert >/dev/null || { echo "mkcert is required (cluster certificate)." >&2; exit 1; }
 
-# Valeur d'une clé du .env, jamais affichée ; clé absente : message explicite et arrêt.
+# Value of a .env key, never printed; missing key: explicit message and stop.
 read_var() {
   grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | grep . \
-    || { echo "Clé $1 absente ou vide dans deploy/local/.env." >&2; return 1; }
+    || { echo "Key $1 missing or empty in deploy/local/.env." >&2; return 1; }
 }
-# Variables du shell seulement (pas d'export) : seule la commande Locust les reçoit, en préfixe.
+# Shell variables only (no export): only the Locust command receives them, as a prefix.
 admin_pw="$(read_var ADMIN_PASSWORD)"
 alice_pw="$(read_var ALICE_PASSWORD)"
 bob_pw="$(read_var BOB_PASSWORD)"
 chloe_pw="$(read_var CHLOE_PASSWORD)"
 
-# Autorité de certification de mkcert : Python n'utilise pas le trousseau de macOS.
+# mkcert certificate authority: Python does not use the macOS keychain.
 export REQUESTS_CA_BUNDLE="$(mkcert -CAROOT)/rootCA.pem"
-[[ -f "$REQUESTS_CA_BUNDLE" ]] || { echo "Autorité mkcert introuvable (mkcert -install fait ?)." >&2; exit 1; }
+[[ -f "$REQUESTS_CA_BUNDLE" ]] || { echo "mkcert authority not found (was mkcert -install run?)." >&2; exit 1; }
 
-echo "== Vérifications préalables"
+echo "== Preliminary checks"
 curl -fsS --cacert "$REQUESTS_CA_BUNDLE" -o /dev/null "${API}/catalog/api/v1/categories" \
-  || { echo "${API}/catalog ne répond pas : le cluster est-il lancé ?" >&2; exit 1; }
+  || { echo "${API}/catalog does not answer: is the cluster running?" >&2; exit 1; }
 curl -fsS --cacert "$REQUESTS_CA_BUNDLE" -o /dev/null "${AUTH}/realms/collector/.well-known/openid-configuration" \
-  || { echo "${AUTH} ne répond pas : Keycloak est-il prêt ?" >&2; exit 1; }
+  || { echo "${AUTH} does not answer: is Keycloak ready?" >&2; exit 1; }
 $K get deploy catalog-service notification-service >/dev/null \
-  || { echo "kubectl ne joint pas le cluster ${CTX}." >&2; exit 1; }
+  || { echo "kubectl cannot reach the cluster ${CTX}." >&2; exit 1; }
 
 export LOAD_RUN_ID="$(date +%Y%m%d-%H%M)"
 RESULTS="${HERE}/resultats/${LOAD_RUN_ID}"
-[[ ! -e "$RESULTS" ]] || { echo "${RESULTS} existe déjà (attendre une minute)." >&2; exit 1; }
+[[ ! -e "$RESULTS" ]] || { echo "${RESULTS} already exists (wait a minute)." >&2; exit 1; }
 mkdir -p "$RESULTS"
 export LOAD_RESULTS_DIR="$RESULTS"
 
 sampler="" ; portforward=""
-# Anonymise ce qui est archivé : nom de la machine (long et court, sans tenir compte de la casse)
-# et dossier personnel. Idempotent, relancé après la rédaction de resume.md.
+# Anonymizes what is archived: machine name (long and short, case-insensitive) and home
+# directory. Idempotent, run again after resume.md is written.
 sanitize() {
   local short; short="$(hostname -s)"
   for file in "${RESULTS}"/*; do
@@ -84,7 +84,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "== Environnement et état de l'HPA avant"
+echo "== Environment and HPA state before"
 {
   echo "Date de début : $(date '+%d/%m/%Y %H:%M:%S')"
   echo "Paramètres : ${USERS} utilisateurs, montée de ${SPAWN_RATE} par seconde, durée totale ${RUN_TIME}"
@@ -102,14 +102,14 @@ echo "== Environnement et état de l'HPA avant"
 } > "${RESULTS}/environnement.txt"
 { echo "HPA avant l'exécution ($(date '+%H:%M:%S')) :"; $K get hpa; } > "${RESULTS}/hpa-avant.txt"
 
-# Relevé des réplicas toutes les 15 s pendant l'exécution (lecture seule).
+# Replica sampling every 15 s during the run (read-only).
 ( while true; do
     echo "$(date '+%H:%M:%S')"; $K get hpa --no-headers; sleep 15
   done ) > "${RESULTS}/hpa-evolution.txt" 2>&1 &
 sampler=$!
 disown "$sampler"
 
-echo "== Locust : ${USERS} utilisateurs, ${RUN_TIME} (montée de ${SPAWN_RATE}/s, statistiques remises à zéro au plateau)"
+echo "== Locust: ${USERS} users, ${RUN_TIME} (ramp-up of ${SPAWN_RATE}/s, statistics reset at the plateau)"
 cd "$HERE"
 LOAD_ADMIN_PASSWORD="$admin_pw" LOAD_ALICE_PASSWORD="$alice_pw" \
 LOAD_BOB_PASSWORD="$bob_pw" LOAD_CHLOE_PASSWORD="$chloe_pw" \
@@ -119,13 +119,13 @@ uv run --quiet locust -f locustfile.py --headless \
   --exit-code-on-error 0 --only-summary 2>&1 | tee "${RESULTS}/locust.log" \
   || true
 if [[ ! -f "${RESULTS}/locust_stats.csv" ]] || ! grep -q plateau_start "${RESULTS}/fenetre.json" 2>/dev/null; then
-  echo "Le plateau n'a pas été atteint (préparation ou connexion en échec) : voir ${RESULTS}/locust.log." >&2
+  echo "The plateau was not reached (preparation or login failed): see ${RESULTS}/locust.log." >&2
   exit 1
 fi
 kill "$sampler" 2>/dev/null || true; sampler=""
 { echo "HPA après l'exécution ($(date '+%H:%M:%S')) :"; $K get hpa; } > "${RESULTS}/hpa-apres.txt"
 
-echo "== Prometheus (port-forward ${PROM_PORT}), attente de la dernière collecte"
+echo "== Prometheus (port-forward ${PROM_PORT}), waiting for the last scrape"
 $K port-forward svc/kps-prometheus "${PROM_PORT}:9090" >/dev/null 2>&1 &
 portforward=$!
 disown "$portforward"
@@ -136,8 +136,8 @@ uv run --quiet python report.py "$RESULTS" "http://127.0.0.1:${PROM_PORT}"
 sanitize
 
 echo
-echo "Résultats : ${RESULTS}"
+echo "Results: ${RESULTS}"
 if grep -q "Hors seuil" "${RESULTS}/resume.md"; then
-  echo "ATTENTION : au moins une mesure dépasse son seuil (code de sortie 0 quand même, voir resume.md)."
+  echo "WARNING: at least one measure exceeds its threshold (exit code 0 anyway, see resume.md)."
 fi
 exit 0

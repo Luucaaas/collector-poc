@@ -1,9 +1,9 @@
 [project]
 name = "collector-acceptance"
 version = "0.1.0"
-description = "Tests d'acceptation de Collector.shop : 17 critères, de bout en bout sur la pile docker compose"
+description = "Collector.shop acceptance tests: 17 criteria, end to end on the docker compose stack"
 requires-python = ">=3.12"
-# Projet à part : ces tests n'importent aucun code des services, ils parlent à leur API.
+# Separate project: these tests import no service code, they talk to the API.
 package = false
 dependencies = [
     "httpx==0.28.1",
@@ -29,5 +29,5 @@ strict = true
 [tool.pytest.ini_options]
 testpaths = ["."]
 addopts = "-ra"
-# Format JUnit qui accepte les propriétés enregistrées (délai mesuré de US-05 CA2)
+# JUnit format that accepts recorded properties (delay measured by US-05 CA2)
 junit_family = "xunit1"

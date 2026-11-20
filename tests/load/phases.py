@@ -1,15 +1,15 @@
-"""Analyse du protocole 5 (charge et disponibilité) : chronologie de l'HPA, p95 et 5xx par phase.
+"""Analysis of protocol 5 (load and availability): HPA timeline, p95 and 5xx per phase.
 
-Appelé par `docs/04-experimentations/05-charge-disponibilite/run.sh` une fois le test terminé :
-    python phases.py <dossier de résultats> [<adresse de Prometheus>]
+Called by `docs/04-experimentations/05-charge-disponibilite/run.sh` once the test is done:
+    python phases.py <results directory> [<Prometheus address>]
 
-Fichiers lus dans le dossier de résultats (tous écrits par `run.sh` ou par le locustfile) :
-- `requetes.csv` : une ligne par requête (instant, nom, durée en ms, code HTTP, échec) ;
-- `chronologie.tsv` : événements datés par `run.sh` (suppression du pod, remplaçant prêt, arrêt) ;
-- `fenetre.json` : début de la phase nominale et du pic, datés par le profil de charge ;
-- `hpa.tsv` (instant, HPA, réplicas souhaités, courants, CPU en %), `ready.tsv` (instant,
-  déploiement, réplicas prêts) : relevés toutes les 5 s.
-Le module est pur : aucune dépendance au réseau hors de la lecture facultative de Prometheus.
+Files read from the results directory (all written by `run.sh` or by the locustfile):
+- `requetes.csv`: one line per request (instant, name, duration in ms, HTTP code, failure);
+- `chronologie.tsv`: events dated by `run.sh` (pod deletion, replacement ready, stop);
+- `fenetre.json`: start of the nominal phase and of the peak, dated by the load profile;
+- `hpa.tsv` (instant, HPA, desired replicas, current, CPU in %), `ready.tsv` (instant,
+  deployment, ready replicas): samples every 5 s.
+The module is pure: no network dependency apart from the optional reading of Prometheus.
 """
 
 import csv
@@ -51,7 +51,7 @@ class Sample:
 
 
 def percentile(values: list[float], fraction: float) -> float | None:
-    """Percentile au rang le plus proche (comme Locust) ; None si la liste est vide."""
+    """Nearest-rank percentile (like Locust); None if the list is empty."""
     if not values:
         return None
     ordered = sorted(values)
@@ -59,7 +59,7 @@ def percentile(values: list[float], fraction: float) -> float | None:
 
 
 def read_requests(path: Path) -> list[Request]:
-    """Requêtes de charge seulement : la préparation et la connexion sont exclues."""
+    """Load requests only: preparation and login are excluded."""
     rows: list[Request] = []
     opener = gzip.open if path.suffix == ".gz" else open
     with opener(path, "rt", newline="", encoding="utf-8") as handle:
@@ -92,10 +92,10 @@ def _int_or_none(text: str) -> int | None:
 
 
 def read_samples(hpa_path: Path, ready_path: Path) -> list[Sample]:
-    """Relevés de l'HPA (souhaités, courants, CPU) complétés des réplicas prêts du déploiement.
+    """HPA samples (desired, current, CPU) completed with the ready replicas of the deployment.
 
-    Les deux relevés viennent de deux appels à `kubectl` à quelques dixièmes de seconde d'écart :
-    chaque ligne de l'HPA prend la valeur la plus proche, à moins de 4 s.
+    The two samples come from two `kubectl` calls a few tenths of a second apart: each HPA line
+    takes the closest value, within 4 s.
     """
     ready: dict[str, list[tuple[float, int]]] = {}
     for line in ready_path.read_text(encoding="utf-8").splitlines():
@@ -161,7 +161,7 @@ def phase_stats(label: str, rows: list[Request], start: float, end: float) -> Ph
 
 
 def failures_around(rows: list[Request], moment: float, before: float, after: float) -> list[str]:
-    """Échecs dans la fenêtre autour de `moment`, regroupés par seconde, nom et code."""
+    """Failures in the window around `moment`, grouped by second, name and code."""
     counts: dict[tuple[int, str, int], int] = {}
     for r in rows:
         if r.failed and moment - before <= r.epoch < moment + after:
@@ -198,8 +198,8 @@ class Timeline:
     new_ready: float | None
     recovered: float | None
     stop: float
-    reached: dict[int, float | None]  # instant où l'HPA demande n réplicas
-    ready_at: dict[int, float | None]  # instant où n réplicas sont prêts
+    reached: dict[int, float | None]  # instant when the HPA asks for n replicas
+    ready_at: dict[int, float | None]  # instant when n replicas are ready
     back_desired: float | None
     back_ready: float | None
 
@@ -213,7 +213,7 @@ def _ready_from(count: int) -> Callable[[Sample], bool]:
 
 
 def read_pod_counts(path: Path) -> dict[float, int]:
-    """Nombre de pods de `catalog-service` par relevé (pods en cours d'arrêt compris)."""
+    """Number of `catalog-service` pods per sample (pods being terminated included)."""
     counts: dict[float, int] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         parts = line.split("\t")
@@ -228,11 +228,11 @@ def build_timeline(
     samples: list[Sample],
     pod_counts: dict[float, int] | None = None,
 ) -> Timeline:
-    """Chronologie. Deux sources : relevés de 5 s (HPA, réplicas prêts de 3 et 4, pods) et
-    interrogation toutes les 0,5 s de `run.sh` pour « 5 réplicas prêts » (`five_ready`, plus
-    précise, utilisée quand elle existe). Le retour à 2 réplicas est le premier relevé après
-    l'arrêt où il ne reste que 2 pods de `catalog-service` (et non le `currentReplicas` de l'HPA,
-    en retard sur les pods)."""
+    """Timeline. Two sources: 5 s samples (HPA, ready replicas for 3 and 4, pods) and the
+    0.5 s polling of `run.sh` for « 5 replicas ready » (`five_ready`, more precise, used when
+    present). The return to 2 replicas is the first sample after the stop where only 2
+    `catalog-service` pods remain (not the HPA `currentReplicas`,
+    which lags behind the pods)."""
     peak = window["peak_start"]
     stop = events["stop"]
     reached = {n: first_time(samples, CATALOG, peak, _desired_from(n)) for n in (3, 4, 5)}
@@ -359,7 +359,7 @@ def render(
 
 def main(argv: list[str]) -> int:
     if len(argv) not in (2, 3):
-        print("usage : phases.py <dossier de résultats> [<adresse de Prometheus>]", file=sys.stderr)
+        print("usage: phases.py <results directory> [<Prometheus address>]", file=sys.stderr)
         return 2
     directory = Path(argv[1])
     window = {
@@ -393,7 +393,7 @@ def main(argv: list[str]) -> int:
             json.dumps({"errors": errors, "total": total}), encoding="utf-8"
         )
     elif (directory / "prometheus.json").exists():
-        # Régénération sans Prometheus (rétention de 2 h dépassée) : valeurs de la première analyse.
+        # Regeneration without Prometheus (2 h retention exceeded): values from the first analysis.
         saved = json.loads((directory / "prometheus.json").read_text(encoding="utf-8"))
         prom = (saved["errors"], saved["total"])
     parameters = (directory / "parametres.txt").read_text(encoding="utf-8").strip()

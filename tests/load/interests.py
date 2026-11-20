@@ -1,20 +1,20 @@
-"""Calcul de la liste des centres d'intérêt de chloe pour une exécution (module pur)."""
+"""Computation of chloe's interest list for a run (pure module)."""
 
 from typing import Any
 
-# Préfixe des catégories créées par les exécutions de charge (`Charge <date>`).
+# Prefix of the categories created by load runs (`Charge <date>`).
 RUN_CATEGORY_PREFIX = "Charge "
 
 
 def interests_for_run(
     current_ids: list[str], categories: list[dict[str, Any]], run_category_id: str
 ) -> list[str]:
-    """Nouvelle liste : sans les catégories des exécutions précédentes, avec celle de celle-ci.
+    """New list: without the categories of previous runs, with the one of this run.
 
-    La limite métier est de 20 centres d'intérêt : sans ce retrait, chloe l'atteindrait après une
-    vingtaine d'exécutions. Seules les catégories dont le nom commence par « Charge » sont
-    retirées ; toutes les autres (y compris un identifiant que le catalogue ne connaît plus) sont
-    gardées, dans leur ordre.
+    The business limit is 20 interests: without this removal, chloe would reach it after about
+    twenty runs. Only the categories whose name starts with « Charge » are removed; all the
+    others (including an identifier the catalogue no longer knows) are kept,
+    in their order.
     """
     previous_runs = {
         str(category["id"])

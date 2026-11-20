@@ -1,14 +1,14 @@
-"""Scénarios Locust de Collector.shop : lecteurs anonymes et vendeurs connectés.
+"""Collector.shop Locust scenarios: anonymous readers and logged-in sellers.
 
-Lancé par `run.sh` (qui fournit les mots de passe par l'environnement). Voir README.md.
+Started by `run.sh` (which provides the passwords through the environment). See README.md.
 
-Deux types d'utilisateurs, dans la proportion de 8 à 2 (80 % de lecteurs) :
-- `ReaderUser` : un visiteur anonyme qui parcourt le catalogue ;
-- `SellerUser` : alice ou bob, à tour de rôle, qui publie des articles et change leurs prix.
+Two kinds of users, in the ratio 8 to 2 (80 % readers):
+- `ReaderUser`: an anonymous visitor browsing the catalogue;
+- `SellerUser`: alice or bob, in turn, who publishes articles and changes their prices.
 
-Au démarrage (`test_start`), une préparation crée la catégorie propre à l'exécution et abonne
-chloe à cette catégorie : chaque publication et chaque changement de prix crée donc une
-notification, ce qui alimente la métrique `notification_delay_seconds` (ENF-14).
+At startup (`test_start`), a preparation creates the run's own category and subscribes chloe
+to it: every publication and every price change therefore creates a notification, which
+feeds the `notification_delay_seconds` metric (ENF-14).
 """
 
 import itertools
@@ -34,8 +34,8 @@ RUN_ID = os.environ.get("LOAD_RUN_ID") or time.strftime("%Y%m%d-%H%M")
 RESULTS_DIR = os.environ.get("LOAD_RESULTS_DIR")
 
 
-REQUEST_LOG = os.environ.get("LOAD_REQUEST_LOG")  # protocole 5 : une ligne par requête (facultatif)
-STOP_FILE = os.environ.get("LOAD_STOP_FILE")  # protocole 5 : sa création arrête le test
+REQUEST_LOG = os.environ.get("LOAD_REQUEST_LOG")  # protocol 5: one line per request (optional)
+STOP_FILE = os.environ.get("LOAD_STOP_FILE")  # protocol 5: creating it stops the test
 PEAK_PROFILE = (
     load_profile.PeakProfile(
         nominal_users=int(os.environ.get("LOAD_NOMINAL_USERS", "50")),
@@ -51,13 +51,13 @@ PEAK_PROFILE = (
 
 
 class RunState:
-    """Données partagées par tous les utilisateurs d'une exécution (un seul processus Locust)."""
+    """Data shared by all the users of a run (a single Locust process)."""
 
     category_id: str = ""
     category_name: str = ""
     plateau_start: float | None = None
     shops: dict[str, str] = {}
-    # Locust rend threading coopératif (gevent) : ce verrou ne bloque pas les autres utilisateurs.
+    # Locust makes threading cooperative (gevent): this lock does not block the other users.
     shop_lock = threading.Lock()
     article_numbers = itertools.count(1)
     seller_numbers = itertools.count()
@@ -67,10 +67,10 @@ SELLERS = ("alice", "bob")
 
 
 def record(response: ResponseContextManager, expected: set[int]) -> None:
-    """Marque la réponse réussie si son code est attendu, sinon échec nommé par la nature du code.
+    """Marks the response successful if its code is expected, otherwise a failure named by its kind.
 
-    « HTTP 5xx » est la formule que lit `thresholds.count_5xx` pour le taux d'erreur serveur.
-    Un 201 `REJECTED` est un succès métier (le contrôle automatique a fait son travail).
+    « HTTP 5xx » is the wording read by `thresholds.count_5xx` for the server error rate.
+    A 201 `REJECTED` is a business success (the automatic check did its job).
     """
     code = response.status_code
     if code in expected:
@@ -78,9 +78,9 @@ def record(response: ResponseContextManager, expected: set[int]) -> None:
     elif code >= 500:
         response.failure(f"HTTP 5xx : {code}")  # type: ignore[no-untyped-call]
     elif code == 0:
-        response.failure("erreur de connexion")  # type: ignore[no-untyped-call]
+        response.failure("connection error")  # type: ignore[no-untyped-call]
     else:
-        response.failure(f"HTTP {code} inattendu")  # type: ignore[no-untyped-call]
+        response.failure(f"HTTP {code} unexpected")  # type: ignore[no-untyped-call]
 
 
 def _write_window(update: dict[str, Any]) -> None:
@@ -93,25 +93,25 @@ def _write_window(update: dict[str, Any]) -> None:
 
 
 def prepare_run(environment: Environment, **_: Any) -> None:
-    """Préparation de l'exécution ; un échec l'arrête (mesurer sans elle n'aurait pas de sens)."""
+    """Run preparation; a failure stops it (measuring without it would make no sense)."""
     try:
         _prepare(environment)
     except Exception as error:
-        print(f"Préparation impossible : {error}", flush=True)
+        print(f"Preparation failed: {error}", flush=True)
         environment.process_exit_code = 1
         if environment.runner is not None:
             environment.runner.quit()
 
 
 def _prepare(environment: Environment) -> None:
-    """Catégorie de l'exécution (admin) et abonnement de chloe à cette catégorie."""
+    """Run category (admin) and subscription of chloe to this category."""
     base = environment.host or config.API_HOST
 
     def new_client() -> HttpSession:
-        # Un client (donc un jeu de cookies) par compte : avec le cookie de session de Keycloak
-        # d'admin, la connexion de chloe sauterait le formulaire (authentification unique).
+        # One client (hence one cookie jar) per account: with admin's Keycloak session cookie,
+        # chloe's login would skip the form (single sign-on).
         client = HttpSession(base_url=base, request_event=environment.events.request, user=None)
-        client.verify = config.ca_bundle()  # vérification TLS toujours active
+        client.verify = config.ca_bundle()  # TLS verification always on
         return client
 
     client = new_client()
@@ -124,7 +124,7 @@ def _prepare(environment: Environment) -> None:
         name=f"{PREPARATION} POST /categories",
     )
     if reply.status_code != 201:
-        raise RuntimeError(f"Création de la catégorie : HTTP {reply.status_code}")
+        raise RuntimeError(f"Category creation: HTTP {reply.status_code}")
     RunState.category_id = reply.json()["id"]
 
     client = new_client()
@@ -136,12 +136,12 @@ def _prepare(environment: Environment) -> None:
         name=f"{PREPARATION} GET /me/interests",
     )
     if current.status_code != 200:
-        raise RuntimeError(f"Lecture des centres d'intérêt : HTTP {current.status_code}")
-    # Les catégories « Charge … » des exécutions précédentes sont retirées (limite métier de 20),
-    # toutes les autres sont gardées, puis celle de l'exécution est ajoutée.
+        raise RuntimeError(f"Reading interests: HTTP {current.status_code}")
+    # The « Charge … » categories of previous runs are removed (business limit of 20), all the
+    # others are kept, then the one of this run is added.
     catalog = client.get(f"{config.CATALOG}/categories", name=f"{PREPARATION} GET /categories")
     if catalog.status_code != 200:
-        raise RuntimeError(f"Lecture des catégories : HTTP {catalog.status_code}")
+        raise RuntimeError(f"Reading categories: HTTP {catalog.status_code}")
     interests = interests_for_run(
         current.json()["category_ids"], catalog.json()["items"], RunState.category_id
     )
@@ -152,7 +152,7 @@ def _prepare(environment: Environment) -> None:
         name=f"{PREPARATION} PUT /me/interests",
     )
     if updated.status_code != 200:
-        raise RuntimeError(f"Mise à jour des centres d'intérêt : HTTP {updated.status_code}.")
+        raise RuntimeError(f"Updating interests: HTTP {updated.status_code}.")
     preferences = client.put(
         f"{config.NOTIFICATION}/me/preferences",
         json={"new_article": True, "price_changed": True},
@@ -160,11 +160,11 @@ def _prepare(environment: Environment) -> None:
         name=f"{PREPARATION} PUT /me/preferences",
     )
     if preferences.status_code != 200:
-        raise RuntimeError(f"Mise à jour des préférences : HTTP {preferences.status_code}")
+        raise RuntimeError(f"Updating preferences: HTTP {preferences.status_code}")
 
 
 def plateau_reached(**_: Any) -> None:
-    """Début du plateau : les statistiques sont remises à zéro (--reset-stats), la fenêtre aussi."""
+    """Start of the plateau: statistics are reset (--reset-stats), and so is the window."""
     RunState.plateau_start = time.time()
     _write_window({"plateau_start": RunState.plateau_start, "category": RunState.category_name})
 
@@ -174,16 +174,16 @@ def run_finished(**_: Any) -> None:
 
 
 class ReaderUser(HttpUser):
-    """Visiteur anonyme. Attente de 1 à 3 s entre deux actions : le temps de regarder une page de
-    résultats avant de cliquer, rythme d'un parcours de catalogue (20 requêtes par seconde pour
-    40 lecteurs, bien au-delà d'un trafic de démonstration)."""
+    """Anonymous visitor. Wait of 1 to 3 s between two actions: time to look at a results page
+    before clicking, the pace of a catalogue visit (20 requests per second for 40 readers,
+    well beyond demo traffic)."""
 
     host = config.API_HOST
     weight = 8
     wait_time = between(1, 3)
 
     def on_start(self) -> None:
-        self.client.verify = config.ca_bundle()  # vérification TLS toujours active
+        self.client.verify = config.ca_bundle()  # TLS verification always on
         self.known_ids: list[str] = []
 
     @task(5)
@@ -220,23 +220,23 @@ class ReaderUser(HttpUser):
 
 
 class SellerUser(HttpUser):
-    """Vendeur connecté (alice ou bob). Attente de 4 à 10 s : saisir une annonce ou un nouveau
-    prix prend plus de temps que de lire une page. 10 vendeurs publient donc environ 1,4 fois par
-    seconde, et chaque article valide déclenche une notification pour chloe."""
+    """Logged-in seller (alice or bob). Wait of 4 to 10 s: typing a listing or a new price takes
+    longer than reading a page. 10 sellers therefore publish about 1.4 times per second, and
+    every valid article triggers a notification for chloe."""
 
     host = config.API_HOST
     weight = 2
     wait_time = between(4, 10)
 
     def on_start(self) -> None:
-        self.client.verify = config.ca_bundle()  # vérification TLS toujours active
+        self.client.verify = config.ca_bundle()  # TLS verification always on
         self.username = SELLERS[next(RunState.seller_numbers) % len(SELLERS)]
         self.tokens = TokenHolder(self.client, self.username)
         self.shop_id = self._ensure_shop()
-        self.prices: dict[str, str] = {}  # articles publiés par cet utilisateur : id -> prix
+        self.prices: dict[str, str] = {}  # articles published by this user: id -> price
 
     def _ensure_shop(self) -> str:
-        """Une boutique par vendeur et par exécution, créée par le premier de ses utilisateurs."""
+        """One shop per seller and per run, created by the first of its users."""
         with RunState.shop_lock:
             if self.username not in RunState.shops:
                 reply = self.client.post(
@@ -246,7 +246,7 @@ class SellerUser(HttpUser):
                     name=f"{PREPARATION} POST /shops",
                 )
                 if reply.status_code != 201:
-                    raise RuntimeError(f"Création de la boutique : HTTP {reply.status_code}")
+                    raise RuntimeError(f"Shop creation: HTTP {reply.status_code}")
                 RunState.shops[self.username] = reply.json()["id"]
             return RunState.shops[self.username]
 
@@ -267,8 +267,8 @@ class SellerUser(HttpUser):
             "price": price,
             "shipping_fee": "4.90",
         }
-        # Même nom pour les deux cas : la publication, contrôle automatique compris, est une seule
-        # opération pour l'utilisateur (201 PUBLISHED ou 201 REJECTED).
+        # Same name for both cases: publication, automatic check included, is a single operation
+        # for the user (201 PUBLISHED or 201 REJECTED).
         with self.client.post(
             f"{config.CATALOG}/articles",
             json=body,
@@ -311,7 +311,7 @@ class SellerUser(HttpUser):
                 self.prices[article_id] = new_price
 
 
-# Enregistrement des écouteurs (plutôt que des décorateurs, que mypy juge non typés).
+# Listener registration (rather than decorators, which mypy considers untyped).
 events.test_start.add_listener(prepare_run)  # type: ignore[no-untyped-call]
 events.spawning_complete.add_listener(plateau_reached)  # type: ignore[no-untyped-call]
 events.test_stop.add_listener(run_finished)  # type: ignore[no-untyped-call]
@@ -329,9 +329,9 @@ if REQUEST_LOG:
         start_time: float | None = None,
         **_: Any,
     ) -> None:
-        """Une ligne par requête (instant, nom, durée, code HTTP, échec) : le protocole 5 calcule
-        ses p95 et ses 5xx par phase à partir de ce fichier, que l'historique de Locust (fenêtre
-        glissante de 10 s) ne permet pas."""
+        """One line per request (instant, name, duration, HTTP code, failure): protocol 5 computes
+        its p95 and 5xx per phase from this file, which Locust's history (10 s sliding
+        window) does not allow."""
         status = getattr(response, "status_code", 0) or 0
         stamp = start_time if start_time is not None else time.time()
         label = name.replace(",", " ")
@@ -344,8 +344,8 @@ if REQUEST_LOG:
 if PEAK_PROFILE is not None:
 
     class PeakShape(LoadTestShape):
-        """Charge nominale puis pic (`profile.py`) ; les transitions sont datées dans
-        `fenetre.json`, le test s'arrête quand `run.sh` crée le fichier d'arrêt."""
+        """Nominal load then peak (`profile.py`); transitions are dated in `fenetre.json`,
+        the test stops when `run.sh` creates the stop file."""
 
         started: float | None = None
         current = ""

@@ -1,4 +1,4 @@
-"""Fixtures communes : jetons Keycloak, clients HTTP, fabriques de données, observation AMQP."""
+"""Shared fixtures: Keycloak tokens, HTTP clients, data factories, AMQP observation."""
 
 import base64
 import json
@@ -16,17 +16,17 @@ from helpers import EventSpy
 
 USERS = ("admin", "alice", "bob", "chloe")
 KEYCLOAK_WAIT_SECONDS = 60.0
-TOKEN_MAX_AGE_SECONDS = 200  # les jetons du realm durent 300 s
+TOKEN_MAX_AGE_SECONDS = 200  # realm tokens last 300 s
 
 
 def unique(name: str) -> str:
-    """Nom unique par appel : les tests restent rejouables sur une pile qui garde son état."""
+    """Unique name per call: tests can be replayed on a stack that keeps its state."""
     return f"{name} {uuid.uuid4().hex[:8]}"
 
 
 @dataclass
 class Session:
-    """Un compte de démonstration : son jeton (renouvelé au besoin) et son identifiant `sub`."""
+    """A demo account: its token (renewed when needed) and its `sub` identifier."""
 
     username: str
     password: str
@@ -46,7 +46,7 @@ class Session:
                 },
                 timeout=10,
             )
-            assert response.status_code == 200, f"jeton refusé pour {self.username}"
+            assert response.status_code == 200, f"token refused for {self.username}"
             self._token = response.json()["access_token"]
             self._fetched_at = time.monotonic()
         return self._token
@@ -63,7 +63,7 @@ class Session:
 
 
 class Api:
-    """Client HTTP d'un service ; `as_` choisit le compte, absent = appel sans jeton."""
+    """HTTP client of a service; `as_` picks the account, absent means a call without a token."""
 
     def __init__(self, base_url: str) -> None:
         self._client = httpx.Client(base_url=base_url, timeout=10)
@@ -133,38 +133,38 @@ def notification() -> Iterator[Api]:
 
 @pytest.fixture(scope="session", autouse=True)
 def stack_ready(catalog: Api, notification: Api, alice: Session) -> None:
-    """Échoue tout de suite, avec un message clair, si la pile n'est pas lancée ou pas prête."""
+    """Fail immediately, with a clear message, if the stack is not started or not ready."""
     for name, api in (("catalog", catalog), ("notification", notification)):
         try:
             response = api.get("/health/ready")
         except httpx.HTTPError as error:
-            pytest.exit(f"{name}-service injoignable ({error}) : lancer deploy/compose/up.sh")
+            pytest.exit(f"{name}-service unreachable ({error}): run deploy/compose/up.sh")
         if response.status_code != 200:
-            pytest.exit(f"{name}-service pas prêt (HTTP {response.status_code})")
-    # Keycloak : le realm est importé après le démarrage ; on attend (borné) un premier jeton.
+            pytest.exit(f"{name}-service not ready (HTTP {response.status_code})")
+    # Keycloak: the realm is imported after startup; wait (bounded) for a first token.
     deadline = time.monotonic() + KEYCLOAK_WAIT_SECONDS
     while True:
         try:
-            alice.token  # noqa: B018  (obtient et met en cache le jeton)
+            alice.token  # noqa: B018  (gets and caches the token)
             break
         except (AssertionError, httpx.HTTPError) as error:
             if time.monotonic() > deadline:
                 pytest.exit(
-                    f"Keycloak ne délivre pas de jeton après {KEYCLOAK_WAIT_SECONDS:.0f} s "
-                    f"(realm non importé ?) : {error}"
+                    f"Keycloak issues no token after {KEYCLOAK_WAIT_SECONDS:.0f} s "
+                    f"(realm not imported?): {error}"
                 )
             time.sleep(1)
 
 
 @pytest.fixture
 def spy(env: dict[str, str]) -> Iterator[EventSpy]:
-    """File temporaire liée à `article.events`, créée avant l'action testée."""
+    """Temporary queue bound to `article.events`, created before the action under test."""
     event_spy = EventSpy(config.amqp_url(env)).start()
     yield event_spy
     event_spy.close()
 
 
-# --- Fabriques de données -------------------------------------------------------------------
+# --- Data factories -----------------------------------------------------------------------
 
 
 @dataclass
@@ -215,7 +215,7 @@ def make(catalog: Api, admin: Session) -> Factory:
 
 @pytest.fixture(scope="session")
 def alice_shop(catalog: Api, admin: Session, alice: Session) -> dict[str, Any]:
-    """Boutique d'alice, partagée par les tests (chacun crée sa propre catégorie)."""
+    """Alice's shop, shared by the tests (each one creates its own category)."""
     return Factory(catalog, admin).shop(alice, "Boutique d'alice")
 
 
@@ -225,7 +225,7 @@ def bob_shop(catalog: Api, admin: Session, bob: Session) -> dict[str, Any]:
 
 
 def published(events: list[dict[str, Any]], article_id: str) -> list[dict[str, Any]]:
-    """Événements d'un article donné (les autres tests peuvent publier en parallèle de la pile)."""
+    """Events of a given article (other tests may publish at the same time on the stack)."""
     return [e for e in events if e["data"]["article_id"] == article_id]
 
 

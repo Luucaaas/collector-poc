@@ -87,7 +87,7 @@ Outils du POC cités ici : ceux de la stack décidée (pytest, pytest-cov, Sonar
 | Formule | `critères validés / critères définis × 100`, soit 17 critères pour les 5 user stories de [user-stories.md](../03-backlog/user-stories.md) |
 | Seuil | 17 critères sur 17 passent |
 | Justification du seuil | Chaque critère décrit un comportement attendu du métier Collector (par exemple le rejet d'un article avec coordonnées). Un critère non validé est une fonctionnalité soit absente, soit incorrecte : aucun écart n'est acceptable pour la démonstration. |
-| Outil | Tests d'acceptation pytest + httpx dans `tests/acceptance`, nommés d'après la story et le critère (`test_us03_ca2_article_avec_coordonnees_rejete`) |
+| Outil | Tests d'acceptation pytest + httpx dans `tests/acceptance`, nommés d'après la story et le critère (`test_us03_ca2_article_with_contact_details_rejected`) |
 | Où et quand | En CI : job `acceptance` qui démarre une pile `docker compose` (PostgreSQL, RabbitMQ, Keycloak, les 2 services), puis lance `tests/acceptance`. Avant chaque démonstration contre le cluster local |
 | Qui suit | Lead Developer |
 | Action si le seuil n'est pas respecté | Le test en échec bloque la fusion. Soit le code est corrigé, soit le critère est révisé dans le backlog avec une décision documentée. |

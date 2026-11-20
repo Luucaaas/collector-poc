@@ -1,9 +1,9 @@
-"""Échanges HTTP avec Keycloak : connexion par le flux PKCE et renouvellement des jetons.
+"""HTTP exchanges with Keycloak: login through the PKCE flow and token renewal.
 
-Les requêtes passent par le client de Locust (`HttpSession`) pour partager ses réglages TLS : la
-vérification du certificat reste active, l'autorité de mkcert est fournie par la variable
-`REQUESTS_CA_BUNDLE` de `run.sh`. Elles portent un nom préfixé « [connexion] » : elles figurent dans
-les CSV mais sont exclues des seuils (thresholds.is_load_request).
+Requests go through the Locust client (`HttpSession`) to share its TLS settings: certificate
+verification stays on, the mkcert authority is provided by the `REQUESTS_CA_BUNDLE` variable of
+`run.sh`. They carry a name prefixed « [connexion] »: they appear in the CSV files but are
+excluded from the thresholds (thresholds.is_load_request).
 """
 
 import secrets
@@ -30,7 +30,7 @@ class LoginError(RuntimeError):
 
 
 def login(client: HttpSession, username: str, password: str) -> Tokens:
-    """Authorization Code + PKCE S256 comme le fait la page web, avec le formulaire de Keycloak."""
+    """Authorization Code + PKCE S256 like the web page does, with the Keycloak form."""
     verifier, challenge = pkce_pair()
     state = secrets.token_urlsafe(16)
     nonce = secrets.token_urlsafe(16)
@@ -46,11 +46,11 @@ def login(client: HttpSession, username: str, password: str) -> Tokens:
     }
     page = client.get(f"{config.KEYCLOAK}/auth", params=params, name=f"{LOGIN} page d'autorisation")
     if page.status_code != 200:
-        raise LoginError(f"page d'autorisation : HTTP {page.status_code}")
+        raise LoginError(f"authorization page: HTTP {page.status_code}")
     action = extract_form_action(page.text)
 
-    # allow_redirects=False : la redirection mène à la page web (app.), qu'on ne charge pas ;
-    # on lit seulement le `code` dans l'en-tête Location.
+    # allow_redirects=False: the redirect leads to the web page (app.), which is not loaded;
+    # only the `code` is read from the Location header.
     submit = client.post(
         action,
         data={"username": username, "password": password, "credentialId": ""},
@@ -58,7 +58,7 @@ def login(client: HttpSession, username: str, password: str) -> Tokens:
         name=f"{LOGIN} formulaire",
     )
     if submit.status_code != 302:
-        raise LoginError(f"formulaire de connexion : HTTP {submit.status_code}")
+        raise LoginError(f"login form: HTTP {submit.status_code}")
     code = extract_code(submit.headers.get("Location", ""), state)
 
     reply = client.post(
@@ -73,7 +73,7 @@ def login(client: HttpSession, username: str, password: str) -> Tokens:
         name=f"{LOGIN} échange du code",
     )
     if reply.status_code != 200:
-        raise LoginError(f"échange du code : HTTP {reply.status_code}")
+        raise LoginError(f"code exchange: HTTP {reply.status_code}")
     return parse_token_response(reply.json())
 
 
@@ -88,15 +88,15 @@ def refresh(client: HttpSession, tokens: Tokens) -> Tokens:
         name=f"{LOGIN} renouvellement",
     )
     if reply.status_code != 200:
-        raise LoginError(f"renouvellement : HTTP {reply.status_code}")
+        raise LoginError(f"renewal: HTTP {reply.status_code}")
     return parse_token_response(reply.json())
 
 
 class TokenHolder:
-    """Jeton d'un utilisateur simulé, renouvelé par le jeton de rafraîchissement avant expiration.
+    """Token of a simulated user, renewed with the refresh token before it expires.
 
-    Le renouvellement est vérifié à chaque requête (`headers`), sans minuterie : un utilisateur qui
-    attend 10 s entre deux actions ne laisse jamais le jeton expirer sans qu'on le voie.
+    Renewal is checked on every request (`headers`), without a timer: a user who waits 10 s
+    between two actions never lets the token expire unnoticed.
     """
 
     def __init__(self, client: HttpSession, username: str) -> None:

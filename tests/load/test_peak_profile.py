@@ -1,4 +1,4 @@
-"""Tests du profil de charge « pic »."""
+"""Tests of the « peak » load profile."""
 
 from peak_profile import PeakProfile, phase, stage
 

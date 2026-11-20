@@ -1,8 +1,8 @@
-"""Configuration du test de charge : adresses du cluster et mots de passe lus dans l'environnement.
+"""Load test configuration: cluster addresses and passwords read from the environment.
 
-Les mots de passe sont exportés par `run.sh` dans l'environnement du seul processus Locust (lus dans
-`deploy/local/.env`). Ils ne sont jamais écrits ni affichés : en cas d'absence, le message nomme la
-variable, jamais sa valeur.
+Passwords are exported by `run.sh` into the environment of the Locust process only (read from
+`deploy/local/.env`). They are never written or printed: when one is missing, the message names
+the variable, never its value.
 """
 
 import os
@@ -16,11 +16,11 @@ REDIRECT_URI = "https://app.127.0.0.1.sslip.io/"
 
 
 def ca_bundle() -> str | bool:
-    """Autorité qui signe le certificat du cluster (mkcert), fournie par `run.sh`.
+    """Authority that signs the cluster certificate (mkcert), provided by `run.sh`.
 
-    Locust n'utilise pas la variable `REQUESTS_CA_BUNDLE` d'elle-même : on la passe explicitement au
-    client. Sans elle, la valeur est `True` : vérification avec les autorités publiques, donc le
-    certificat de mkcert est refusé. Jamais `False` : la vérification n'est jamais désactivée.
+    Locust does not use the `REQUESTS_CA_BUNDLE` variable by itself: it is passed explicitly to the
+    client. Without it, the value is `True`: verification against public authorities, so the
+    mkcert certificate is refused. Never `False`: verification is never disabled.
     """
     return os.environ.get("REQUESTS_CA_BUNDLE") or True
 
@@ -29,5 +29,5 @@ def password_for(username: str) -> str:
     variable = f"LOAD_{username.upper()}_PASSWORD"
     value = os.environ.get(variable)
     if not value:
-        raise RuntimeError(f"Variable d'environnement {variable} absente ou vide (voir run.sh).")
+        raise RuntimeError(f"Environment variable {variable} missing or empty (see run.sh).")
     return value

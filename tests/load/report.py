@@ -1,11 +1,11 @@
-"""Rédige `resume.md` à partir des CSV de Locust et des mesures de Prometheus.
+"""Writes `resume.md` from the Locust CSV files and the Prometheus measurements.
 
-Appelé par `run.sh` une fois Locust terminé :
-    python report.py <dossier de résultats> <adresse de Prometheus>
+Called by `run.sh` once Locust has finished:
+    python report.py <results directory> <Prometheus address>
 
-Prometheus est interrogé sur la fenêtre du plateau (de `spawning_complete` à `test_stop`, relevées
-par le locustfile dans `fenetre.json`), évaluée un peu après la fin pour laisser passer la dernière
-collecte : le `ServiceMonitor` collecte toutes les 15 s, 35 s laissent donc deux cycles complets.
+Prometheus is queried over the plateau window (from `spawning_complete` to `test_stop`, recorded
+by the locustfile in `fenetre.json`), evaluated a little after the end to let the last scrape
+pass: the `ServiceMonitor` scrapes every 15 s, so 35 s leave two complete cycles.
 """
 
 import json
@@ -19,7 +19,7 @@ from pathlib import Path
 
 import thresholds
 
-# Délai laissé à Prometheus pour collecter les derniers échantillons après la fin du test.
+# Delay left to Prometheus to scrape the last samples after the end of the test.
 SETTLE_SECONDS = 35
 
 Fetch = Callable[[str], dict[str, object]]
@@ -32,7 +32,7 @@ def http_fetch(url: str) -> dict[str, object]:
 
 
 def instant_value(fetch: Fetch, base: str, expr: str, at: float) -> float | None:
-    """Valeur d'une requête instantanée Prometheus ; None si erreur, série vide ou NaN."""
+    """Value of a Prometheus instant query; None on error, empty series or NaN."""
     query = urllib.parse.urlencode({"query": expr, "time": f"{at:.3f}"})
     try:
         payload = fetch(f"{base}/api/v1/query?{query}")
@@ -48,7 +48,7 @@ def instant_value(fetch: Fetch, base: str, expr: str, at: float) -> float | None
 def prometheus_measures(
     fetch: Fetch, base: str, start: float, end: float
 ) -> tuple[float | None, float | None, float | None]:
-    """(5xx côté services, requêtes totales côté services, p95 du délai des notifications)."""
+    """(5xx on the services side, total requests on the services side, notification delay p95)."""
     at = end + SETTLE_SECONDS
     window = f"{max(1, math.ceil(at - start))}s"
     selector = 'job=~"catalog-service|notification-service",handler!~"/health.*|/metrics"'
@@ -109,7 +109,7 @@ def build_resume(directory: Path, prometheus: str, fetch: Fetch = http_fetch) ->
 
 def main(argv: list[str]) -> int:
     if len(argv) != 3:
-        print("usage : report.py <dossier de résultats> <adresse de Prometheus>", file=sys.stderr)
+        print("usage: report.py <results directory> <Prometheus address>", file=sys.stderr)
         return 2
     directory = Path(argv[1])
     resume = build_resume(directory, argv[2].rstrip("/"))

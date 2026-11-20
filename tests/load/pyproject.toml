@@ -1,9 +1,9 @@
 [project]
 name = "collector-load"
 version = "0.1.0"
-description = "Test de charge de Collector.shop : scénarios Locust sur le cluster k3d (indicateur I3, ENF-14)"
+description = "Collector.shop load test: Locust scenarios on the k3d cluster (indicator I3, ENF-14)"
 requires-python = ">=3.12"
-# Projet à part : aucun code des services n'est importé, tout passe par l'API publique.
+# Separate project: no service code is imported, everything goes through the public API.
 package = false
 dependencies = [
     "locust==2.47.0",

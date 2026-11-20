@@ -1,13 +1,13 @@
-"""Connexion par le flux Authorization Code + PKCE S256 du client public `collector-web`.
+"""Login through the Authorization Code + PKCE S256 flow of the public client `collector-web`.
 
-Ce module ne contient que les parties pures (calculs et lecture de texte), testables sans réseau.
-Les échanges HTTP sont dans `session.py`.
+This module only holds the pure parts (computations and text parsing), testable without network.
+The HTTP exchanges are in `session.py`.
 
-Pourquoi ce flux plutôt qu'un client à mot de passe direct : le test de charge doit traverser
-exactement ce que traverse le navigateur, sans ajouter à Keycloak un client qui affaiblirait le
-realm (ADR de la phase 8). Un utilisateur Locust fait donc comme la page web : il demande
-l'autorisation, remplit le formulaire de Keycloak, récupère le `code` sur la redirection et
-l'échange contre des jetons avec le `code_verifier`.
+Why this flow rather than a direct password client: the load test must go through exactly what
+the browser goes through, without adding to Keycloak a client that would weaken the realm (ADR
+of phase 8). A Locust user therefore behaves like the web page: it asks for authorization,
+fills in the Keycloak form, gets the `code` from the redirect and exchanges it for tokens with
+the `code_verifier`.
 """
 
 import base64
@@ -20,18 +20,18 @@ from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
-# Marge de renouvellement : le jeton d'accès dure 5 minutes, on le renouvelle quand il lui reste
-# moins d'une minute. Une requête lancée juste avant l'expiration ne part donc jamais avec un jeton
-# périmé, même si la réponse de Keycloak tarde.
+# Renewal margin: the access token lasts 5 minutes, it is renewed when less than a minute is
+# left. A request sent just before expiry therefore never leaves with an expired token, even if
+# the Keycloak response is slow.
 REFRESH_MARGIN_SECONDS = 60.0
 
 
 def pkce_pair() -> tuple[str, str]:
-    """Renvoie (code_verifier, code_challenge) pour la méthode S256 (RFC 7636).
+    """Returns (code_verifier, code_challenge) for the S256 method (RFC 7636).
 
-    Le `code_verifier` est un secret aléatoire de 43 caractères (32 octets en base64url sans
-    remplissage). Le `code_challenge` en est l'empreinte SHA-256, encodée de la même façon : seule
-    l'empreinte part dans la première requête, le secret n'est révélé qu'à l'échange du code.
+    The `code_verifier` is a random secret of 43 characters (32 bytes in unpadded base64url). The
+    `code_challenge` is its SHA-256 digest, encoded the same way: only the digest goes out in the
+    first request, the secret is only revealed when the code is exchanged.
     """
     verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode("ascii")
     return verifier, challenge_for(verifier)
@@ -43,7 +43,7 @@ def challenge_for(verifier: str) -> str:
 
 
 class _LoginFormParser(HTMLParser):
-    """Relève l'attribut `action` du formulaire de connexion de Keycloak (`kc-form-login`)."""
+    """Picks the `action` attribute of the Keycloak login form (`kc-form-login`)."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -58,32 +58,32 @@ class _LoginFormParser(HTMLParser):
 
 
 def extract_form_action(page: str) -> str:
-    """Adresse où envoyer le formulaire de connexion (le parseur HTML décode déjà `&amp;`).
+    """Address to send the login form to (the HTML parser already decodes `&amp;`).
 
-    L'adresse contient un `session_code` et un `tab_id` propres à cette tentative : elle ne se
-    devine pas, il faut la lire dans la page.
+    The address contains a `session_code` and a `tab_id` specific to this attempt: it cannot be
+    guessed, it has to be read from the page.
     """
     parser = _LoginFormParser()
     parser.feed(page)
     if parser.action is None:
-        raise ValueError("Formulaire de connexion Keycloak introuvable dans la page.")
+        raise ValueError("Keycloak login form not found in the page.")
     return html.unescape(parser.action)
 
 
 def extract_code(location: str, expected_state: str) -> str:
-    """Lit le `code` dans l'en-tête `Location` de la redirection finale de Keycloak.
+    """Reads the `code` from the `Location` header of the final Keycloak redirect.
 
-    Vérifie le `state` : c'est la protection contre la falsification de requête inter-sites du
-    flux (RFC 6749 §10.12), le test la respecte comme le ferait le client réel.
+    Checks the `state`: it is the flow's protection against cross-site request forgery
+    (RFC 6749 §10.12), the test honors it as the real client would.
     """
     query = parse_qs(urlsplit(location).query)
     if "error" in query:
-        raise ValueError(f"Keycloak a refusé l'autorisation : {query['error'][0]}.")
+        raise ValueError(f"Keycloak refused the authorization: {query['error'][0]}.")
     if query.get("state", [None])[0] != expected_state:
-        raise ValueError("Le paramètre state de la redirection ne correspond pas.")
+        raise ValueError("The state parameter of the redirect does not match.")
     codes = query.get("code")
     if not codes:
-        raise ValueError("Pas de code d'autorisation dans la redirection.")
+        raise ValueError("No authorization code in the redirect.")
     return codes[0]
 
 
@@ -91,11 +91,11 @@ def extract_code(location: str, expected_state: str) -> str:
 class Tokens:
     access_token: str
     refresh_token: str
-    expires_at: float  # horloge monotone (time.monotonic), instant d'expiration du jeton d'accès
+    expires_at: float  # monotonic clock (time.monotonic), expiry instant of the access token
 
 
 def parse_token_response(payload: dict[str, Any], now: float | None = None) -> Tokens:
-    """Construit les jetons depuis la réponse du point de terminaison `/token`."""
+    """Builds the tokens from the response of the `/token` endpoint."""
     current = time.monotonic() if now is None else now
     return Tokens(
         access_token=str(payload["access_token"]),
@@ -105,5 +105,5 @@ def parse_token_response(payload: dict[str, Any], now: float | None = None) -> T
 
 
 def needs_refresh(tokens: Tokens, now: float, margin: float = REFRESH_MARGIN_SECONDS) -> bool:
-    """Vrai quand il reste moins de `margin` secondes au jeton d'accès."""
+    """True when the access token has less than `margin` seconds left."""
     return tokens.expires_at - now <= margin

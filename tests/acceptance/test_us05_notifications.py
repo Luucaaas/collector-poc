@@ -1,8 +1,8 @@
-"""US-05 : centres d'intérêt, préférences et notifications de l'acheteur (4 critères).
+"""US-05: buyer interests, preferences and notifications (4 criteria).
 
-Les comptes `chloe` et `alice` gardent leur état d'un test à l'autre (et d'une exécution à
-l'autre) : chaque test commence par fixer ses propres centres d'intérêt et préférences, et ne
-regarde que les notifications de ses propres articles.
+The `chloe` and `alice` accounts keep their state from one test to the next (and from one run
+to the next): each test starts by setting its own interests and preferences, and only looks at
+the notifications of its own articles.
 """
 
 import re
@@ -40,7 +40,7 @@ def notifications_of(notification: Api, user: Session, article_id: str) -> list[
 
 
 def processed_events(notification: Api, event_type: str) -> float:
-    """Valeur de events_consumed_total{event_type, outcome="processed"} (0 si absente)."""
+    """Value of events_consumed_total{event_type, outcome="processed"} (0 if absent)."""
     text = notification.get("/metrics").text
     pattern = (
         rf'^events_consumed_total\{{[^}}]*event_type="{re.escape(event_type)}"[^}}]*\}} (\S+)$'
@@ -63,7 +63,7 @@ def wait_for_notification(
     return wait_until(probe, timeout)
 
 
-def test_us05_ca1_interets_et_preferences_enregistres(
+def test_us05_ca1_interests_and_preferences_saved(
     notification: Api, chloe: Session, make: Factory
 ) -> None:
     baskets, figurines = make.category("Baskets"), make.category("Figurines")
@@ -75,7 +75,7 @@ def test_us05_ca1_interets_et_preferences_enregistres(
     )
 
     assert interests.status_code == 200 and preferences.status_code == 200
-    # Relecture : les deux catégories et les préférences choisies.
+    # Read back: the two categories and the chosen preferences.
     reread_interests = notification.get("/api/v1/me/interests", chloe)
     assert reread_interests.status_code == 200
     assert sorted(reread_interests.json()["category_ids"]) == sorted(ids)
@@ -85,7 +85,7 @@ def test_us05_ca1_interets_et_preferences_enregistres(
     assert reread_preferences.json()["price_changed"] is False
 
 
-def test_us05_ca2_notification_nouvel_article_en_moins_de_2_secondes(
+def test_us05_ca2_new_article_notification_in_under_2_seconds(
     catalog: Api,
     notification: Api,
     alice: Session,
@@ -97,7 +97,7 @@ def test_us05_ca2_notification_nouvel_article_en_moins_de_2_secondes(
     category = make.category("Figurines")
     set_interests(notification, chloe, [category["id"]])
     set_preferences(notification, chloe, new_article=True, price_changed=True)
-    # alice s'intéresse aussi à la catégorie : sans l'exclusion du vendeur, elle serait notifiée.
+    # alice is also interested in the category: without the seller exclusion, she would be notified.
     set_interests(notification, alice, [category["id"]])
     set_preferences(notification, alice, new_article=True, price_changed=True)
     payload = make.article_payload(alice_shop["id"], category["id"])
@@ -107,19 +107,19 @@ def test_us05_ca2_notification_nouvel_article_en_moins_de_2_secondes(
     assert response.status_code == 201 and response.json()["status"] == "PUBLISHED"
     article_id = response.json()["id"]
     received, _ = wait_for_notification(notification, chloe, article_id, "NEW_ARTICLE", 10)
-    delay = time.monotonic() - started  # de l'envoi de la publication à la notification lisible
+    delay = time.monotonic() - started  # from the publication request to the readable notification
 
-    assert received is not None, "aucune notification NEW_ARTICLE reçue en 10 s"
-    record_property("delai_notification_secondes", f"{delay:.3f}")
-    print(f"\nDélai publication -> notification lisible : {delay:.3f} s")
+    assert received is not None, "no NEW_ARTICLE notification received in 10 s"
+    record_property("notification_delay_seconds", f"{delay:.3f}")
+    print(f"\nDelay publication -> readable notification: {delay:.3f} s")
     assert delay < MAX_DELAY_SECONDS
     assert received["content"] == {"title": payload["title"], "price": "120.00", "currency": "EUR"}
     assert received["article_id"] == article_id
-    # Le vendeur ne reçoit rien pour son propre article.
+    # The seller receives nothing for their own article.
     assert notifications_of(notification, alice, article_id) == []
 
 
-def test_us05_ca3_notification_changement_de_prix_selon_preference(
+def test_us05_ca3_price_change_notification_follows_preference(
     catalog: Api,
     notification: Api,
     alice: Session,
@@ -133,10 +133,10 @@ def test_us05_ca3_notification_changement_de_prix_selon_preference(
     article = make.article(alice, alice_shop["id"], category["id"])
     assert article["price"] == "120.00"
 
-    # Type activé : PRICE_CHANGED 120 -> 95.
+    # Type enabled: PRICE_CHANGED 120 -> 95.
     catalog.put(f"/api/v1/articles/{article['id']}/price", alice, json={"price": "95.00"})
     received, _ = wait_for_notification(notification, chloe, article["id"], "PRICE_CHANGED", 10)
-    assert received is not None, "aucune notification PRICE_CHANGED reçue en 10 s"
+    assert received is not None, "no PRICE_CHANGED notification received in 10 s"
     assert received["content"] == {
         "title": article["title"],
         "old_price": "120.00",
@@ -144,12 +144,12 @@ def test_us05_ca3_notification_changement_de_prix_selon_preference(
         "currency": "EUR",
     }
 
-    # Type désactivé : aucune notification pour le changement suivant (95 -> 80).
+    # Type disabled: no notification for the next change (95 -> 80).
     set_preferences(notification, chloe, new_article=True, price_changed=False)
     processed_before = processed_events(notification, "article.price_changed")
     catalog.put(f"/api/v1/articles/{article['id']}/price", alice, json={"price": "80.00"})
-    # On attend que le consommateur ait réellement traité l'événement de prix (compteur
-    # events_consumed_total{outcome="processed"} de /metrics), puis on vérifie l'absence.
+    # Wait until the consumer has actually processed the price event (counter
+    # events_consumed_total{outcome="processed"} of /metrics), then check the absence.
     reached, _ = wait_until(
         lambda: (
             True
@@ -158,7 +158,7 @@ def test_us05_ca3_notification_changement_de_prix_selon_preference(
         ),
         10,
     )
-    assert reached, "l'événement article.price_changed n'a pas été traité en 10 s"
+    assert reached, "the article.price_changed event was not processed in 10 s"
     price_changes = [
         n
         for n in notifications_of(notification, chloe, article["id"])
@@ -167,7 +167,7 @@ def test_us05_ca3_notification_changement_de_prix_selon_preference(
     assert [n["content"]["new_price"] for n in price_changes] == ["95.00"]
 
 
-def test_us05_ca4_acces_aux_notifications_protege(
+def test_us05_ca4_notification_access_protected(
     catalog: Api,
     notification: Api,
     alice: Session,
@@ -180,17 +180,17 @@ def test_us05_ca4_acces_aux_notifications_protege(
     for buyer in (chloe, alice):
         set_interests(notification, buyer, [category["id"]])
         set_preferences(notification, buyer, new_article=True, price_changed=True)
-    article = make.article(bob, bob_shop["id"], category["id"])  # bob vend, chloe et alice achètent
+    article = make.article(bob, bob_shop["id"], category["id"])  # bob sells, chloe and alice buy
     for buyer in (chloe, alice):
         got, _ = wait_for_notification(notification, buyer, article["id"], "NEW_ARTICLE", 10)
         assert got is not None
 
     for path in ("/api/v1/me/notifications", "/api/v1/me/interests", "/api/v1/me/preferences"):
         assert notification.get(path).status_code == 401, path
-        assert notification.get(path, bob).status_code == 403, path  # bob n'a que seller
+        assert notification.get(path, bob).status_code == 403, path  # bob only has seller
 
-    # alice a le rôle buyer : elle ne voit que ses propres notifications. On compare les
-    # ensembles complets d'identifiants (toutes les notifications, pas seulement cet article).
+    # alice has the buyer role: she only sees her own notifications. We compare the full
+    # sets of identifiers (all notifications, not just this article).
     def all_ids(user: Session) -> set[str]:
         response = notification.get("/api/v1/me/notifications", user, params={"limit": 100})
         assert response.status_code == 200

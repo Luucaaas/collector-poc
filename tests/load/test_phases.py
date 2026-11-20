@@ -1,4 +1,4 @@
-"""Tests de l'analyse du protocole 5 (percentiles, phases, chronologie de l'HPA), sans réseau."""
+"""Tests of the protocol 5 analysis (percentiles, phases, HPA timeline), without network."""
 
 from pathlib import Path
 
@@ -40,7 +40,7 @@ def test_phase_stats_counts_5xx_and_other_failures() -> None:
         request(2, 20),
         request(3, 30, 503),
         request(4, 40, 404),
-        request(9, 99),  # hors fenêtre
+        request(9, 99),  # outside the window
     ]
     stats = p.phase_stats("x", rows, 0, 5)
     assert (stats.requests, stats.server_errors, stats.other_failures) == (4, 1, 1)
@@ -111,7 +111,7 @@ def test_render_reports_not_reached() -> None:
         samples,
         {"nominal_start": 900.0, "peak_start": 1000.0},
         (0.0, 100.0),
-        "Paramètres.",
+        "Parameters.",
     )
     assert "HPA demande 5 réplicas | non atteint" in text
     assert "Retour à 2 réplicas : non atteint" in text

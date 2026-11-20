@@ -1,4 +1,4 @@
-"""Tests des seuils, de la lecture des CSV de Locust et de la rédaction de `resume.md`."""
+"""Tests of the thresholds, the reading of Locust CSV files and the writing of `resume.md`."""
 
 import json
 from pathlib import Path
@@ -51,9 +51,9 @@ def test_publish_over_threshold() -> None:
 
 
 def test_error_rate_ignores_login_and_aggregated() -> None:
-    # 4000 + 1500 + 2000 + 500 + 300 requêtes de charge ; la connexion et le total sont exclus.
+    # 4000 + 1500 + 2000 + 500 + 300 load requests; login and the total are excluded.
     assert t.total_requests(make_stats()) == 8300
-    checks = t.build_checks(make_stats(), 83, 0, 100, 1)  # 1,0 % exactement : non conforme
+    checks = t.build_checks(make_stats(), 83, 0, 100, 1)  # exactly 1.0 %: non conforme
     assert verdicts(checks)["Réponses 5xx, vues par Locust"] == "non conforme"
     checks = t.build_checks(make_stats(), 82, 0, 100, 1)
     assert verdicts(checks)["Réponses 5xx, vues par Locust"] == "conforme"
@@ -74,18 +74,18 @@ def test_notification_delay_threshold() -> None:
 def test_render_resume_states_overall_result() -> None:
     stats = make_stats(read=450)
     checks = t.build_checks(stats, 0, 0, 100, 0.4)
-    text = t.render_resume("Titre", checks, t.informative_rows(stats), stats, "env", "fenêtre")
+    text = t.render_resume("Title", checks, t.informative_rows(stats), stats, "env", "window")
     assert "**Hors seuil** : Lecture du catalogue (liste)." in text
     assert "| Lecture du catalogue (liste) | 450 ms | p95 < 300 ms | non conforme |" in text
     assert "[connexion] formulaire (hors seuils)" in text
-    assert "[prépa] vide" not in text  # une ligne sans requête n'est pas listée
+    assert "[prépa] vide" not in text  # a row without requests is not listed
     assert "| Aggregated" not in text
 
 
 def test_render_resume_all_conform() -> None:
     stats = make_stats()
     checks = t.build_checks(stats, 0, 0, 100, 0.4)
-    text = t.render_resume("Titre", checks, t.informative_rows(stats), stats, "env", "fenêtre")
+    text = t.render_resume("Title", checks, t.informative_rows(stats), stats, "env", "window")
     assert "**Tous les seuils sont respectés.**" in text
 
 
@@ -112,7 +112,7 @@ def test_read_stats_and_failures(tmp_path: Path) -> None:
     write_run(tmp_path)
     stats = t.read_stats(tmp_path / "locust_stats.csv")
     assert stats["POST /articles"].p95_ms == 310
-    assert t.count_5xx(tmp_path / "locust_failures.csv") == (2, 3)  # la connexion est exclue
+    assert t.count_5xx(tmp_path / "locust_failures.csv") == (2, 3)  # login is excluded
 
 
 def test_build_resume_queries_prometheus_on_plateau_window(tmp_path: Path) -> None:
@@ -126,7 +126,7 @@ def test_build_resume_queries_prometheus_on_plateau_window(tmp_path: Path) -> No
 
     text = report.build_resume(tmp_path, "http://prom", fetch)
     assert len(urls) == 3
-    # Fenêtre : de 1000 à 1310 + 35 s de délai = 345 s.
+    # Window: from 1000 to 1310 + 35 s of delay = 345 s.
     assert all("345s" in __import__("urllib.parse").parse.unquote(u) for u in urls)
     assert "| Délai des notifications (ENF-14) | 0,800 s | p95 < 2 s | conforme |" in text
     assert "| Réponses 5xx, vues par les services | 5,000 % (50 sur 1000)" in text
@@ -136,7 +136,7 @@ def test_build_resume_queries_prometheus_on_plateau_window(tmp_path: Path) -> No
 
 def test_prometheus_errors_give_no_value() -> None:
     def broken(url: str) -> dict[str, object]:
-        raise OSError("hors ligne")
+        raise OSError("offline")
 
     assert report.instant_value(broken, "http://prom", "up", 1.0) is None
     empty = report.instant_value(lambda u: {"data": {"result": []}}, "http://prom", "up", 1.0)
@@ -151,7 +151,7 @@ def test_read_stats_accepts_not_available_percentiles(tmp_path: Path) -> None:
     (tmp_path / "locust_stats.csv").write_text(STATS_HEADER + "GET,GET /articles,10,10,N/A,N/A\n")
     stats = t.read_stats(tmp_path / "locust_stats.csv")
     assert stats["GET /articles"].failures == 10
-    # Pas de latence mesurable : la comparaison ne doit pas déclarer « conforme ».
+    # No measurable latency: the comparison must not declare « conforme ».
     check = t.build_checks(stats, 0, 0, 100, 1)[0]
     assert check.verdict == "non conforme"
 

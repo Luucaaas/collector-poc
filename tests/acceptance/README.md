@@ -5,9 +5,9 @@
 | Fichier | Story | Tests |
 | --- | --- | --- |
 | `test_us01_categories.py` | US-01 Créer une catégorie | CA1 à CA3 |
-| `test_us02_boutiques.py` | US-02 Créer une boutique | CA1 à CA3 |
+| `test_us02_shops.py` | US-02 Créer une boutique | CA1 à CA3 |
 | `test_us03_publication.py` | US-03 Publier un article | CA1 à CA4 |
-| `test_us04_prix.py` | US-04 Modifier le prix | CA1 à CA3 |
+| `test_us04_price.py` | US-04 Modifier le prix | CA1 à CA3 |
 | `test_us05_notifications.py` | US-05 Intérêts et notifications | CA1 à CA4 |
 
 ## Lancer

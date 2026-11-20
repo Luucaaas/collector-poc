@@ -77,7 +77,7 @@ Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Aucune tâche d'agent en cours. Tout le code est en anglais (P11-01 à P11-07 fusionnées le 20/11/2026) ; restent en français l'interface du front, les messages de l'API destinés à l'utilisateur, le realm Keycloak, le tableau de bord Grafana, les données de démonstration, les rapports générés pour le jury et la documentation. Contrôler la CI du commit poussé. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec le dernier tag vert de `main` (les trois images au même tag) ; `smoke.sh` affiche désormais `OK` et `FAIL`, `preparer.sh` affiche `READY`.
+Aucune tâche d'agent en cours. Tout le code est en anglais (P11-01 à P11-07 fusionnées le 20/11/2026) ; restent en français l'interface du front, les messages de l'API destinés à l'utilisateur, le realm Keycloak, le tableau de bord Grafana, les données de démonstration, les rapports générés pour le jury et la documentation. CI verte sur `703dc54`, les trois images existent au tag `sha-703dc54`. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec le dernier tag vert de `main` (les trois images au même tag) ; `smoke.sh` affiche désormais `OK` et `FAIL`, `preparer.sh` affiche `READY`.
 
 ## Décisions en attente
 
@@ -88,6 +88,8 @@ Aucune tâche d'agent en cours. Tout le code est en anglais (P11-01 à P11-07 fu
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+20/11/2026 21:32 — CI verte sur `703dc54` (runs 44811062718 et 44811062431) : 17 tests d'acceptation passés, les trois images publiées au tag `sha-703dc54`.
 
 20/11/2026 21:24 — P11-03 à P11-07 fusionnées (5 zones traduites en anglais, audits tracés dans les fiches). Contrôles sur main : 294 et 206 tests des services (98,66 % et 97,67 %), 17 tests d'acceptation collectés, 37 tests de charge, 62 tests du front, Ruff, mypy, ESLint, `bash -n`, Helm et vérificateurs (612/0, 0 échec) verts.
 

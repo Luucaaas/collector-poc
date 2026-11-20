@@ -67,17 +67,17 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P10-04 | Questions probables et glossaire | developpeur | `phase-10/questions` | fusionnée |
 | P11-01 | Pipeline CI/CD en anglais | developpeur | `phase-11/ci-english` | fusionnée |
 | P11-02 | Image du front : nginx 1.30.7 (6 CVE) | developpeur | `phase-11/nginx-1-30-7` | fusionnée |
-| P11-03 | Services backend en anglais | developpeur | `phase-11/en-services` | en cours |
-| P11-04 | Front en anglais (code, pas l'interface) | developpeur | `phase-11/en-frontend` | en cours |
-| P11-05 | Déploiement en anglais | developpeur | `phase-11/en-deploy` | en cours |
-| P11-06 | Tests d'acceptation et de charge en anglais | developpeur | `phase-11/en-tests` | en cours |
-| P11-07 | Scripts de la documentation en anglais | developpeur | `phase-11/en-docs-scripts` | en cours |
+| P11-03 | Services backend en anglais | developpeur | `phase-11/en-services` | fusionnée |
+| P11-04 | Front en anglais (code, pas l'interface) | developpeur | `phase-11/en-frontend` | fusionnée |
+| P11-05 | Déploiement en anglais | developpeur | `phase-11/en-deploy` | fusionnée |
+| P11-06 | Tests d'acceptation et de charge en anglais | developpeur | `phase-11/en-tests` | fusionnée |
+| P11-07 | Scripts de la documentation en anglais | developpeur | `phase-11/en-docs-scripts` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Reprise de P11-03 à P11-07 (traduction du code en anglais), interrompue le 19/11/2026 par la limite d'usage. P11-04 (front) terminée par le développeur : branche `phase-11/en-frontend`, commit `92b920c`, dans le worktree `.claude/worktrees/agent-a0e2c84654073299b`, à auditer. P11-03, P11-05, P11-06 et P11-07 arrêtées en cours de travail, modifications non commitées dans leurs worktrees `.claude/worktrees/agent-a2a4fe5a273d7d9f9` (services), `agent-a0f40509a7e4849c3` (deploy), `agent-a3f34f0913593aac6` (tests), `agent-a01f067fcd97af430` (scripts de docs) : relancer chaque développeur dans son worktree en lui demandant de vérifier `git status` et de reprendre depuis son état, puis audit, fusion une par une, tests et vérificateurs sur `main`, push et CI.
+Aucune tâche d'agent en cours. Tout le code est en anglais (P11-01 à P11-07 fusionnées le 20/11/2026) ; restent en français l'interface du front, les messages de l'API destinés à l'utilisateur, le realm Keycloak, le tableau de bord Grafana, les données de démonstration, les rapports générés pour le jury et la documentation. Contrôler la CI du commit poussé. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec le dernier tag vert de `main` (les trois images au même tag) ; `smoke.sh` affiche désormais `OK` et `FAIL`, `preparer.sh` affiche `READY`.
 
 ## Décisions en attente
 
@@ -88,6 +88,8 @@ Reprise de P11-03 à P11-07 (traduction du code en anglais), interrompue le 19/1
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+20/11/2026 21:24 — P11-03 à P11-07 fusionnées (5 zones traduites en anglais, audits tracés dans les fiches). Contrôles sur main : 294 et 206 tests des services (98,66 % et 97,67 %), 17 tests d'acceptation collectés, 37 tests de charge, 62 tests du front, Ruff, mypy, ESLint, `bash -n`, Helm et vérificateurs (612/0, 0 échec) verts.
 
 19/11/2026 14:28 — P11-03 à P11-07 ouvertes : traduction du reste du code en anglais, en 5 zones.
 

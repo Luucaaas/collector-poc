@@ -40,3 +40,6 @@ deploy/local/.certs/
 * [0-9].*
 * [0-9][0-9]
 * [0-9][0-9].*
+
+# Claude Code agent worktrees (local copies of task branches)
+.claude/worktrees/

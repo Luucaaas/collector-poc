@@ -921,7 +921,7 @@ Les chiffres viennent de fichiers du dépôt, cités en lien relatif ; `python3 
 
 **Critères** : 4, 5.
 
-**À dire.** C'est une bonne démonstration : le script affiche « ÉCHEC : retour arrière » et remet la version précédente avec `helm rollback`. Je le dis, je vérifie que les pods sont `Running` et je continue. Le retour arrière d'une version défaillante a été mesuré au protocole 4, sans requête perdue. Si le déploiement traîne plus de 70 secondes, je passe à l'étape 2 : le cluster reste utilisable pendant le remplacement.
+**À dire.** C'est une bonne démonstration : le script affiche « FAILURE: rolling back » et remet la version précédente avec `helm rollback`. Je le dis, je vérifie que les pods sont `Running` et je continue. Le retour arrière d'une version défaillante a été mesuré au protocole 4, sans requête perdue. Si le déploiement traîne plus de 70 secondes, je passe à l'étape 2 : le cluster reste utilisable pendant le remplacement.
 
 **Chiffres.** Retour arrière sans requête perdue ([index, protocole 4](../04-experimentations/README.md)).
 

@@ -1,7 +1,7 @@
 {{- if .Values.migration.enabled }}
-# Migration Alembic avant chaque installation ou mise à jour (hook Helm) : la base est à jour
-# avant que les nouveaux pods démarrent. Même image que le service. Le Job réussi est supprimé ;
-# un Job en échec est conservé (logs lisibles) jusqu'au prochain déploiement.
+# Alembic migration before each install or upgrade (Helm hook): the database is up to date
+# before the new pods start. Same image as the service. The successful Job is deleted;
+# a failed Job is kept (readable logs) until the next deployment.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        # Pas les étiquettes du Service : le pod de migration ne doit jamais recevoir de trafic.
+        # Not the Service's labels: the migration pod must never receive traffic.
         app.kubernetes.io/instance: {{ .Release.Name }}-migrate
         app.kubernetes.io/component: migration
     spec:
@@ -37,7 +37,7 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ required "secretName est obligatoire" .Values.secretName }}
+                  name: {{ required "secretName is required" .Values.secretName }}
                   key: DATABASE_URL
           resources:
             requests: {cpu: 50m, memory: 64Mi}

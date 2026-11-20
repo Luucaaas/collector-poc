@@ -18,7 +18,7 @@ playwright-report/
 test-results/
 blob-report/
 
-# Environnement et secrets
+# Environment and secrets
 .env
 .env.*
 !.env.example
@@ -31,11 +31,11 @@ kubeconfig*
 .vscode/
 .DS_Store
 
-# Certificat mkcert du cluster local (clé privée)
+# mkcert certificate of the local cluster (private key)
 deploy/local/.certs/
 
-# Copies de conflit créées par la synchronisation iCloud du Bureau (« fichier 2.yml », « Dockerfile 2 ») :
-# jamais versionnées (une copie de workflow avait été publiée et tournait en double).
+# Conflict copies created by the iCloud synchronization of the Desktop ("file 2.yml", "Dockerfile 2"):
+# never versioned (a workflow copy had been published and ran twice).
 * [0-9]
 * [0-9].*
 * [0-9][0-9]

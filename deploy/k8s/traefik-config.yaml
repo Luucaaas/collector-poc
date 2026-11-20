@@ -1,7 +1,7 @@
-# Traefik est fourni par k3s. Deux réglages, repris de l'expérimentation 2 :
-#  - redirection HTTP -> HTTPS (301) au niveau du point d'entrée `web` ;
-#  - certificat par défaut : le Secret `mkcert-wildcard` (créé par cluster.sh à partir du
-#    certificat mkcert), servi pour tous les hôtes *.127.0.0.1.sslip.io.
+# Traefik is provided by k3s. Two settings, taken from experiment 2:
+#  - HTTP -> HTTPS redirect (301) at the `web` entry point;
+#  - default certificate: the `mkcert-wildcard` Secret (created by cluster.sh from the
+#    mkcert certificate), served for all *.127.0.0.1.sslip.io hosts.
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:

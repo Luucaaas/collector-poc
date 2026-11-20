@@ -127,7 +127,7 @@ Version défaillante : `resources.limits.memory: 24Mi` (requête de 16 Mi), pass
 
 | Mesure | Valeur |
 | --- | --- |
-| Sortie de `deploy.sh services` | `UPGRADE FAILED: resource Deployment/collector/catalog-service not ready. status: InProgress, message: Updated: 1/2`, puis « ÉCHEC : retour arrière », « catalog-service : retour à la révision 1 », « Rollback was a success! », « notification-service : non modifié par ce lancement, laissé tel quel » |
+| Sortie de `deploy.sh services` | `UPGRADE FAILED: resource Deployment/collector/catalog-service not ready. status: InProgress, message: Updated: 1/2`, puis « ÉCHEC : retour arrière », « catalog-service : retour à la révision 1 », « Rollback was a success! », « notification-service : non modifié par ce lancement, laissé tel quel » (sortie du 06/11/2026 ; depuis le 19/11/2026 le script affiche en anglais « FAILURE: rolling back », « back to revision 1 », « not modified by this run, left as is ») |
 | Code de sortie | **1** (assertion du script) |
 | Durée de `deploy.sh` | 309,8 s : 300 s d'attente du déploiement (`helm --wait --timeout 5m`), puis le retour arrière |
 | État des pods 90 s après le début | nouveau pod `catalog-service-6fccff6cf7-qd8dw` : `CrashLoopBackOff`, 3 redémarrages, dernier arrêt `OOMKilled`, prêt = false ; les 2 anciens pods : `Running`, prêts, 0 redémarrage |

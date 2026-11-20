@@ -1,22 +1,22 @@
-# Valeurs de kube-prometheus-stack 91.9.0 pour le cluster k3d `collector` (expérimentation 3, ADR 0008).
-# Seules les clés qui diffèrent des valeurs par défaut du chart sont listées.
-# Installé dans le namespace `collector` par `deploy/local/deploy.sh monitoring` (release `kps`).
-# Aucun secret ici : le mot de passe de Grafana vient du Secret `grafana-admin`.
+# Values of kube-prometheus-stack 91.9.0 for the k3d cluster `collector` (experiment 3, ADR 0008).
+# Only the keys that differ from the chart's default values are listed.
+# Installed in the `collector` namespace by `deploy/local/deploy.sh monitoring` (release `kps`).
+# No secret here: the Grafana password comes from the `grafana-admin` Secret.
 
-# Noms courts et prévisibles : services kps-prometheus et kps-grafana.
+# Short, predictable names: services kps-prometheus and kps-grafana.
 fullnameOverride: kps
 
-# --- Composants retirés (le POC ne supervise que l'application) -------------------------------
+# --- Removed components (the POC only monitors the application) ------------------------------
 alertmanager:
-  enabled: false            # pas d'alertes dans le POC
+  enabled: false            # no alerts in the POC
 defaultRules:
-  create: false             # règles d'alerte et d'enregistrement du chart : inutiles sans Alertmanager
+  create: false             # the chart's alerting and recording rules: useless without Alertmanager
 nodeExporter:
-  enabled: false            # métriques de la machine : non demandées
+  enabled: false            # machine metrics: not requested
 kubeStateMetrics:
-  enabled: true             # réplicas des Deployments et de l'HPA (démo de montée en charge, critère 5)
+  enabled: true             # replicas of the Deployments and of the HPA (load scaling demo, criterion 5)
 kubelet:
-  enabled: true             # collecte du kubelet dont cAdvisor : CPU et mémoire par conteneur
+  enabled: true             # kubelet collection including cAdvisor: CPU and memory per container
 kubeApiServer:
   enabled: false
 kubeControllerManager:
@@ -30,10 +30,10 @@ kubeEtcd:
 coreDns:
   enabled: false
 
-# --- Images épinglées par tag@sha256 (digest de l'index multi-architecture, relevé le 05/11/2026
-# par `docker buildx imagetools inspect <image>`). Le champ `sha` ne porte que les 64 caractères
-# hexadécimaux : le chart ajoute « @sha256: » (exception : kube-state-metrics, dont le sous-chart
-# ajoute seulement « @ », d'où le préfixe « sha256: » dans sa valeur). Pour monter de version : changer le tag ET le digest.
+# --- Images pinned by tag@sha256 (digest of the multi-architecture index, taken on 05/11/2026
+# with `docker buildx imagetools inspect <image>`). The `sha` field only holds the 64 hexadecimal
+# characters: the chart adds "@sha256:" (exception: kube-state-metrics, whose subchart
+# only adds "@", hence the "sha256:" prefix in its value). To upgrade: change the tag AND the digest.
 kube-state-metrics:
   image:
     tag: v2.20.0
@@ -42,7 +42,7 @@ kube-state-metrics:
     requests: {cpu: 10m, memory: 32Mi}
     limits: {memory: 128Mi}
 
-# --- Opérateur Prometheus ---------------------------------------------------------------
+# --- Prometheus Operator ----------------------------------------------------------------
 prometheusOperator:
   image:
     tag: v0.94.1
@@ -52,35 +52,35 @@ prometheusOperator:
       tag: v0.94.1
       sha: 06b52bd4dbe3ed6dd5905aadaf8b9987d9da4c31d37bb86deaadae68cee2d26b
   tls:
-    enabled: false          # sans webhooks, pas de Secret de certificat à créer (sinon le pod reste en ContainerCreating)
+    enabled: false          # without webhooks, no certificate Secret to create (otherwise the pod stays in ContainerCreating)
   admissionWebhooks:
-    enabled: false          # évite le Job « certgen » et une image de plus
+    enabled: false          # avoids the "certgen" Job and one more image
   resources:
     requests: {cpu: 50m, memory: 64Mi}
     limits: {memory: 256Mi}
 
-# --- Prometheus : non exposé (accès par `kubectl port-forward svc/kps-prometheus 9090`) ------------
+# --- Prometheus: not exposed (access through `kubectl port-forward svc/kps-prometheus 9090`) ------
 prometheus:
   prometheusSpec:
     image:
       tag: v3.15.0-distroless
       sha: b2a413d5a03ea6a76782a508d1c7947440bba3b973931a25676e278431891b01
-    retention: 2h           # pas de stockage persistant (limite L20) : 2 h suffisent aux démonstrations
-    # Sélectionne les ServiceMonitor de tous les namespaces, sans exiger le label « release: kps ».
+    retention: 2h           # no persistent storage (limit L20): 2 h is enough for the demonstrations
+    # Selects the ServiceMonitors of all namespaces, without requiring the "release: kps" label.
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorNamespaceSelector: {}
     resources:
       requests: {cpu: 100m, memory: 256Mi}
       limits: {memory: 768Mi}
 
-# --- Grafana : HTTPS par Traefik, pas d'accès anonyme ---------------------------------------
+# --- Grafana: HTTPS through Traefik, no anonymous access ------------------------------------
 grafana:
   image:
     tag: 13.2.3-distroless
     sha: 202e5d5b3f8499e70ccac7991eea6d7da72d2790eb2e0597e7987acf724e7180
-  defaultDashboardsEnabled: false   # seuls les tableaux de bord versionnés dans le dépôt
+  defaultDashboardsEnabled: false   # only the dashboards versioned in the repository
   admin:
-    existingSecret: grafana-admin   # créé par deploy.sh (clés admin-user et admin-password)
+    existingSecret: grafana-admin   # created by deploy.sh (keys admin-user and admin-password)
     userKey: admin-user
     passwordKey: admin-password
   grafana.ini:
@@ -101,24 +101,24 @@ grafana:
     path: /
     tls:
       - hosts:
-          - grafana.127.0.0.1.sslip.io   # certificat par défaut de Traefik : le joker mkcert
+          - grafana.127.0.0.1.sslip.io   # Traefik's default certificate: the mkcert wildcard
   sidecar:
     image:
       tag: 2.11.2
       sha: 2912be006f62f9ea080194cf6d3afcd90daead8d101d0ba686a137a849f6a4f6
     datasources:
       alertmanager:
-        enabled: false          # Alertmanager est désactivé : pas de source de données orpheline
+        enabled: false          # Alertmanager is disabled: no orphan data source
     dashboards:
       enabled: true
-      label: grafana_dashboard      # le sidecar charge toute ConfigMap portant ce label
+      label: grafana_dashboard      # the sidecar loads any ConfigMap carrying this label
       labelValue: "1"
       searchNamespace: ALL
     resources:
       requests: {cpu: 10m, memory: 32Mi}
       limits: {memory: 128Mi}
-  # 290 à 350 Mi au repos : 384 Mi faisaient tuer Grafana (OOMKilled) à l'ouverture d'un tableau
-  # de bord pendant le protocole 5 (P8-03). La requête suit la consommation réelle.
+  # 290 to 350 Mi at rest: 384 Mi got Grafana killed (OOMKilled) when opening a dashboard
+  # during protocol 5 (P8-03). The request follows the real consumption.
   resources:
     requests: {cpu: 50m, memory: 320Mi}
     limits: {memory: 768Mi}

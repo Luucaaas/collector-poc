@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Vérifie la présence et la version des outils de développement du POC.
-# Compatible avec le bash 3.2 de macOS.
+# Checks that the POC's development tools are present and shows their version.
+# Compatible with the macOS bash 3.2.
 #
-# Usage :
-#   deploy/local/check-tools.sh            # vérifie les outils
-#   deploy/local/check-tools.sh --cluster  # vérifie les outils, puis crée un cluster
-#                                          # k3d de test (1 server + 2 agents),
-#                                          # attend les 3 nœuds Ready et le supprime
+# Usage:
+#   deploy/local/check-tools.sh            # checks the tools
+#   deploy/local/check-tools.sh --cluster  # checks the tools, then creates a test
+#                                          # k3d cluster (1 server + 2 agents),
+#                                          # waits for the 3 Ready nodes and deletes it
 #
-# Code de sortie : 0 si tout est présent, 1 s'il manque un outil
-# ou si la validation du cluster échoue.
+# Exit code: 0 if everything is present, 1 if a tool is missing
+# or if the cluster validation fails.
 
 set -u
 
@@ -26,21 +26,21 @@ else
   GREEN=""; RED=""; YELLOW=""; RESET=""
 fi
 
-# Extrait le premier numéro de version (x.y ou x.y.z) d'une chaîne.
+# Extracts the first version number (x.y or x.y.z) from a string.
 extract_version() {
   grep -Eo '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1
 }
 
 row() {
-  # row <outil> <version> <statut> <couleur>
+  # row <tool> <version> <status> <color>
   printf '%-12s %-12s %s%s%s\n' "$1" "$2" "$4" "$3" "$RESET"
 }
 
 ok()      { row "$1" "$2" "OK" "$GREEN"; }
-missing() { row "$1" "-" "MANQUANT" "$RED"; MISSING=$((MISSING + 1)); }
-warn()    { row "$1" "$2" "ATTENTION : $3" "$YELLOW"; WARNINGS=$((WARNINGS + 1)); }
+missing() { row "$1" "-" "MISSING" "$RED"; MISSING=$((MISSING + 1)); }
+warn()    { row "$1" "$2" "WARNING: $3" "$YELLOW"; WARNINGS=$((WARNINGS + 1)); }
 
-# check <outil> <commande qui affiche la version>
+# check <tool> <command that prints the version>
 check() {
   local tool="$1" cmd="$2" version
   if ! command -v "$tool" >/dev/null 2>&1; then
@@ -51,8 +51,8 @@ check() {
   ok "$tool" "${version:-?}"
 }
 
-printf '%-12s %-12s %s\n' "OUTIL" "VERSION" "STATUT"
-printf '%-12s %-12s %s\n' "-----" "-------" "------"
+printf '%-12s %-12s %s\n' "TOOL" "VERSION" "STATUS"
+printf '%-12s %-12s %s\n' "----" "-------" "------"
 
 check brew    "brew --version"
 check git     "git --version"
@@ -62,32 +62,32 @@ check k3d     "k3d version"
 check uv      "uv --version"
 check node    "node --version"
 
-# mkcert : l'autorité de certification locale doit aussi être installée.
+# mkcert: the local certificate authority must also be installed.
 if command -v mkcert >/dev/null 2>&1; then
   version=$(mkcert -version 2>/dev/null | extract_version)
   if [ -f "$(mkcert -CAROOT 2>/dev/null)/rootCA.pem" ]; then
     ok mkcert "${version:-?}"
   else
-    warn mkcert "${version:-?}" "CA absente, lancer 'mkcert -install'"
+    warn mkcert "${version:-?}" "CA missing, run 'mkcert -install'"
   fi
 else
   missing mkcert
 fi
 
-# Python 3.12 : installé et géré par uv.
+# Python 3.12: installed and managed by uv.
 if command -v uv >/dev/null 2>&1 && py=$(uv python find 3.12 2>/dev/null); then
   ok python3.12 "$("$py" --version 2>&1 | extract_version)"
 else
   missing python3.12
 fi
 
-# Docker : le client doit être présent et le daemon (Docker Desktop) démarré.
+# Docker: the client must be present and the daemon (Docker Desktop) started.
 if command -v docker >/dev/null 2>&1; then
   version=$(docker --version 2>/dev/null | extract_version)
   if docker info >/dev/null 2>&1; then
     ok docker "${version:-?}"
   else
-    warn docker "${version:-?}" "daemon arrêté, ouvrir Docker Desktop"
+    warn docker "${version:-?}" "daemon stopped, open Docker Desktop"
   fi
 else
   missing docker
@@ -95,22 +95,22 @@ fi
 
 echo
 if [ "$MISSING" -gt 0 ]; then
-  echo "${RED}${MISSING} outil(s) manquant(s).${RESET}"
+  echo "${RED}${MISSING} tool(s) missing.${RESET}"
   exit 1
 fi
 if [ "$WARNINGS" -gt 0 ]; then
-  echo "${YELLOW}Tous les outils sont présents, ${WARNINGS} point(s) d'attention.${RESET}"
+  echo "${YELLOW}All tools are present, ${WARNINGS} warning(s).${RESET}"
 else
-  echo "${GREEN}Tous les outils sont présents.${RESET}"
+  echo "${GREEN}All tools are present.${RESET}"
 fi
 
 [ "$RUN_CLUSTER" -eq 1 ] || exit 0
 
-# --- Validation de l'environnement : cluster k3d de test -------------------
+# --- Environment validation: test k3d cluster -------------------------------
 echo
-echo "Création du cluster de test '$TEST_CLUSTER' (1 server + 2 agents)..."
+echo "Creating the test cluster '$TEST_CLUSTER' (1 server + 2 agents)..."
 if ! k3d cluster create "$TEST_CLUSTER" --servers 1 --agents 2 --wait; then
-  echo "${RED}Échec de la création du cluster.${RESET}"
+  echo "${RED}Cluster creation failed.${RESET}"
   k3d cluster delete "$TEST_CLUSTER" >/dev/null 2>&1
   exit 1
 fi
@@ -120,16 +120,16 @@ if kubectl --context "k3d-$TEST_CLUSTER" wait --for=condition=Ready nodes --all 
   kubectl --context "k3d-$TEST_CLUSTER" get nodes
   ready=$(kubectl --context "k3d-$TEST_CLUSTER" get nodes --no-headers | grep -c ' Ready ')
   if [ "$ready" -eq 3 ]; then
-    echo "${GREEN}Les 3 nœuds sont Ready.${RESET}"
+    echo "${GREEN}All 3 nodes are Ready.${RESET}"
   else
-    echo "${RED}${ready} nœud(s) Ready sur 3.${RESET}"
+    echo "${RED}${ready} node(s) Ready out of 3.${RESET}"
     status=1
   fi
 else
-  echo "${RED}Les nœuds ne sont pas Ready après 120 s.${RESET}"
+  echo "${RED}The nodes are not Ready after 120 s.${RESET}"
   status=1
 fi
 
-echo "Suppression du cluster de test..."
+echo "Deleting the test cluster..."
 k3d cluster delete "$TEST_CLUSTER"
 exit "$status"

@@ -1,5 +1,5 @@
-# Ressource TEMPORAIRE de `cluster.sh verify` : un serveur HTTP minimal pour prouver que
-# Traefik sert le certificat et redirige. Supprimée à la fin de la vérification.
+# TEMPORARY resource of `cluster.sh verify`: a minimal HTTP server to prove that
+# Traefik serves the certificate and redirects. Deleted at the end of the check.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

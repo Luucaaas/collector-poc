@@ -1,9 +1,9 @@
-# PostgreSQL : image officielle, un StatefulSet d'un réplica, volume local-path de k3s.
-# Une instance, trois bases logiques (catalog_db, notification_db, keycloak) et un rôle par base.
-# Les rôles sont créés au premier démarrage d'un volume vide par le script d'initialisation
-# deploy/compose/postgres-init/10-roles.sh (le même que pour la pile docker compose), fourni par
-# la ConfigMap `postgres-init` que crée deploy.sh. Le Secret `postgres-credentials` contient
-# POSTGRES_PASSWORD et les trois mots de passe de rôle.
+# PostgreSQL: official image, a single-replica StatefulSet, k3s local-path volume.
+# One instance, three logical databases (catalog_db, notification_db, keycloak) and one role per database.
+# The roles are created on the first start of an empty volume by the initialization script
+# deploy/compose/postgres-init/10-roles.sh (the same as for the docker compose stack), provided by
+# the `postgres-init` ConfigMap that deploy.sh creates. The `postgres-credentials` Secret contains
+# POSTGRES_PASSWORD and the three role passwords.
 apiVersion: v1
 kind: Service
 metadata:
@@ -35,12 +35,12 @@ spec:
       labels:
         app: postgres
     spec:
-      # Bonne pratique : ne pas injecter dans le pod les variables d'environnement des Services
-      # du namespace (<SERVICE>_PORT=tcp://..., <SERVICE>_SERVICE_HOST) ; la résolution DNS suffit.
+      # Good practice: do not inject into the pod the environment variables of the namespace's
+      # Services (<SERVICE>_PORT=tcp://..., <SERVICE>_SERVICE_HOST); DNS resolution is enough.
       enableServiceLinks: false
       securityContext:
-        # L'image alpine fait tourner PostgreSQL sous l'utilisateur `postgres` (uid/gid 70).
-        # fsGroup donne ce groupe au volume : le démarrage n'a plus besoin d'être root.
+        # The alpine image runs PostgreSQL as the `postgres` user (uid/gid 70).
+        # fsGroup gives this group to the volume: startup no longer needs to be root.
         runAsNonRoot: true
         runAsUser: 70
         runAsGroup: 70
@@ -82,13 +82,13 @@ spec:
             failureThreshold: 6
           volumeMounts:
             - name: data
-              mountPath: /var/lib/postgresql   # PostgreSQL 18 : PGDATA est un sous-dossier versionné
+              mountPath: /var/lib/postgresql   # PostgreSQL 18: PGDATA is a versioned subdirectory
             - name: init
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
-            # Système de fichiers racine en lecture seule : seuls les chemins écrits sont montés.
+            # Read-only root file system: only the written paths are mounted.
             - name: run
-              mountPath: /var/run/postgresql   # socket Unix et fichier PID
+              mountPath: /var/run/postgresql   # Unix socket and PID file
             - name: tmp
               mountPath: /tmp
           resources:

@@ -1,8 +1,8 @@
-# RabbitMQ : image officielle, un StatefulSet d'un réplica, volume local-path de k3s.
-# Utilisateurs, vhost et permissions viennent du fichier de définitions rendu par
-# deploy/compose/render.py (Secret `rabbitmq-definitions`), chargé par rabbitmq.conf
-# (ConfigMap `rabbitmq-config`) : pas d'utilisateur `guest`, un utilisateur par service.
-# Le management (15672) n'est joignable que dans le cluster (port-forward) : aucun Ingress.
+# RabbitMQ: official image, a single-replica StatefulSet, k3s local-path volume.
+# Users, vhost and permissions come from the definitions file rendered by
+# deploy/compose/render.py (`rabbitmq-definitions` Secret), loaded by rabbitmq.conf
+# (`rabbitmq-config` ConfigMap): no `guest` user, one user per service.
+# The management UI (15672) is only reachable inside the cluster (port-forward): no Ingress.
 apiVersion: v1
 kind: Service
 metadata:
@@ -20,9 +20,9 @@ spec:
       port: 15672
       targetPort: management
 ---
-# Service headless : donne au pod un nom d'hôte stable (rabbitmq-0). RabbitMQ range ses données
-# dans un dossier nommé d'après son nœud (rabbit@<nom d'hôte>) : sans nom stable, le volume ne
-# serait pas repris à la recréation du pod (protocole 1).
+# Headless Service: gives the pod a stable host name (rabbitmq-0). RabbitMQ stores its data
+# in a directory named after its node (rabbit@<host name>): without a stable name, the volume would
+# not be picked up again when the pod is recreated (protocol 1).
 apiVersion: v1
 kind: Service
 metadata:
@@ -55,17 +55,17 @@ spec:
       labels:
         app: rabbitmq
     spec:
-      # Bonne pratique : ne pas injecter dans le pod les variables d'environnement des Services
-      # du namespace (<SERVICE>_PORT=tcp://..., <SERVICE>_SERVICE_HOST). L'image lit des variables
-      # RABBITMQ_* ; aucun lecteur de RABBITMQ_PORT n'y a été trouvé (grep), le réglage n'est donc
-      # pas indispensable.
+      # Good practice: do not inject into the pod the environment variables of the namespace's
+      # Services (<SERVICE>_PORT=tcp://..., <SERVICE>_SERVICE_HOST). The image reads RABBITMQ_*
+      # variables; no reader of RABBITMQ_PORT was found there (grep), so the setting is
+      # not essential.
       enableServiceLinks: false
-      # Arrêt propre sur SIGTERM, mesuré en quelques secondes ; 60 s de marge (protocole 1).
+      # Clean shutdown on SIGTERM, measured at a few seconds; 60 s of margin (protocol 1).
       terminationGracePeriodSeconds: 60
-      # Pas de securityContext de pod ni de fsGroup : le point d'entrée de l'image démarre en root,
-      # donne le volume à l'utilisateur `rabbitmq` puis lui passe la main. Un fsGroup rend le
-      # cookie Erlang lisible par le groupe et le nœud refuse alors de démarrer (protocole 1 §6,
-      # limite L18). Durcissement à étudier dans la cible.
+      # No pod securityContext or fsGroup: the image's entrypoint starts as root,
+      # gives the volume to the `rabbitmq` user then hands over to it. An fsGroup makes the
+      # Erlang cookie group-readable and the node then refuses to start (protocol 1 §6,
+      # limit L18). Hardening to study in the target.
       containers:
         - name: rabbitmq
           image: rabbitmq:4.3.5-management@sha256:57bddb6fbc3498b5d8b5a14dc6f4506073ebcf94c66ba2a7678c335faa8dd631
@@ -74,16 +74,16 @@ spec:
               containerPort: 5672
             - name: management
               containerPort: 15672
-          # Prêt : le nœud écoute sur ses ports. Chaque appel démarre une VM Erlang, d'où
-          # timeoutSeconds 10 ; période de 5 s pour un retour à Ready rapide.
+          # Ready: the node listens on its ports. Each call starts an Erlang VM, hence
+          # timeoutSeconds 10; period of 5 s for a quick return to Ready.
           readinessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "check_port_connectivity"]
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 10
-          # Vivant : le nœud répond à un ping Erlang. Marge large (60 s puis 6 échecs de 30 s)
-          # pour ne jamais tuer un broker lent à démarrer.
+          # Alive: the node answers an Erlang ping. Wide margin (60 s then 6 failures of 30 s)
+          # to never kill a broker that is slow to start.
           livenessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "ping"]

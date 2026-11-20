@@ -1,7 +1,7 @@
 #!/bin/sh
-# Exécuté une seule fois, au premier démarrage d'un volume vide (docker-entrypoint-initdb.d).
-# Une base et un utilisateur par composant : aucun n'est superutilisateur, chacun est propriétaire
-# de sa base, et l'accès à chaque base est retiré à PUBLIC (comme dans l'expérimentation 2).
+# Run only once, on the first start of an empty volume (docker-entrypoint-initdb.d).
+# One database and one user per component: none is a superuser, each owns
+# its database, and access to each database is removed from PUBLIC (as in experiment 2).
 set -e
 for entry in catalog:catalog_db:CATALOG_DB_PASSWORD \
              notification:notification_db:NOTIFICATION_DB_PASSWORD \

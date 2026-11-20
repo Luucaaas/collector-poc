@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Arrête la pile locale. `--volumes` supprime aussi les données (PostgreSQL, RabbitMQ).
-# Les images construites sont conservées. Le fichier .env n'est jamais supprimé.
+# Stops the local stack. `--volumes` also deletes the data (PostgreSQL, RabbitMQ).
+# The built images are kept. The .env file is never deleted.
 set -euo pipefail
 cd "$(dirname "$0")"
 
 ARGS=()
 [[ "${1:-}" == "--volumes" ]] && ARGS=(--volumes)
-# --remove-orphans : retire aussi un conteneur laissé par une version précédente du fichier.
-# Un .env absent ne doit pas empêcher l'arrêt : compose a seulement besoin des noms de services.
+# --remove-orphans: also removes a container left by a previous version of the file.
+# A missing .env must not prevent the shutdown: compose only needs the service names.
 if [[ -f .env ]]; then
   docker compose down --remove-orphans ${ARGS[@]+"${ARGS[@]}"}
 else

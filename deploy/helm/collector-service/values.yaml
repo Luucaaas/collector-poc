@@ -1,49 +1,49 @@
-# Valeurs par défaut du chart générique. Chaque service les complète dans
-# deploy/helm/values/<service>.yaml ; `deploy.sh services <tag>` fournit image.tag et image.digest.
+# Default values of the generic chart. Each service completes them in
+# deploy/helm/values/<service>.yaml; `deploy.sh services <tag>` provides image.tag and image.digest.
 
-# Nom des objets (Deployment, Service, ...) : par défaut le nom de la release.
+# Name of the objects (Deployment, Service, ...): the release name by default.
 nameOverride: ""
 
 image:
-  repository: ""        # ex. ghcr.io/luucaaas/catalog-service
-  tag: ""               # ex. sha-bec38ed (obligatoire)
-  digest: ""            # sha256:... de l'index multi-architecture (obligatoire) ; épingle l'image (tag@digest)
+  repository: ""        # e.g. ghcr.io/luucaaas/catalog-service
+  tag: ""               # e.g. sha-bec38ed (required)
+  digest: ""            # sha256:... of the multi-architecture index (required); pins the image (tag@digest)
   pullPolicy: IfNotPresent
 
-# Utilisé seulement si l'HPA est désactivé ; sinon l'HPA (minReplicas) décide du nombre de réplicas.
+# Used only if the HPA is disabled; otherwise the HPA (minReplicas) decides the replica count.
 replicaCount: 2
 containerPort: 8000
 
-# Secret créé par deploy.sh (clés DATABASE_URL et RABBITMQ_URL) : jamais de mot de passe ici.
-# Facultatif : le front nginx n'a pas de Secret (obligatoire seulement si la migration est activée).
+# Secret created by deploy.sh (keys DATABASE_URL and RABBITMQ_URL): never a password here.
+# Optional: the nginx front end has no Secret (required only if the migration is enabled).
 secretName: ""
 
-# Identité du processus du conteneur et propriétaire des volumes (fsGroup). 10001 pour les images
-# Python ; le front (nginx-unprivileged) tourne sous l'uid 101.
+# Identity of the container process and owner of the volumes (fsGroup). 10001 for the Python
+# images; the front end (nginx-unprivileged) runs as uid 101.
 podSecurity:
   uid: 10001
   gid: 10001
   fsGroup: 10001
 
-# Chemins des sondes HTTP (sur le port `http`). Le front n'a que /healthz.
+# HTTP probe paths (on the `http` port). The front end only has /healthz.
 probes:
   livePath: /health/live
   readyPath: /health/ready
 
-# emptyDir supplémentaires (en plus de /tmp), pour garder un système de fichiers racine en lecture
-# seule. Liste de {name, mountPath, sizeLimit}. Ex. front : sortie des modèles nginx (/etc/nginx/conf.d).
+# Extra emptyDirs (in addition to /tmp), to keep a read-only root file
+# system. List of {name, mountPath, sizeLimit}. E.g. front end: nginx template output (/etc/nginx/conf.d).
 extraEmptyDirs: []
 
-# Fichier de configuration monté depuis un ConfigMap, en lecture seule (subPath). Un changement de
-# `content` redémarre les pods (annotation de somme de contrôle). Ex. front : config.json.
+# Configuration file mounted from a ConfigMap, read-only (subPath). A change to
+# `content` restarts the pods (checksum annotation). E.g. front end: config.json.
 configFile:
   enabled: false
-  name: ""              # nom du fichier dans le ConfigMap (clé)
-  mountPath: ""         # chemin complet dans le conteneur
-  content: ""           # texte du fichier
+  name: ""              # file name in the ConfigMap (key)
+  mountPath: ""         # full path in the container
+  content: ""           # file text
 
-# Variables non sensibles. Les valeurs par défaut du code sont celles du POC ; elles sont
-# explicites ici pour que la configuration du cluster se lise dans un seul endroit.
+# Non-sensitive variables. The code's default values are the POC's; they are
+# explicit here so that the cluster configuration reads in a single place.
 config:
   ISSUER: https://auth.127.0.0.1.sslip.io/realms/collector
   JWKS_URL: http://keycloak.collector.svc.cluster.local:8080/realms/collector/protocol/openid-connect/certs
@@ -67,11 +67,11 @@ autoscaling:
 
 ingress:
   enabled: true
-  mode: api             # api : <prefix><apiPath> avec Middleware StripPrefix ; root : chemin / sans Middleware (front)
+  mode: api             # api: <prefix><apiPath> with a StripPrefix Middleware; root: path / without a Middleware (front end)
   host: api.127.0.0.1.sslip.io
-  prefix: ""            # ex. /catalog : retiré par le Middleware StripPrefix avant d'appeler le service
-  stsSeconds: 31536000  # HSTS (mode api) : un an, sans includeSubDomains ni preload (le domaine sslip.io n'est pas le nôtre)
-  apiPath: /api/v1      # seul ce chemin est routé : /health/* et /metrics restent hors de l'Ingress
+  prefix: ""            # e.g. /catalog: removed by the StripPrefix Middleware before calling the service
+  stsSeconds: 31536000  # HSTS (api mode): one year, without includeSubDomains or preload (the sslip.io domain is not ours)
+  apiPath: /api/v1      # only this path is routed: /health/* and /metrics stay outside the Ingress
 
 migration:
   enabled: true
@@ -80,8 +80,8 @@ migration:
 
 terminationGracePeriodSeconds: 30
 
-# ServiceMonitor (Prometheus Operator) sur /metrics, port `http`. Désactivé par défaut : le CRD vient
-# de kube-prometheus-stack ; deploy.sh l'active (--set) quand le CRD existe.
+# ServiceMonitor (Prometheus Operator) on /metrics, `http` port. Disabled by default: the CRD comes
+# from kube-prometheus-stack; deploy.sh enables it (--set) when the CRD exists.
 serviceMonitor:
   enabled: false
   interval: 15s

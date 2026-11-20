@@ -1,4 +1,4 @@
-# Valeurs propres à catalog-service (le reste vient de collector-service/values.yaml).
+# Values specific to catalog-service (the rest comes from collector-service/values.yaml).
 image:
   repository: ghcr.io/luucaaas/catalog-service
 secretName: catalog-service-secrets

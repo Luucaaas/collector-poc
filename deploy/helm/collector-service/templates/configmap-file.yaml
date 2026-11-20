@@ -1,5 +1,5 @@
 {{- if .Values.configFile.enabled }}
-# Fichier de configuration monté dans le conteneur (ex. config.json du front).
+# Configuration file mounted in the container (e.g. the front end's config.json).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,6 +7,6 @@ metadata:
   labels:
     {{- include "collector-service.labels" . | nindent 4 }}
 data:
-  {{ required "configFile.name est obligatoire" .Values.configFile.name }}: |
-    {{- required "configFile.content est obligatoire" .Values.configFile.content | trim | nindent 4 }}
+  {{ required "configFile.name is required" .Values.configFile.name }}: |
+    {{- required "configFile.content is required" .Values.configFile.content | trim | nindent 4 }}
 {{- end }}

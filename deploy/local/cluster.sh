@@ -1,33 +1,33 @@
 #!/usr/bin/env bash
-# Cycle de vie du cluster k3d `collector` : création, vérification HTTPS, suppression.
+# Lifecycle of the k3d cluster `collector`: creation, HTTPS check, deletion.
 #
-# Usage : deploy/local/cluster.sh create | verify | delete
-#   create : vérifie les pré-requis, crée le cluster (1 server + 2 agents), génère le certificat
-#            mkcert s'il manque, configure Traefik (certificat par défaut, redirection
-#            HTTP -> HTTPS) et crée le namespace `collector`. Relançable sans effet de bord.
-#   verify : déploie une ressource temporaire (traefik/whoami), contrôle la redirection 301 et le
-#            HTTPS sans `-k`, affiche les dates du certificat, puis supprime la ressource.
-#   delete : supprime le cluster. Le certificat (deploy/local/.certs/) est conservé pour réutilisation.
+# Usage: deploy/local/cluster.sh create | verify | delete
+#   create: checks the prerequisites, creates the cluster (1 server + 2 agents), generates the
+#            mkcert certificate if it is missing, configures Traefik (default certificate,
+#            HTTP -> HTTPS redirect) and creates the `collector` namespace. Safe to rerun.
+#   verify: deploys a temporary resource (traefik/whoami), checks the 301 redirect and
+#            HTTPS without `-k`, prints the certificate dates, then deletes the resource.
+#   delete: deletes the cluster. The certificate (deploy/local/.certs/) is kept for reuse.
 #
-# La CA mkcert doit déjà être installée (`mkcert -install`, à faire une fois, hors de ce script).
+# The mkcert CA must already be installed (`mkcert -install`, done once, outside this script).
 set -euo pipefail
 
-# --- Versions épinglées (tag@digest de l'index multi-architecture) ----------------------
+# --- Pinned versions (tag@digest of the multi-architecture index) -----------------------
 K3S_IMAGE="rancher/k3s:v1.35.8-k3s1@sha256:59fe491fd3b73204e499e40b325240d85c42c7189c3ae50150d37b78243f3b32"
 
 CLUSTER="collector"
 CTX="k3d-${CLUSTER}"
 HOST_SUFFIX="127.0.0.1.sslip.io"
-MIN_FREE_MB=10000   # le déploiement complet consomme 6,4 Go (protocole 4) + marge du kubelet (évictions sous ~3,1 Go libres)
+MIN_FREE_MB=10000   # the full deployment uses 6.4 GB (protocol 4) + kubelet margin (evictions below ~3.1 GB free)
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 K8S_DIR="$(cd "${HERE}/../k8s" && pwd)"
-CERT_DIR="${HERE}/.certs"   # ignoré par Git : contient la clé privée du certificat
+CERT_DIR="${HERE}/.certs"   # ignored by Git: contains the certificate's private key
 K="kubectl --context ${CTX}"
 
 step() { printf '\n=== %s ===\n' "$*"; }
 
-# Relance une commande jusqu'à ce qu'elle réussisse. $1 essais, $2 pause, le reste : commande.
+# Reruns a command until it succeeds. $1 attempts, $2 pause, the rest: the command.
 retry() {
   local tries="$1" pause="$2"
   shift 2
@@ -35,49 +35,49 @@ retry() {
     "$@" && return 0
     sleep "$pause"
   done
-  echo "Échec après ${tries} essais : $*" >&2
+  echo "Failed after ${tries} attempts: $*" >&2
   return 1
 }
 
 cluster_exists() { k3d cluster list --no-headers 2>/dev/null | awk '{print $1}' | grep -qx "$CLUSTER"; }
 
 check_prerequisites() {
-  step "Pré-requis"
+  step "Prerequisites"
   for tool in docker k3d kubectl mkcert curl openssl lsof; do
-    command -v "$tool" >/dev/null || { echo "Outil manquant : $tool (voir deploy/local/check-tools.sh)" >&2; exit 1; }
+    command -v "$tool" >/dev/null || { echo "Missing tool: $tool (see deploy/local/check-tools.sh)" >&2; exit 1; }
   done
-  docker info >/dev/null 2>&1 || { echo "Docker ne répond pas : démarrer Docker Desktop." >&2; exit 1; }
-  [[ -f "$(mkcert -CAROOT)/rootCA.pem" ]] || { echo "CA mkcert absente : lancer 'mkcert -install' une fois (hors de ce script)." >&2; exit 1; }
-  echo "Outils présents, Docker répond, CA mkcert présente."
+  docker info >/dev/null 2>&1 || { echo "Docker is not responding: start Docker Desktop." >&2; exit 1; }
+  [[ -f "$(mkcert -CAROOT)/rootCA.pem" ]] || { echo "mkcert CA missing: run 'mkcert -install' once (outside this script)." >&2; exit 1; }
+  echo "Tools present, Docker responds, mkcert CA present."
 }
 
-# Ports 80 et 443 du Mac libres, et 10 Go libres dans la VM Docker : seulement avant la création.
+# Mac ports 80 and 443 free, and 10 GB free in the Docker VM: only before creation.
 check_resources() {
   for port in 80 443; do
     if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
-      echo "Le port ${port} du Mac est déjà utilisé :" >&2
+      echo "Mac port ${port} is already in use:" >&2
       lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
       exit 1
     fi
   done
-  echo "Ports 80 et 443 du Mac : libres."
-  # L'image k3s (nécessaire de toute façon) sert à mesurer l'espace libre de la VM Docker.
+  echo "Mac ports 80 and 443: free."
+  # The k3s image (needed anyway) is used to measure the free space of the Docker VM.
   local free_mb
   free_mb=$(docker run --rm --entrypoint df "$K3S_IMAGE" -m / | awk 'NR==2 {print $4}')
-  echo "Espace libre de la VM Docker : ${free_mb} Mo (minimum ${MIN_FREE_MB} Mo)."
+  echo "Free space in the Docker VM: ${free_mb} MB (minimum ${MIN_FREE_MB} MB)."
   if [[ "$free_mb" -lt "$MIN_FREE_MB" ]]; then
-    echo "Espace disque insuffisant." >&2
+    echo "Not enough disk space." >&2
     exit 1
   fi
 }
 
-# Certificat générique mkcert, généré une seule fois et réutilisé après un `delete`.
+# Wildcard mkcert certificate, generated once and reused after a `delete`.
 ensure_certificate() {
-  step "Certificat mkcert"
+  step "mkcert certificate"
   mkdir -p "$CERT_DIR"
   chmod 700 "$CERT_DIR"
   if [[ -f "${CERT_DIR}/tls.crt" && -f "${CERT_DIR}/tls.key" ]]; then
-    echo "Certificat existant conservé."
+    echo "Existing certificate kept."
   else
     mkcert -cert-file "${CERT_DIR}/tls.crt" -key-file "${CERT_DIR}/tls.key" "*.${HOST_SUFFIX}" "${HOST_SUFFIX}"
     chmod 600 "${CERT_DIR}/tls.key"
@@ -88,11 +88,11 @@ create() {
   check_prerequisites
   step "Cluster k3d"
   if cluster_exists; then
-    echo "Le cluster ${CLUSTER} existe déjà : non recréé."
-    k3d cluster start "$CLUSTER" >/dev/null 2>&1 || true   # sans effet s'il tourne déjà
+    echo "Cluster ${CLUSTER} already exists: not recreated."
+    k3d cluster start "$CLUSTER" >/dev/null 2>&1 || true   # no effect if it is already running
   else
     check_resources
-    # Ports 80 et 443 du Mac vers le répartiteur de charge (serverlb), qui les passe à Traefik.
+    # Mac ports 80 and 443 to the load balancer (serverlb), which passes them to Traefik.
     k3d cluster create "$CLUSTER" --servers 1 --agents 2 --image "$K3S_IMAGE" \
       -p "80:80@loadbalancer" -p "443:443@loadbalancer" --wait --timeout 600s
   fi
@@ -101,60 +101,60 @@ create() {
 
   ensure_certificate
 
-  step "Namespace et certificat par défaut de Traefik"
+  step "Namespace and default Traefik certificate"
   $K apply -f "${K8S_DIR}/namespace.yaml"
-  # Le Secret TLS est dans kube-system, là où Traefik lit son TLSStore. `apply` d'un Secret
-  # généré à sec le rend relançable.
+  # The TLS Secret is in kube-system, where Traefik reads its TLSStore. `apply` of a Secret
+  # generated dry-run makes it rerunnable.
   $K -n kube-system create secret tls mkcert-wildcard \
     --cert "${CERT_DIR}/tls.crt" --key "${CERT_DIR}/tls.key" --dry-run=client -o yaml | $K apply -f - >/dev/null
-  # Les CRD de Traefik n'existent qu'une fois son chart installé par k3s.
+  # Traefik's CRDs only exist once its chart has been installed by k3s.
   retry 90 2 $K get crd tlsstores.traefik.io >/dev/null 2>&1
   $K apply -f "${K8S_DIR}/traefik-config.yaml"
-  # La redirection n'apparaît dans les arguments de Traefik qu'après réinstallation du chart.
+  # The redirect only shows up in Traefik's arguments after the chart is reinstalled.
   retry 120 2 bash -c "$K -n kube-system get deploy traefik -o jsonpath='{.spec.template.spec.containers[0].args}' | grep -q redirections"
   $K -n kube-system rollout status deployment/traefik --timeout=300s
-  echo "Cluster ${CLUSTER} prêt : 3 nœuds, Traefik en HTTPS avec redirection."
+  echo "Cluster ${CLUSTER} ready: 3 nodes, Traefik on HTTPS with redirect."
 }
 
 verify() {
   check_prerequisites
-  cluster_exists || { echo "Le cluster ${CLUSTER} n'existe pas : lancer 'create'." >&2; exit 1; }
+  cluster_exists || { echo "Cluster ${CLUSTER} does not exist: run 'create'." >&2; exit 1; }
   local host="whoami.${HOST_SUFFIX}"
   trap '$K delete -f "${K8S_DIR}/whoami-verif.yaml" --ignore-not-found >/dev/null 2>&1 || true' EXIT
-  step "Ressource temporaire (traefik/whoami)"
+  step "Temporary resource (traefik/whoami)"
   $K apply -f "${K8S_DIR}/whoami-verif.yaml"
   $K -n collector rollout status deployment/whoami-verif --timeout=180s
   retry 60 2 bash -c "curl -s -o /dev/null -w '%{http_code}' https://${host}/ | grep -q 200"
-  step "Redirection HTTP -> HTTPS"
-  # Traefik répond 301 à un GET et 308 aux autres méthodes (HEAD de `curl -I`, POST) : le 308
-  # conserve la méthode de la requête.
+  step "HTTP -> HTTPS redirect"
+  # Traefik answers 301 to a GET and 308 to the other methods (HEAD of `curl -I`, POST): the 308
+  # keeps the request method.
   echo "GET  : $(curl -s -o /dev/null -w 'code %{http_code}, Location %{redirect_url}' "http://${host}/")"
   echo "HEAD : $(curl -s -o /dev/null -I -w 'code %{http_code}' "http://${host}/")"
   echo "POST : $(curl -s -o /dev/null -X POST -w 'code %{http_code}' "http://${host}/")"
-  step "HTTPS sans -k"
-  # -w plutôt que « | head » : avec pipefail, un SIGPIPE de curl ferait échouer le script.
+  step "HTTPS without -k"
+  # -w rather than "| head": with pipefail, a SIGPIPE on curl would make the script fail.
   echo "HTTPS : $(curl -s -o /dev/null -w 'code %{http_code}, HTTP/%{http_version}' "https://${host}/")"
-  step "Certificat présenté"
-  # Seules les dates et les noms d'hôte sont affichés : le sujet brut de mkcert contient le
-  # nom de l'utilisateur et celui de sa machine.
+  step "Certificate presented"
+  # Only the dates and host names are printed: mkcert's raw subject contains the user's
+  # name and that of their machine.
   openssl s_client -connect "${host}:443" -servername "$host" </dev/null 2>/dev/null \
     | openssl x509 -noout -startdate -enddate -ext subjectAltName | grep -E '^not|DNS:' | sed 's/^ */  /'
-  step "Suppression de la ressource temporaire"
+  step "Deleting the temporary resource"
 }
 
 delete() {
-  step "Suppression du cluster ${CLUSTER}"
+  step "Deleting cluster ${CLUSTER}"
   if cluster_exists; then
     k3d cluster delete "$CLUSTER"
   else
-    echo "Le cluster ${CLUSTER} n'existe pas."
+    echo "Cluster ${CLUSTER} does not exist."
   fi
-  echo "Certificat conservé dans deploy/local/.certs/ (réutilisé par le prochain create)."
+  echo "Certificate kept in deploy/local/.certs/ (reused by the next create)."
 }
 
 case "${1:-}" in
   create) create ;;
   verify) verify ;;
   delete) delete ;;
-  *) echo "Usage : $0 create | verify | delete" >&2; exit 2 ;;
+  *) echo "Usage: $0 create | verify | delete" >&2; exit 2 ;;
 esac

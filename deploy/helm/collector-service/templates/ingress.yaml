@@ -1,8 +1,8 @@
 {{- if .Values.ingress.enabled }}
-{{- if not (has .Values.ingress.mode (list "api" "root")) }}{{ fail (printf "ingress.mode doit valoir api ou root (reçu : %s)" .Values.ingress.mode) }}{{- end }}
+{{- if not (has .Values.ingress.mode (list "api" "root")) }}{{ fail (printf "ingress.mode must be api or root (got: %s)" .Values.ingress.mode) }}{{- end }}
 {{- $root := eq .Values.ingress.mode "root" }}
 {{- if not $root }}
-# Retire le préfixe (ex. /catalog) avant d'appeler le service (contrats.md §1.1).
+# Removes the prefix (e.g. /catalog) before calling the service (contrats.md §1.1).
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -12,12 +12,12 @@ metadata:
 spec:
   stripPrefix:
     prefixes:
-      - {{ required "ingress.prefix est obligatoire (ex. /catalog)" .Values.ingress.prefix }}
+      - {{ required "ingress.prefix is required (e.g. /catalog)" .Values.ingress.prefix }}
 ---
-# En-têtes de sécurité des réponses de l'API (audit P9-01, F-07), posés une fois par Traefik plutôt que
-# dans le code de chaque service : HSTS, nosniff et Cross-Origin-Resource-Policy. `same-site` : les appels
-# `fetch` du front (https://app.) sont des requêtes CORS, que CORP ne bloque pas ; seul le chargement
-# direct (balise <img>, <script>) par un autre site est refusé.
+# Security headers of the API responses (audit P9-01, F-07), set once by Traefik rather than in
+# each service's code: HSTS, nosniff and Cross-Origin-Resource-Policy. `same-site`: the front end's
+# `fetch` calls (https://app.) are CORS requests, which CORP does not block; only direct loading
+# (<img>, <script> tag) by another site is refused.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -31,9 +31,9 @@ spec:
     customResponseHeaders:
       Cross-Origin-Resource-Policy: same-site
 ---
-# Seul <prefix>/api/v1 est routé : /health/* et /metrics ne sont pas joignables par l'ingress.
+# Only <prefix>/api/v1 is routed: /health/* and /metrics cannot be reached through the ingress.
 {{- else }}
-# Mode « racine » (front) : tout le chemin / de l'hôte est routé vers le Service, sans Middleware.
+# "Root" mode (front end): the whole / path of the host is routed to the Service, without a Middleware.
 {{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress

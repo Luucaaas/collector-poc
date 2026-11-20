@@ -74,9 +74,9 @@ Cliquer sur le run `backend` du commit du jour, puis montrer le graphe des jobs.
 
 Revenir au terminal : le déploiement est fini (ou presque). Montrer, de haut en bas, les blocs de la sortie.
 
-**Ce qu'on dit.** « Le script vérifie d'abord que les trois images existent sur GHCR et note leur empreinte, le digest. Puis `helm upgrade` remplace les pods un par un : Kubernetes n'éteint l'ancien pod que quand le nouveau répond à sa sonde de santé, donc il n'y a pas d'interruption. Ensuite un test de fumée de 25 contrôles passe par l'Ingress, comme un vrai client. Et si un seul échoue, le script revient tout seul à la version précédente. Dernier point : le digest que le cluster exécute réellement, affiché dans le bloc « Images en cours d'exécution (imageID) » en fin de sortie, est celui publié par la CI : c'est la traçabilité du commit au pod. »
+**Ce qu'on dit.** « Le script vérifie d'abord que les trois images existent sur GHCR et note leur empreinte, le digest. Puis `helm upgrade` remplace les pods un par un : Kubernetes n'éteint l'ancien pod que quand le nouveau répond à sa sonde de santé, donc il n'y a pas d'interruption. Ensuite un test de fumée de 25 contrôles passe par l'Ingress, comme un vrai client. Et si un seul échoue, le script revient tout seul à la version précédente. Dernier point : le digest que le cluster exécute réellement, affiché dans le bloc « Running images (imageID) » en fin de sortie, est celui publié par la CI : c'est la traçabilité du commit au pod. »
 
-**Ce que le jury doit voir** : la ligne `smoke.sh` avec ses contrôles `OK` (25), les lignes `deployment ... successfully rolled out`, le bloc « Images en cours d'exécution (imageID) » avec les `sha256:...` des pods, puis la liste finale des pods en `Running` et `2/2` dans la colonne `READY` des trois composants.
+**Ce que le jury doit voir** : la ligne `smoke.sh` avec ses contrôles `OK` (25), les lignes `deployment ... successfully rolled out`, le bloc « Running images (imageID) » avec les `sha256:...` des pods, puis la liste finale des pods en `Running` et `2/2` dans la colonne `READY` des trois composants.
 
 **Plan de secours étape 1.**
 
@@ -84,7 +84,7 @@ Revenir au terminal : le déploiement est fini (ou presque). Montrer, de haut en
 | --- | --- |
 | Le run du commit du jour n'est pas terminé ou est rouge | Montrer le run de référence : [`backend` du relevé de la phase 8](https://github.com/Luucaaas/collector-poc/actions/runs/42219458020) (11 jobs verts) et déployer le tag déjà sur le cluster (`deploy/local/deploy.sh services sha-5975ca0` prend 19 s : aucun pod à remplacer) |
 | Le déploiement traîne (plus de 70 s) | Ne pas attendre : passer à l'étape 2, la sortie se lit plus tard ; le cluster reste utilisable pendant le remplacement des pods |
-| Le déploiement échoue | C'est une bonne démonstration : le script affiche « ÉCHEC : retour arrière » et remet la version précédente. Le dire, vérifier que les pods sont `Running` (`kubectl -n collector get pods`) et continuer |
+| Le déploiement échoue | C'est une bonne démonstration : le script affiche « FAILURE: rolling back » et remet la version précédente. Le dire, vérifier que les pods sont `Running` (`kubectl -n collector get pods`) et continuer |
 | GitHub inaccessible | Schéma du pipeline : `docs/01-qualite/img/pipeline-cicd.svg` et [conformité du pipeline](../../01-qualite/conformite-pipeline.md) |
 
 ## Étape 2 : parcours métier (1:20 à 3:15)

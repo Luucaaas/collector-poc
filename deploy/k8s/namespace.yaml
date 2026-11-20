@@ -1,4 +1,4 @@
-# Namespace unique du POC : applications, infrastructure et observabilité y sont déployées.
+# Single namespace of the POC: applications, infrastructure and observability are deployed in it.
 apiVersion: v1
 kind: Namespace
 metadata:

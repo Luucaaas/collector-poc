@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Rend les fichiers de configuration qui contiennent des mots de passe (dossier `rendered/`).
+"""Renders the configuration files that contain passwords (`rendered/` directory).
 
-- `collector-realm.json` : realm de base (`deploy/keycloak/`), marqueurs `${..._PASSWORD}`
-  remplacés, plus le client de test `collector-tests` (pile docker compose seulement) ;
-- `rabbitmq-definitions.json` : utilisateurs, vhost et permissions de RabbitMQ.
+- `collector-realm.json`: base realm (`deploy/keycloak/`), `${..._PASSWORD}` markers
+  replaced, plus the `collector-tests` test client (docker compose stack only);
+- `rabbitmq-definitions.json`: RabbitMQ users, vhost and permissions.
 
-Usage : render.py <fichier .env> <dossier de sortie> [--cluster]. Bibliothèque standard seule.
-Avec `--cluster` (deploy/local/deploy.sh), le client de test n'est pas ajouté et `collector-web`
-n'accepte pas `http://localhost:5173` : le realm du cluster n'a ni Direct Access Grants ni adresse
-de développement.
+Usage: render.py <.env file> <output directory> [--cluster]. Standard library only.
+With `--cluster` (deploy/local/deploy.sh), the test client is not added and `collector-web`
+does not accept `http://localhost:5173`: the cluster realm has neither Direct Access Grants nor a
+development address.
 """
 
 import json
@@ -19,12 +19,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 REALM_USERS = ("ADMIN", "ALICE", "BOB", "CHLOE")
 
-# Développement du front (`npm run dev`, Vite sur le port 5173) : adresse ajoutée au client public
-# `collector-web` dans la pile docker compose seulement. Le realm du cluster reste limité à https://app.
+# Front-end development (`npm run dev`, Vite on port 5173): address added to the public client
+# `collector-web` in the docker compose stack only. The cluster realm stays limited to https://app.
 DEV_FRONT_ORIGIN = "http://localhost:5173"
 
-# Client de test : jetons sans navigateur (Direct Access Grants), avec l'audience collector-api.
-# Il n'existe que dans la pile docker compose, jamais dans le realm de base.
+# Test client: tokens without a browser (Direct Access Grants), with the collector-api audience.
+# It only exists in the docker compose stack, never in the base realm.
 TEST_CLIENT = {
     "clientId": "collector-tests",
     "name": "Tests d'acceptation : jetons sans navigateur (pile docker compose seulement)",
@@ -57,7 +57,7 @@ def render_realm(env: dict[str, str], with_test_client: bool = True) -> str:
     for user in REALM_USERS:
         text = text.replace("${" + user + "_PASSWORD}", env[user + "_PASSWORD"])
     if re.search(r"\$\{[A-Z]+_PASSWORD\}", text):
-        raise SystemExit("Marqueur de mot de passe non remplacé dans le realm")
+        raise SystemExit("Password marker not replaced in the realm")
     realm = json.loads(text)
     if with_test_client:
         realm["clients"].append(TEST_CLIENT)
@@ -71,9 +71,9 @@ def render_realm(env: dict[str, str], with_test_client: bool = True) -> str:
 
 
 def render_rabbitmq(env: dict[str, str]) -> str:
-    # Permissions (configure, write, read) par expressions régulières, limitées aux objets du POC.
-    # AMQP : déclarer exige configure ; lier une file exige write sur la file et read sur
-    # l'exchange ; consommer exige read sur la file ; publier exige write sur l'exchange.
+    # Permissions (configure, write, read) by regular expressions, limited to the POC's objects.
+    # AMQP: declaring requires configure; binding a queue requires write on the queue and read on
+    # the exchange; consuming requires read on the queue; publishing requires write on the exchange.
     exchange = r"article\.events"
     queue = r"notification\.article-events"
     users = [
@@ -108,8 +108,8 @@ def main() -> None:
     env = read_env(Path(args[0]))
     out = Path(args[1])
     out.mkdir(parents=True, exist_ok=True)
-    # Pile compose : lisible par les utilisateurs non-root des conteneurs. Cluster : les fichiers
-    # contiennent des mots de passe et ne vont que dans des Secrets, donc dossier privé.
+    # Compose stack: readable by the containers' non-root users. Cluster: the files
+    # contain passwords and only go into Secrets, so a private directory.
     out.chmod(0o700 if cluster else 0o755)
     for name, content in (
         ("collector-realm.json", render_realm(env, with_test_client=not cluster)),

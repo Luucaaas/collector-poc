@@ -6,10 +6,10 @@ metadata:
     {{- include "collector-service.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  # Avec l'HPA, le nombre de réplicas lui appartient : le fixer ici le réinitialiserait à chaque déploiement.
+  # With the HPA, the replica count belongs to it: setting it here would reset it on every deployment.
   replicas: {{ .Values.replicaCount }}
   {{- end }}
-  # Mise à jour sans perte de capacité : un pod neuf doit être prêt avant d'en retirer un ancien.
+  # Update without losing capacity: a new pod must be ready before an old one is removed.
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -23,16 +23,16 @@ spec:
       labels:
         {{- include "collector-service.selectorLabels" . | nindent 8 }}
       annotations:
-        # Un changement de configuration redémarre les pods (les variables ne sont lues qu'au démarrage).
+        # A configuration change restarts the pods (the variables are only read at startup).
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- if .Values.configFile.enabled }}
-        # Idem pour le fichier de configuration monté (ex. config.json du front, lu au démarrage de la page).
+        # Same for the mounted configuration file (e.g. the front end's config.json, read when the page starts).
         checksum/config-file: {{ include (print $.Template.BasePath "/configmap-file.yaml") . | sha256sum }}
         {{- end }}
     spec:
-      # Pas de jeton d'API Kubernetes dans le pod : le service n'appelle pas Kubernetes.
+      # No Kubernetes API token in the pod: the service does not call Kubernetes.
       automountServiceAccountToken: false
-      # Pas de variables <SERVICE>_PORT injectées pour chaque Service du namespace.
+      # No <SERVICE>_PORT variables injected for each Service in the namespace.
       enableServiceLinks: false
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       securityContext:
@@ -51,9 +51,9 @@ spec:
             - secretRef:
                 name: {{ .Values.secretName }}
             {{- end }}
-          # Probes (chemins dans probes.*) : liveness = le processus répond ; readiness = prêt à servir
-          # (services : PostgreSQL joignable, jamais RabbitMQ ; front : nginx répond sur /healthz).
-          {{- /* Chemins configurables (le front nginx n'a qu'une sonde /healthz). */}}
+          # Probes (paths in probes.*): liveness = the process answers; readiness = ready to serve
+          # (services: PostgreSQL reachable, never RabbitMQ; front end: nginx answers on /healthz).
+          {{- /* Configurable paths (the nginx front end only has a /healthz probe). */}}
           startupProbe:
             httpGet: {path: {{ .Values.probes.livePath }}, port: http}
             periodSeconds: 2
@@ -70,7 +70,7 @@ spec:
             failureThreshold: 2
           lifecycle:
             preStop:
-              # Laisse le temps à Traefik et au Service de retirer le pod avant l'arrêt d'uvicorn.
+              # Gives Traefik and the Service time to remove the pod before uvicorn stops.
               exec:
                 command: ["sleep", "5"]
           resources:
@@ -86,7 +86,7 @@ spec:
             {{- end }}
             {{- if .Values.configFile.enabled }}
             - name: config-file
-              mountPath: {{ required "configFile.mountPath est obligatoire" .Values.configFile.mountPath }}
+              mountPath: {{ required "configFile.mountPath is required" .Values.configFile.mountPath }}
               subPath: {{ .Values.configFile.name }}
               readOnly: true
             {{- end }}

@@ -14,9 +14,9 @@ function decodePayload(jwt: string): Record<string, unknown> {
 }
 
 /**
- * Rôles du realm (claim `realm_access.roles` du jeton d'accès), POUR L'AFFICHAGE SEULEMENT :
- * masquer un menu n'est pas un contrôle d'accès. La signature du jeton n'est pas vérifiée ici ;
- * ce sont les API qui vérifient la signature et les rôles à chaque requête.
+ * Realm roles (`realm_access.roles` claim of the access token), FOR DISPLAY ONLY:
+ * hiding a menu is not access control. The token signature is not verified here;
+ * the APIs verify the signature and the roles on every request.
  */
 export function getRoles(user: User | null | undefined): string[] {
   if (!user?.access_token) return [];
@@ -27,6 +27,6 @@ export function getRoles(user: User | null | undefined): string[] {
 
 export function displayName(user: User | null | undefined): string {
   const profile = user?.profile;
-  // Le realm ne fournit que `preferred_username` (minimisation des données).
+  // The realm only provides `preferred_username` (data minimization).
   return profile?.preferred_username ?? "Utilisateur connecté";
 }

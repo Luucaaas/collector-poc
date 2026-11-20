@@ -5,7 +5,7 @@ import { useAction } from "../api/useAction";
 import { useApi } from "../api/useApi";
 import { useAsync } from "../api/useAsync";
 
-/** Page « Catégories » (admin, US-01) : liste et création. */
+/** "Catégories" page (admin, US-01): list and creation. */
 export function CategoriesPage() {
   const api = useApi();
   const [version, setVersion] = useState(0);

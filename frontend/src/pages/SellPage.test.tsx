@@ -52,8 +52,8 @@ async function fillArticle(overrides: { description?: string; price?: string } =
   await userEvent.type(screen.getByLabelText(/Prix \(€\)/), overrides.price ?? "120,5");
 }
 
-describe("SellPage : boutiques", () => {
-  it("crée une boutique puis recharge la liste", async () => {
+describe("SellPage: shops", () => {
+  it("creates a shop then reloads the list", async () => {
     let shops: unknown[] = [];
     const calls = api({
       extra: (c) => {
@@ -74,7 +74,7 @@ describe("SellPage : boutiques", () => {
     expect(calls.find((c) => c.method === "POST")?.body).toEqual({ name: "Boutique Alice" });
   });
 
-  it("affiche le refus d'un numéro de téléphone et marque le champ", async () => {
+  it("shows the refusal of a phone number and marks the field", async () => {
     api({
       shops: [],
       extra: (c) =>
@@ -90,8 +90,8 @@ describe("SellPage : boutiques", () => {
   });
 });
 
-describe("SellPage : mise en vente", () => {
-  it("publie un article accepté, prix envoyé en chaîne décimale", async () => {
+describe("SellPage: listing", () => {
+  it("publishes an accepted article, price sent as a decimal string", async () => {
     const calls = api({ extra: (c) => (c.method === "POST" && c.path === "/articles" ? json(article(), 201) : undefined) });
     renderWithConfig(<SellPage />);
     await fillArticle();
@@ -102,7 +102,7 @@ describe("SellPage : mise en vente", () => {
     expect(typeof (body as { price: unknown }).price).toBe("string");
   });
 
-  it("affiche un article rejeté avec ses motifs traduits", async () => {
+  it("shows a rejected article with its translated reasons", async () => {
     api({
       extra: (c) =>
         c.method === "POST" && c.path === "/articles"
@@ -119,7 +119,7 @@ describe("SellPage : mise en vente", () => {
     expect(screen.queryByText("Saisie à corriger")).not.toBeInTheDocument();
   });
 
-  it("distingue un 422 de validation (erreur de saisie) d'un rejet", async () => {
+  it("tells a validation 422 (input error) from a rejection", async () => {
     api({
       extra: (c) =>
         c.method === "POST" && c.path === "/articles"
@@ -134,7 +134,7 @@ describe("SellPage : mise en vente", () => {
     expect(screen.queryByText("Article rejeté par le contrôle automatique")).not.toBeInTheDocument();
   });
 
-  it("refuse côté navigateur un prix nul ou à trois décimales, sans appeler l'API", async () => {
+  it("rejects a zero or three-decimal price in the browser, without calling the API", async () => {
     const calls = api();
     renderWithConfig(<SellPage />);
     await fillArticle({ price: "0" });
@@ -149,17 +149,17 @@ describe("SellPage : mise en vente", () => {
 });
 
 describe("authorLabel", () => {
-  it("dit « par vous » pour l'utilisateur connecté, sinon abrège l'identifiant", () => {
+  it("says \"par vous\" for the signed-in user, otherwise abbreviates the identifier", () => {
     expect(authorLabel("u1", "u1")).toBe("par vous");
     expect(authorLabel("a7f3c2e1-5b4d-4c3a-9e8f-1d2c3b4a5f60", "u1")).toBe("par a7f3c2e1…");
     expect(authorLabel("u1", undefined)).toBe("par u1…");
   });
 });
 
-describe("SellPage : prix des articles", () => {
+describe("SellPage: article prices", () => {
   const priceForm = () => screen.findByRole("form", { name: /Modifier le prix de Boba Fett/ });
 
-  it("modifie le prix et affiche l'historique", async () => {
+  it("changes the price and shows the history", async () => {
     let history: unknown[] = [];
     const calls = api({
       extra: (c) => {
@@ -186,7 +186,7 @@ describe("SellPage : prix des articles", () => {
     expect(cells[3]).toBe("par vous");
   });
 
-  it("dit qu'un prix identique ne change rien, sans appeler l'API", async () => {
+  it("says an identical price changes nothing, without calling the API", async () => {
     const calls = api();
     renderWithConfig(<SellPage />);
     const form = await priceForm();
@@ -196,7 +196,7 @@ describe("SellPage : prix des articles", () => {
     expect(calls.some((c) => c.method === "PUT")).toBe(false);
   });
 
-  it("affiche le conflit 409 d'un article non publié", async () => {
+  it("shows the 409 conflict of an unpublished article", async () => {
     api({ extra: (c) => (c.method === "PUT" ? problem(409) : undefined) });
     renderWithConfig(<SellPage />);
     const form = await priceForm();
@@ -205,7 +205,7 @@ describe("SellPage : prix des articles", () => {
     expect(await screen.findByText("Cet article n'est plus publié : son prix ne peut pas être modifié.")).toBeInTheDocument();
   });
 
-  it("désactive le bouton pendant l'envoi (pas de double soumission)", async () => {
+  it("disables the button while sending (no double submission)", async () => {
     let release: (r: Response) => void = () => {};
     const pending = new Promise<Response>((resolve) => (release = resolve));
     const calls: string[] = [];

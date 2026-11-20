@@ -2,14 +2,14 @@ import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
 
-// Parcours de bout en bout dans un vrai navigateur (Chromium seul), HORS CI (processus-test.md).
-// Par défaut, ils visent l'application servie par Vite (npm run dev) devant la pile docker compose.
-// Aucune trace, capture ni vidéo, et pas de rapport HTML : les rapports Playwright reprennent les
-// valeurs saisies (mots de passe des comptes de démo) dans le titre des étapes.
+// End-to-end journeys in a real browser (Chromium only), OUTSIDE CI (processus-test.md).
+// By default they target the application served by Vite (npm run dev) in front of the docker compose stack.
+// No trace, screenshot or video, and no HTML report: Playwright reports repeat the
+// typed values (demo account passwords) in the step titles.
 export default defineConfig({
   testDir: "./e2e",
-  // Les captures pour la soutenance (CAPTURES=1) et celles de Grafana (GRAFANA_CAPTURES=1, protocole 5)
-  // sont lancées à part, jamais avec les parcours.
+  // The screenshots for the defense (CAPTURES=1) and the Grafana ones (GRAFANA_CAPTURES=1, protocol 5)
+  // are run separately, never with the journeys.
   testMatch: process.env.GRAFANA_CAPTURES
     ? /grafana\.spec\.ts/
     : process.env.CAPTURES
@@ -29,7 +29,7 @@ export default defineConfig({
     video: "off",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  // Lance le serveur de développement de Vite seulement si l'adresse visée est celle par défaut.
+  // Starts the Vite dev server only if the targeted address is the default one.
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : { command: "npm run dev", url: baseURL, reuseExistingServer: true, timeout: 60_000 },

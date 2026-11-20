@@ -45,7 +45,7 @@ function api(extra: (call: Call) => Response | undefined = () => undefined) {
 }
 
 describe("InterestsPage", () => {
-  it("pré-coche la sélection actuelle et enregistre les centres d'intérêt", async () => {
+  it("pre-checks the current selection and saves the interests", async () => {
     const calls = api((c) => (c.method === "PUT" && c.path === "/me/interests" ? json(c.body) : undefined));
     renderWithConfig(<InterestsPage />);
     const figurines = await screen.findByRole("checkbox", { name: "Figurines" });
@@ -60,7 +60,7 @@ describe("InterestsPage", () => {
     expect((put?.body as { category_ids: string[] }).category_ids.sort()).toEqual(["c1", "c2"]);
   });
 
-  it("affiche le refus de plus de 20 catégories", async () => {
+  it("shows the refusal of more than 20 categories", async () => {
     api((c) =>
       c.method === "PUT" && c.path === "/me/interests"
         ? problem(422, { errors: [{ field: "category_ids", code: "TOO_MANY_CATEGORIES" }] })
@@ -71,7 +71,7 @@ describe("InterestsPage", () => {
     expect(await screen.findByText(/plus de 20 catégories/)).toBeInTheDocument();
   });
 
-  it("enregistre les préférences de notification", async () => {
+  it("saves the notification preferences", async () => {
     const calls = api((c) => (c.method === "PUT" && c.path === "/me/preferences" ? json(c.body) : undefined));
     renderWithConfig(<InterestsPage />);
     const priceChanged = await screen.findByRole("checkbox", { name: "Être prévenu d'un changement de prix" });
@@ -85,7 +85,7 @@ describe("InterestsPage", () => {
     });
   });
 
-  it("affiche les deux types de notification en texte lisible", async () => {
+  it("shows both notification types as readable text", async () => {
     const calls = api();
     renderWithConfig(<InterestsPage />);
     const list = await screen.findByRole("list", { name: "Liste des notifications" });
@@ -95,7 +95,7 @@ describe("InterestsPage", () => {
     expect(calls.some((c) => c.path === "/me/notifications?limit=10&offset=0")).toBe(true);
   });
 
-  it("recharge les notifications avec « Actualiser » et gère la liste vide", async () => {
+  it("reloads notifications with \"Actualiser\" and handles the empty list", async () => {
     let empty = true;
     const calls = api((c) =>
       c.path.startsWith("/me/notifications") ? json(empty ? { items: [], total: 0 } : { items: NOTIFICATIONS, total: 2 }) : undefined,

@@ -12,25 +12,25 @@ const fetchOf = (response: Response | Error): typeof fetch =>
   (() => (response instanceof Error ? Promise.reject(response) : Promise.resolve(response))) as typeof fetch;
 
 describe("configuration", () => {
-  it("accepte une configuration valide et retire la barre finale des adresses", async () => {
+  it("accepts a valid configuration and strips the trailing slash from addresses", async () => {
     const config = await loadConfig(fetchOf(Response.json(VALID)));
     expect(config.catalogApiUrl).toBe("https://api.example/catalog/api/v1");
     expect(config.clientId).toBe("collector-web");
   });
 
-  it("signale un fichier absent (404) par un message en français", async () => {
+  it("reports a missing file (404) with a French message", async () => {
     await expect(loadConfig(fetchOf(new Response("", { status: 404 })))).rejects.toThrow(/introuvable \(HTTP 404\)/);
   });
 
-  it("signale une panne réseau", async () => {
-    await expect(loadConfig(fetchOf(new TypeError("réseau")))).rejects.toThrow(/Impossible de charger/);
+  it("reports a network failure", async () => {
+    await expect(loadConfig(fetchOf(new TypeError("network")))).rejects.toThrow(/Impossible de charger/);
   });
 
-  it("signale un JSON illisible", async () => {
-    await expect(loadConfig(fetchOf(new Response("pas du json")))).rejects.toThrow(/pas un JSON valide/);
+  it("reports unreadable JSON", async () => {
+    await expect(loadConfig(fetchOf(new Response("not json")))).rejects.toThrow(/pas un JSON valide/);
   });
 
-  it("refuse un champ manquant ou une adresse invalide", () => {
+  it("rejects a missing field or an invalid address", () => {
     expect(() => parseConfig({ ...VALID, clientId: "" })).toThrow(ConfigError);
     expect(() => parseConfig({ ...VALID, authority: "n'importe quoi" })).toThrow(/« authority »/);
     expect(() => parseConfig({ ...VALID, catalogApiUrl: undefined })).toThrow(/« catalogApiUrl »/);

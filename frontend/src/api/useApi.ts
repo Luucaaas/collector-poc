@@ -5,7 +5,7 @@ import { apiRequest } from "./client";
 
 type Call = <T>(path: string, options?: { method?: "GET" | "POST" | "PUT"; body?: unknown; signal?: AbortSignal }) => Promise<T>;
 
-/** Appels aux deux API, avec le jeton de l'utilisateur connecté (ou sans jeton s'il ne l'est pas). */
+/** Calls to the two APIs, with the signed-in user's token (or without a token when signed out). */
 export function useApi(): { catalog: Call; notification: Call } {
   const config = useConfig();
   const token = useAuth().user?.access_token ?? null;

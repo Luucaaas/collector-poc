@@ -6,8 +6,8 @@ import { useLocation } from "react-router";
 import { getRoles, type Role } from "./roles";
 
 /**
- * Garde de route : non connecté → redirection vers la connexion Keycloak (puis retour sur la page
- * demandée) ; connecté sans le rôle → « accès refusé ». Garde d'affichage seulement.
+ * Route guard: signed out → redirect to the Keycloak sign-in (then back to the requested
+ * page); signed in without the role → "access denied". Display guard only.
  */
 export function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
   const auth = useAuth();
@@ -17,7 +17,7 @@ export function RequireRole({ role, children }: { role: Role; children: ReactNod
 
   useEffect(() => {
     if (mustSignIn) void auth.signinRedirect({ state: { returnTo } });
-    // `auth` change à chaque rendu ; seuls `mustSignIn` et `returnTo` déclenchent la redirection.
+    // `auth` changes on every render; only `mustSignIn` and `returnTo` trigger the redirect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mustSignIn, returnTo]);
 

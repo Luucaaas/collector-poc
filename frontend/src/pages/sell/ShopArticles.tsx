@@ -20,7 +20,7 @@ import { validatePrice } from "../../money";
 
 export const ARTICLES_PAGE_SIZE = 10;
 
-/** Mes articles publiés, par boutique, avec modification du prix et historique (US-04). */
+/** My published articles, per shop, with price change and history (US-04). */
 export function ShopArticles({ shops, version }: { shops: Shop[]; version: number }) {
   const api = useApi();
   const [shopId, setShopId] = useState(shops[0]?.id ?? "");
@@ -86,7 +86,7 @@ export function ShopArticles({ shops, version }: { shops: Shop[]; version: numbe
   );
 }
 
-// L'article garde son propre état : après un changement de prix, la ligne se met à jour sans recharger la liste.
+// The article keeps its own state: after a price change, the row updates without reloading the list.
 function ArticleRow({ initial }: { initial: Article }) {
   const api = useApi();
   const [article, setArticle] = useState(initial);
@@ -107,7 +107,7 @@ function ArticleRow({ initial }: { initial: Article }) {
     }
     setLocalError(null);
     if (parsed.value === article.price) {
-      // RM-04 : un prix identique ne crée ni ligne d'historique ni événement ; on ne fait pas croire à un changement.
+      // RM-04: an identical price creates no history row or event; do not pretend a change happened.
       setInfo({ severity: "info", text: "Ce prix est identique au prix actuel : aucune modification n'a été enregistrée." });
       return;
     }
@@ -193,7 +193,7 @@ function PriceHistory({ articleId, currency, version }: { articleId: string; cur
   );
 }
 
-/** Auteur d'un changement : le contrat ne donne que le `sub` ; on dit « vous » ou on abrège l'identifiant. */
+/** Author of a change: the contract only gives the `sub`; say "vous" or abbreviate the identifier. */
 export function authorLabel(changedBy: string, userId: string | undefined): string {
   if (userId && changedBy === userId) return "par vous";
   return `par ${changedBy.slice(0, 8)}…`;

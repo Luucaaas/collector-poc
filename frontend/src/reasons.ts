@@ -1,4 +1,4 @@
-/** Motifs de rejet du contrôle automatique (rejection_reasons), traduits pour le vendeur. */
+/** Rejection reasons of the automatic check (rejection_reasons), translated for the seller (French UI text). */
 const REASONS: Record<string, string> = {
   CONTACT_EMAIL: "le texte contient une adresse email",
   CONTACT_PHONE: "le texte contient un numéro de téléphone",

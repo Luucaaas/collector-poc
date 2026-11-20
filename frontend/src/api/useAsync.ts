@@ -6,12 +6,12 @@ export type AsyncState<T> =
   | { status: "error"; message: string }
   | { status: "success"; data: T };
 
-/** Exécute `load` à chaque changement de `deps` et annule la requête précédente. */
+/** Runs `load` whenever `deps` change and aborts the previous request. */
 export function useAsync<T>(load: (signal: AbortSignal) => Promise<T>, deps: unknown[]): AsyncState<T> {
   const [state, setState] = useState<AsyncState<T>>({ status: "loading" });
   useEffect(() => {
     const controller = new AbortController();
-    // Chargement lancé au montage ou au changement de dépendances : état « en cours » d'abord.
+    // Load started on mount or when dependencies change: "loading" state first.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({ status: "loading" });
     load(controller.signal).then(

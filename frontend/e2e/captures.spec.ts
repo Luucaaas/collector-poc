@@ -1,7 +1,7 @@
 import { expect, goTo, login, RUN, test } from "./helpers";
 
-// Captures d'écran pour la soutenance, lancées à part (CAPTURES=1, voir playwright.config.ts).
-// Aucune capture n'est prise pendant ou après la saisie d'un mot de passe.
+// Screenshots for the defense, run separately (CAPTURES=1, see playwright.config.ts).
+// No screenshot is taken during or after a password is typed.
 const DIR = "e2e/resultats/captures";
 const CATEGORY = `Figurines vintage ${RUN}`;
 const SHOP = `Boutique démo ${RUN}`;
@@ -12,8 +12,8 @@ const PHOTO = "https://images.example.com/boba-1.jpg";
 test.describe.configure({ mode: "serial" });
 test.use({ viewport: { width: 1280, height: 800 } });
 
-test("captures : parcours de démonstration", async ({ page }) => {
-  // admin : page Catégories
+test("screenshots: demo journey", async ({ page }) => {
+  // admin: Catégories page
   await login(page, "admin", async () => {
     await page.screenshot({ path: `${DIR}/02-connexion-keycloak.png` });
   });
@@ -24,11 +24,11 @@ test("captures : parcours de démonstration", async ({ page }) => {
   await page.screenshot({ path: `${DIR}/07-admin-categories.png` });
   await page.getByRole("button", { name: "Déconnexion" }).click();
 
-  // chloe : centre d'intérêt
+  // chloe: interest
   await login(page, "chloe");
   await goTo(page, "Mes centres d'intérêt");
   const group = page.getByRole("group", { name: "Catégories d'intérêt" });
-  await page.waitForLoadState("networkidle"); // les centres d'intérêt déjà enregistrés arrivent après la liste des catégories
+  await page.waitForLoadState("networkidle"); // the interests already saved arrive after the category list
   for (const box of await group.getByRole("checkbox").all()) {
     if (await box.isChecked()) await box.uncheck();
   }
@@ -37,7 +37,7 @@ test("captures : parcours de démonstration", async ({ page }) => {
   await expect(page.getByText("Centres d'intérêt enregistrés.")).toBeVisible();
   await page.getByRole("button", { name: "Déconnexion" }).click();
 
-  // alice : publication, rejet, prix
+  // alice: publication, rejection, price
   await login(page, "alice");
   await goTo(page, "Vendre");
   await page.getByLabel("Nom de la boutique").fill(SHOP);
@@ -74,7 +74,7 @@ test("captures : parcours de démonstration", async ({ page }) => {
   await page.screenshot({ path: `${DIR}/05-vendre-historique-des-prix.png`, fullPage: true });
   await page.getByRole("button", { name: "Déconnexion" }).click();
 
-  // chloe : notifications
+  // chloe: notifications
   await login(page, "chloe");
   await goTo(page, "Mes centres d'intérêt");
   const item = page.getByRole("list", { name: "Liste des notifications" }).getByRole("listitem").filter({ hasText: TITLE });
@@ -86,7 +86,7 @@ test("captures : parcours de démonstration", async ({ page }) => {
   await page.screenshot({ path: `${DIR}/06-notifications-chloe.png`, fullPage: true });
   await page.getByRole("button", { name: "Déconnexion" }).click();
 
-  // catalogue public (sans connexion), avec l'article publié
+  // public catalogue (signed out), with the published article
   await page.goto("/");
   await expect(page.getByText(TITLE).first()).toBeVisible();
   await page.screenshot({ path: `${DIR}/01-catalogue-public.png`, fullPage: true });

@@ -24,13 +24,13 @@ async function failure(response: Response | Error): Promise<ApiError> {
   } catch (error) {
     return error as ApiError;
   }
-  throw new Error("une erreur était attendue");
+  throw new Error("an error was expected");
 }
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("apiRequest", () => {
-  it("ajoute l'en-tête Bearer quand un jeton est fourni", async () => {
+  it("adds the Bearer header when a token is provided", async () => {
     const fetchMock = mockFetch(Response.json({ items: [], total: 0 }));
     await apiRequest({ baseUrl: BASE, path: "/articles", token: "abc" });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -38,14 +38,14 @@ describe("apiRequest", () => {
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer abc");
   });
 
-  it("n'ajoute pas Authorization sans jeton", async () => {
+  it("does not add Authorization without a token", async () => {
     const fetchMock = mockFetch(Response.json({}));
     await apiRequest({ baseUrl: BASE, path: "/categories" });
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.headers).not.toHaveProperty("Authorization");
   });
 
-  it("envoie un X-Request-ID conforme au contrat, différent à chaque appel", async () => {
+  it("sends a contract-compliant X-Request-ID, different on each call", async () => {
     const fetchMock = mockFetch(Response.json({}));
     await apiRequest({ baseUrl: BASE, path: "/a" });
     fetchMock.mockImplementation(() => Promise.resolve(Response.json({})));
@@ -57,7 +57,7 @@ describe("apiRequest", () => {
     expect(ids[0]).not.toBe(ids[1]);
   });
 
-  it("envoie le corps JSON avec son Content-Type", async () => {
+  it("sends the JSON body with its Content-Type", async () => {
     const fetchMock = mockFetch(Response.json({}));
     await apiRequest({ baseUrl: BASE, path: "/p", method: "PUT", body: { price: "95.00" } });
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -66,7 +66,7 @@ describe("apiRequest", () => {
     expect((init.headers as Record<string, string>)["Content-Type"]).toBe("application/json");
   });
 
-  it("lit une erreur RFC 9457 et expose statut, codes et corrélation", async () => {
+  it("reads an RFC 9457 error and exposes status, codes and correlation", async () => {
     const error = await failure(
       problem(422, {
         title: "Données invalides",
@@ -81,13 +81,13 @@ describe("apiRequest", () => {
     expect(error.correlationId).toBe("abc-123");
   });
 
-  it("transforme une panne réseau en ApiError de statut 0", async () => {
+  it("turns a network failure into an ApiError of status 0", async () => {
     const error = await failure(new TypeError("Failed to fetch"));
     expect(error.status).toBe(0);
     expect(describeError(error)).toMatch(/Impossible de joindre le serveur/);
   });
 
-  it("tolère un corps d'erreur qui n'est pas du JSON", async () => {
+  it("tolerates an error body that is not JSON", async () => {
     const error = await failure(new Response("<html>Bad Gateway</html>", { status: 502 }));
     expect(error.status).toBe(502);
     expect(describeError(error)).toMatch(/erreur/);
@@ -108,17 +108,17 @@ describe("describeError", () => {
     expect(msg(422, [{ field: "x", code }])).toMatch(expected);
   });
 
-  it("garde le nom brut d'un champ inconnu", () => {
+  it("keeps the raw name of an unknown field", () => {
     expect(msg(422, [{ field: "autre", code: "MISSING" }])).toContain("autre (champ obligatoire)");
   });
 
-  it("décrit une validation générique champ par champ", () => {
+  it("describes a generic validation field by field", () => {
     expect(msg(422, [{ field: "price", code: "VALUE_ERROR" }])).toBe(
       "Les données saisies sont invalides : prix (valeur invalide).",
     );
   });
 
-  it("traduit 401, 403, 404, 409 et 5xx", () => {
+  it("translates 401, 403, 404, 409 and 5xx", () => {
     expect(msg(401)).toMatch(/session a expiré/);
     expect(msg(403)).toMatch(/pas le droit/);
     expect(msg(404)).toMatch(/introuvable/);
@@ -127,7 +127,7 @@ describe("describeError", () => {
     expect(msg(500)).toMatch(/Réessayez plus tard/);
   });
 
-  it("ignore un code inconnu ou hérité d'Object (constructor, toString)", () => {
+  it("ignores an unknown code or one inherited from Object (constructor, toString)", () => {
     expect(msg(422, [{ field: "x", code: "constructor" }])).toBe(
       "Les données saisies sont invalides : x (valeur invalide).",
     );

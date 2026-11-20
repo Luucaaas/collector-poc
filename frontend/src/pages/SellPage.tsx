@@ -9,7 +9,7 @@ import { ShopArticles } from "./sell/ShopArticles";
 
 const SELLER_TYPES: Record<string, string> = { INDIVIDUAL: "Particulier" };
 
-/** Page « Vendre » (seller, US-02 à US-04) : boutiques, mise en vente, mes articles et leur prix. */
+/** "Vendre" page (seller, US-02 to US-04): shops, listing, my articles and their price. */
 export function SellPage() {
   const api = useApi();
   const [shopsVersion, setShopsVersion] = useState(0);

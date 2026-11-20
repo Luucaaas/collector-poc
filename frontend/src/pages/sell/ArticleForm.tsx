@@ -14,8 +14,8 @@ interface Props {
 }
 
 /**
- * Mise en vente (US-03). Trois issues bien distinctes : article publié (201 PUBLISHED), article rejeté
- * par le contrôle automatique (201 REJECTED, avec motifs) et requête mal formée (422, erreur de saisie).
+ * Listing (US-03). Three clearly distinct outcomes: published article (201 PUBLISHED), article rejected
+ * by the automatic check (201 REJECTED, with reasons) and malformed request (422, input error).
  */
 export function ArticleForm({ shops, categories, categoriesError, onPublished }: Props) {
   const api = useApi();

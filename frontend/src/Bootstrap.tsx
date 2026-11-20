@@ -12,7 +12,7 @@ function AuthShell({ config }: { config: AppConfig }) {
   return (
     <AuthProvider
       {...settings}
-      // Retour de Keycloak : on remplace l'URL (sans `code` ni `state`) par la page demandée.
+      // Return from Keycloak: replace the URL (without `code` or `state`) with the requested page.
       onSigninCallback={(user) => {
         const state = user?.state as { returnTo?: string } | undefined;
         navigate(state?.returnTo ?? "/", { replace: true });
@@ -23,7 +23,7 @@ function AuthShell({ config }: { config: AppConfig }) {
   );
 }
 
-/** Charge /config.json avant de démarrer l'authentification ; message clair en cas d'échec. */
+/** Loads /config.json before starting authentication; clear message on failure. */
 export function Bootstrap() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [error, setError] = useState<string | null>(null);

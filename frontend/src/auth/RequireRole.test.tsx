@@ -24,14 +24,14 @@ beforeEach(() => {
 });
 
 describe("RequireRole", () => {
-  it("envoie vers la connexion un utilisateur non connecté", async () => {
+  it("sends a signed-out user to the sign-in", async () => {
     auth.current = { isLoading: false, isAuthenticated: false, signinRedirect };
     renderGuard();
     expect(screen.queryByText("contenu protégé")).not.toBeInTheDocument();
     await waitFor(() => expect(signinRedirect).toHaveBeenCalledWith({ state: { returnTo: "/vendre" } }));
   });
 
-  it("affiche « accès refusé » à un utilisateur sans le rôle", () => {
+  it("shows \"access denied\" to a user without the role", () => {
     auth.current = {
       isLoading: false,
       isAuthenticated: true,
@@ -44,7 +44,7 @@ describe("RequireRole", () => {
     expect(signinRedirect).not.toHaveBeenCalled();
   });
 
-  it("affiche le contenu à un utilisateur qui a le rôle", () => {
+  it("shows the content to a user who has the role", () => {
     auth.current = {
       isLoading: false,
       isAuthenticated: true,
@@ -55,7 +55,7 @@ describe("RequireRole", () => {
     expect(screen.getByText("contenu protégé")).toBeInTheDocument();
   });
 
-  it("attend la fin du chargement avant de rediriger", () => {
+  it("waits for loading to finish before redirecting", () => {
     auth.current = { isLoading: true, isAuthenticated: false, signinRedirect };
     renderGuard();
     expect(signinRedirect).not.toHaveBeenCalled();

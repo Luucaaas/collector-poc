@@ -1,33 +1,33 @@
-# Modèle nginx de l'image du front. L'image officielle nginx-unprivileged le passe à envsubst au
-# démarrage (script 20-envsubst-on-templates.sh) : le fichier produit est /etc/nginx/conf.d/default.conf.
-# Seules les variables CSP_* sont substituées (NGINX_ENVSUBST_FILTER) : $uri, $request_uri, etc. sont
-# des variables nginx et restent intactes.
+# nginx template of the front image. The official nginx-unprivileged image passes it to envsubst at
+# startup (script 20-envsubst-on-templates.sh): the resulting file is /etc/nginx/conf.d/default.conf.
+# Only the CSP_* variables are substituted (NGINX_ENVSUBST_FILTER): $uri, $request_uri, etc. are
+# nginx variables and stay untouched.
 
 server {
     listen 8080;
     server_name _;
 
-    # Ne pas annoncer la version de nginx (en-tête Server et pages d'erreur).
+    # Do not announce the nginx version (Server header and error pages).
     server_tokens off;
 
     root /usr/share/nginx/html;
     index index.html;
 
-    # Jamais de liste de dossier.
+    # Never list a directory.
     autoindex off;
 
-    # En-têtes de sécurité (fichier produit par envsubst à partir de security-headers.inc.template).
-    # nginx n'hérite pas des add_header du serveur dans un bloc location qui en déclare un :
-    # chaque location inclut donc ce fichier.
+    # Security headers (file produced by envsubst from security-headers.inc.template).
+    # nginx does not inherit the server's add_header in a location block that declares one:
+    # each location therefore includes this file.
     include /etc/nginx/conf.d/security-headers.inc;
 
-    # Aucun fichier ou dossier caché (.git, .env, .htaccess...) n'est servi.
+    # No hidden file or folder (.git, .env, .htaccess...) is served.
     location ~ /\. {
         include /etc/nginx/conf.d/security-headers.inc;
         return 404;
     }
 
-    # Sondes Kubernetes : réponse constante, sans journal d'accès.
+    # Kubernetes probes: constant response, no access log.
     location = /healthz {
         include /etc/nginx/conf.d/security-headers.inc;
         access_log off;
@@ -36,7 +36,7 @@ server {
         return 200 "ok\n";
     }
 
-    # Point d'entrée et configuration d'exécution : toujours revalidés, jamais mis en cache.
+    # Entry point and runtime configuration: always revalidated, never cached.
     location = /index.html {
         include /etc/nginx/conf.d/security-headers.inc;
         add_header Cache-Control "no-store" always;
@@ -48,15 +48,15 @@ server {
         default_type application/json;
     }
 
-    # Fichiers de Vite : le nom contient l'empreinte du contenu, donc un cache d'un an est sans risque.
+    # Vite files: the name contains the content hash, so a one-year cache is safe.
     location /assets/ {
         include /etc/nginx/conf.d/security-headers.inc;
-        # Sans « always » : une erreur (404) n'est jamais marquée « immutable ».
+        # Without "always": an error (404) is never marked "immutable".
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
 
-    # Application monopage : toute autre route est résolue côté navigateur par React Router.
+    # Single-page application: any other route is resolved in the browser by React Router.
     location / {
         include /etc/nginx/conf.d/security-headers.inc;
         add_header Cache-Control "no-store" always;

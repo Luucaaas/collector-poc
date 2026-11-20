@@ -20,7 +20,7 @@ import { formatMoney } from "../format";
 
 export const PAGE_SIZE = 12;
 
-/** Catalogue public : articles PUBLISHED, filtre par catégorie, pagination limit / offset. */
+/** Public catalogue: PUBLISHED articles, category filter, limit / offset pagination. */
 export function CataloguePage() {
   const api = useApi();
   const [categoryId, setCategoryId] = useState("");

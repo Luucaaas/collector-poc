@@ -27,8 +27,8 @@ function makeUser() {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("réglages OIDC", () => {
-  it("utilise le flux Authorization Code, renouvelle automatiquement et revient sur la racine", () => {
+describe("OIDC settings", () => {
+  it("uses the Authorization Code flow, renews automatically and returns to the root", () => {
     const settings = createOidcSettings(CONFIG, "https://app.test");
     expect(settings.response_type).toBe("code");
     expect(settings.scope).toBe("openid profile");
@@ -38,22 +38,22 @@ describe("réglages OIDC", () => {
     expect(settings.automaticSilentRenew).toBe(true);
   });
 
-  it("n'écrit aucune clé oidc.* dans localStorage ni sessionStorage après une connexion", async () => {
+  it("writes no oidc.* key to localStorage or sessionStorage after sign-in", async () => {
     const manager = new UserManager(createOidcSettings(CONFIG, "https://app.test"));
     await manager.storeUser(makeUser());
 
-    // L'utilisateur est bien disponible (en mémoire) ...
+    // The user is available (in memory) ...
     const stored = await manager.getUser();
     expect(stored?.profile.preferred_username).toBe("alice");
-    // ... mais rien n'est persisté dans les stockages du navigateur.
+    // ... but nothing is persisted in the browser storages.
     expect(oidcKeys(localStorage)).toEqual([]);
     expect(oidcKeys(sessionStorage)).toEqual([]);
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
   });
 
-  it("garde le jeton hors de localStorage même pendant la redirection (état transitoire en sessionStorage)", async () => {
-    // Document de découverte OIDC simulé : aucun accès réseau.
+  it("keeps the token out of localStorage even during the redirect (transient state in sessionStorage)", async () => {
+    // Mocked OIDC discovery document: no network access.
     vi.stubGlobal(
       "fetch",
       vi.fn(() =>
@@ -73,25 +73,25 @@ describe("réglages OIDC", () => {
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
     expect(url.searchParams.get("code_challenge")).toBeTruthy();
     expect(oidcKeys(localStorage)).toEqual([]);
-    // Seul l'état de la redirection (state, code_verifier), sans jeton, est dans sessionStorage.
+    // Only the redirect state (state, code_verifier), without a token, is in sessionStorage.
     expect(oidcKeys(sessionStorage)).toHaveLength(1);
     expect(sessionStorage.getItem(oidcKeys(sessionStorage)[0])).not.toContain("access_token");
   });
 });
 
-describe("rôles", () => {
-  it("lit realm_access.roles dans le jeton d'accès", () => {
+describe("roles", () => {
+  it("reads realm_access.roles from the access token", () => {
     expect(getRoles(makeUser())).toEqual(["buyer", "default-roles-collector"]);
   });
 
-  it("renvoie une liste vide sans utilisateur ou avec un jeton illisible", () => {
+  it("returns an empty list without a user or with an unreadable token", () => {
     expect(getRoles(null)).toEqual([]);
     const user = makeUser();
     user.access_token = "pas-un-jwt";
     expect(getRoles(user)).toEqual([]);
   });
 
-  it("affiche le nom d'utilisateur", () => {
+  it("shows the user name", () => {
     expect(displayName(makeUser())).toBe("alice");
     expect(displayName(null)).toBe("Utilisateur connecté");
     const anonymous = makeUser();

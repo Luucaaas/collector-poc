@@ -12,7 +12,7 @@ export const CONFIG = {
 
 export interface Call {
   method: string;
-  /** Chemin sous /api/v1, avec la chaîne de requête. */
+  /** Path under /api/v1, with the query string. */
   path: string;
   body: unknown;
 }
@@ -21,7 +21,7 @@ export const json = (data: unknown, status = 200) => Response.json(data, { statu
 export const problem = (status: number, body: Record<string, unknown> = {}) =>
   new Response(JSON.stringify({ status, ...body }), { status, headers: { "Content-Type": "application/problem+json" } });
 
-/** Simule fetch : `handler` répond à chaque appel ; renvoie la liste (vivante) des appels reçus. */
+/** Mocks fetch: `handler` answers each call; returns the (live) list of calls received. */
 export function stubApi(handler: (call: Call) => Response): Call[] {
   const calls: Call[] = [];
   vi.stubGlobal(

@@ -1,6 +1,6 @@
 import type { ProblemDetails } from "./types";
 
-/** Erreur renvoyée par l'API (status > 0) ou erreur réseau (status 0). */
+/** Error returned by the API (status > 0) or network error (status 0). */
 export class ApiError extends Error {
   readonly status: number;
   readonly codes: string[];
@@ -17,7 +17,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Codes métier du contrat (contrats.md §2) et codes génériques de validation Pydantic. */
+/** Business codes of the contract (contrats.md §2) and generic Pydantic validation codes. */
 const CODE_MESSAGES: Record<string, string> = {
   CONTACT_EMAIL: "Le texte ne doit contenir aucune adresse email.",
   CONTACT_PHONE: "Le texte ne doit contenir aucun numéro de téléphone.",
@@ -34,12 +34,12 @@ const CODE_MESSAGES: Record<string, string> = {
   UUID_PARSING: "identifiant invalide",
 };
 
-/** Message d'un code connu ; `Object.hasOwn` écarte les clés héritées (`constructor`, `toString`...). */
+/** Message of a known code; `Object.hasOwn` rules out inherited keys (`constructor`, `toString`...). */
 function messageFor(code: string | undefined): string | undefined {
   return code !== undefined && Object.hasOwn(CODE_MESSAGES, code) ? CODE_MESSAGES[code] : undefined;
 }
 
-/** Libellés français des champs des corps de requête (contrats.md §2). */
+/** French labels of the request body fields (contrats.md §2). */
 const FIELD_LABELS: Record<string, string> = {
   name: "nom",
   description: "description",
@@ -55,7 +55,7 @@ const FIELD_LABELS: Record<string, string> = {
   price_changed: "changement de prix",
 };
 
-/** Libellé d'un champ ; le nom brut sert de repli pour un champ inconnu (ex. « photo_urls.0 » devient « adresse de la photo »). */
+/** Label of a field; the raw name is the fallback for an unknown field (e.g. "photo_urls.0" becomes "adresse de la photo"). */
 function fieldLabel(field: string): string {
   const root = field.split(".")[0];
   return Object.hasOwn(FIELD_LABELS, root) ? FIELD_LABELS[root] : field;
@@ -82,7 +82,7 @@ function validationMessage(error: ApiError): string {
   return `Les données saisies sont invalides : ${parts.join(", ")}.`;
 }
 
-/** Message en français, destiné à l'utilisateur, pour n'importe quelle erreur levée par l'API. */
+/** French message, meant for the user, for any error raised by the API. */
 export function describeError(error: unknown, options: { conflict?: string } = {}): string {
   if (!(error instanceof ApiError)) return "Une erreur inattendue est survenue.";
   switch (error.status) {

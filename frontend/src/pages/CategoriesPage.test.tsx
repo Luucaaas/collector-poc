@@ -10,7 +10,7 @@ afterEach(() => vi.unstubAllGlobals());
 const cat = (id: string, name: string) => ({ id, name, slug: name.toLowerCase(), created_at: "2026-11-01T00:00:00Z" });
 
 describe("CategoriesPage", () => {
-  it("crée une catégorie et met la liste à jour", async () => {
+  it("creates a category and updates the list", async () => {
     let list = [cat("c1", "Cartes")];
     const calls = stubApi(({ method }) => {
       if (method === "POST") {
@@ -30,7 +30,7 @@ describe("CategoriesPage", () => {
     expect(calls.find((c) => c.method === "POST")).toMatchObject({ path: "/categories", body: { name: "Figurines" } });
   });
 
-  it("affiche en français le refus d'un nom déjà utilisé (409)", async () => {
+  it("shows the French refusal of an already used name (409)", async () => {
     stubApi(({ method }) =>
       method === "POST"
         ? problem(409, { errors: [{ code: "NAME_ALREADY_USED" }] })
@@ -43,7 +43,7 @@ describe("CategoriesPage", () => {
     expect(await screen.findByText(/déjà utilisé/)).toBeInTheDocument();
   });
 
-  it("affiche un nom invalide (422 NAME_INVALID) et la liste vide", async () => {
+  it("shows an invalid name (422 NAME_INVALID) and the empty list", async () => {
     stubApi(({ method }) =>
       method === "POST"
         ? problem(422, { errors: [{ field: "name", code: "NAME_INVALID" }] })
@@ -56,7 +56,7 @@ describe("CategoriesPage", () => {
     expect(await screen.findByText(/nom est invalide/)).toBeInTheDocument();
   });
 
-  it("refuse côté navigateur un nom d'un seul caractère, sans appeler l'API", async () => {
+  it("rejects a one-character name in the browser, without calling the API", async () => {
     const calls = stubApi(() => json({ items: [], total: 0 }));
     renderWithConfig(<CategoriesPage />);
     await screen.findByText("Aucune catégorie pour le moment.");

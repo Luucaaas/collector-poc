@@ -1,9 +1,9 @@
 const AMOUNT = /^\d{1,7}(?:[.,]\d{1,2})?$/;
 
 /**
- * Normalise une saisie de montant en chaîne décimale à deux décimales ("12,5" → "12.50").
- * Renvoie null si le format n'est pas celui de l'API (7 chiffres au plus avant la virgule, 2 décimales
- * au plus). Aucune conversion en nombre : l'argent ne passe jamais par un flottant.
+ * Normalizes an amount input to a decimal string with two decimals ("12,5" → "12.50").
+ * Returns null if the format is not the API one (at most 7 digits before the comma, at most 2
+ * decimals). No conversion to a number: money never goes through a float.
  */
 export function normalizeAmount(input: string): string | null {
   const text = input.trim();
@@ -19,7 +19,7 @@ function toCents(amount: string): number {
   return Number(integer) * 100 + Number(decimals);
 }
 
-/** Contrôle de confort avant envoi (l'API refait la validation) : prix > 0 et au plus 1 000 000. */
+/** Convenience check before sending (the API validates again): price > 0 and at most 1,000,000. */
 export function validatePrice(input: string): { value: string } | { error: string } {
   const value = normalizeAmount(input);
   if (value === null) return { error: "Saisissez un montant valide, avec deux décimales au plus (ex. 120,00)." };
@@ -29,7 +29,7 @@ export function validatePrice(input: string): { value: string } | { error: strin
   return { value };
 }
 
-/** Frais de port : 0 autorisé (livraison gratuite). */
+/** Shipping fee: 0 allowed (free delivery). */
 export function validateFee(input: string): { value: string } | { error: string } {
   const value = normalizeAmount(input);
   if (value === null) return { error: "Saisissez un montant valide, avec deux décimales au plus (ex. 8,00)." };

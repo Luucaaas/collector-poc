@@ -20,8 +20,8 @@ function renderLayout(roles: string[]) {
   );
 }
 
-describe("Layout : menus selon les rôles", () => {
-  it("un utilisateur buyer seul ne voit ni « Vendre » ni « Catégories »", () => {
+describe("Layout: menus by role", () => {
+  it("a buyer-only user sees neither \"Vendre\" nor \"Catégories\"", () => {
     renderLayout(["buyer"]);
     expect(screen.getByRole("link", { name: "Catalogue" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mes centres d'intérêt" })).toBeInTheDocument();
@@ -29,7 +29,7 @@ describe("Layout : menus selon les rôles", () => {
     expect(screen.queryByRole("link", { name: "Catégories" })).not.toBeInTheDocument();
   });
 
-  it("un vendeur voit « Vendre », un administrateur voit « Catégories »", () => {
+  it("a seller sees \"Vendre\", an admin sees \"Catégories\"", () => {
     renderLayout(["seller", "admin"]);
     expect(screen.getByRole("link", { name: "Vendre" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Catégories" })).toBeInTheDocument();

@@ -3,9 +3,9 @@ import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 import devConfig from "./config.dev.json" with { type: "json" };
 
-// En développement seulement, le serveur Vite répond à /config.json avec config.dev.json
-// (pile docker compose). Ce fichier est à la racine, hors de public/ : il n'entre jamais dans dist/,
-// où /config.json est celui du cluster (public/config.json).
+// In development only, the Vite server answers /config.json with config.dev.json
+// (docker compose stack). This file is at the root, outside public/: it never enters dist/,
+// where /config.json is the cluster one (public/config.json).
 const serveDevConfig: Plugin = {
   name: "serve-dev-config",
   apply: "serve",
@@ -24,7 +24,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     css: false,
-    // Les parcours Playwright (e2e/*.spec.ts) sont lancés à part, par `npm run e2e`.
+    // The Playwright journeys (e2e/*.spec.ts) are run separately, by `npm run e2e`.
     include: ["src/**/*.test.{ts,tsx}"],
   },
 });

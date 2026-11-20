@@ -2,15 +2,15 @@ import { InMemoryWebStorage, WebStorageStateStore, type UserManagerSettings } fr
 import type { AppConfig } from "../config";
 
 /**
- * Réglages OIDC : Authorization Code (PKCE S256 appliqué par oidc-client-ts), jetons en mémoire.
+ * OIDC settings: Authorization Code (PKCE S256 applied by oidc-client-ts), tokens in memory.
  *
- * - `userStore` : l'utilisateur connecté (jetons d'accès, de rafraîchissement et d'identité) vit
- *   dans un objet JavaScript. Rien n'est écrit dans localStorage ni sessionStorage : un script
- *   injecté (XSS) ne peut pas les lire dans un stockage persistant, et recharger la page oblige à
- *   se reconnecter (le cookie de session Keycloak rend cette reconnexion immédiate).
- * - `stateStore` : seul l'état transitoire de la redirection (state, code_verifier) doit survivre
- *   au changement de page, donc il est dans sessionStorage (limité à l'onglet) et oidc-client-ts le
- *   supprime dès le retour de Keycloak. Il ne contient aucun jeton.
+ * - `userStore`: the signed-in user (access, refresh and identity tokens) lives in a
+ *   JavaScript object. Nothing is written to localStorage or sessionStorage: an injected
+ *   script (XSS) cannot read them from persistent storage, and reloading the page forces a
+ *   new sign-in (the Keycloak session cookie makes it immediate).
+ * - `stateStore`: only the transient redirect state (state, code_verifier) must survive the
+ *   page change, so it sits in sessionStorage (tab-scoped) and oidc-client-ts removes it as
+ *   soon as Keycloak returns. It contains no token.
  */
 export function createOidcSettings(config: AppConfig, origin: string): UserManagerSettings {
   return {
@@ -19,7 +19,7 @@ export function createOidcSettings(config: AppConfig, origin: string): UserManag
     redirect_uri: `${origin}/`,
     post_logout_redirect_uri: `${origin}/`,
     response_type: "code",
-    // « profile » apporte preferred_username (client scope du realm, un seul mapper).
+    // "profile" brings preferred_username (realm client scope, a single mapper).
     scope: "openid profile",
     automaticSilentRenew: true,
     userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }),

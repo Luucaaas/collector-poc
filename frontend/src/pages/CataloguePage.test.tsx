@@ -61,7 +61,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("CataloguePage", () => {
-  it("liste les articles avec prix et frais de port en euros et la catégorie", async () => {
+  it("lists articles with price and shipping fee in euros and the category", async () => {
     route((url) =>
       url.pathname.endsWith("/categories")
         ? Response.json(CATEGORIES)
@@ -75,7 +75,7 @@ describe("CataloguePage", () => {
     expect(calls.some((u) => u.includes("/articles?limit=12&offset=0"))).toBe(true);
   });
 
-  it("filtre par catégorie", async () => {
+  it("filters by category", async () => {
     route((url) =>
       url.pathname.endsWith("/categories")
         ? Response.json(CATEGORIES)
@@ -88,7 +88,7 @@ describe("CataloguePage", () => {
     await waitFor(() => expect(calls.some((u) => u.includes("category_id=c2"))).toBe(true));
   });
 
-  it("affiche un message quand la liste est vide", async () => {
+  it("shows a message when the list is empty", async () => {
     route((url) =>
       url.pathname.endsWith("/categories") ? Response.json(CATEGORIES) : Response.json({ items: [], total: 0 }),
     );
@@ -96,7 +96,7 @@ describe("CataloguePage", () => {
     expect(await screen.findByText("Aucun article à afficher pour le moment.")).toBeInTheDocument();
   });
 
-  it("affiche l'erreur traduite quand l'API échoue", async () => {
+  it("shows the translated error when the API fails", async () => {
     route((url) =>
       url.pathname.endsWith("/categories")
         ? Response.json(CATEGORIES)
@@ -106,7 +106,7 @@ describe("CataloguePage", () => {
     expect(await screen.findByText(/Le serveur a rencontré une erreur/)).toBeInTheDocument();
   });
 
-  it("pagine avec limit et offset", async () => {
+  it("paginates with limit and offset", async () => {
     route((url) =>
       url.pathname.endsWith("/categories")
         ? Response.json(CATEGORIES)

@@ -1,5 +1,5 @@
-// Types des réponses, d'après docs/02-architecture/contrats.md. Les montants sont des chaînes
-// décimales ("120.00") : on ne les convertit jamais en nombre pour calculer.
+// Response types, from docs/02-architecture/contrats.md. Amounts are decimal
+// strings ("120.00"): they are never converted to numbers for computation.
 
 export interface Category {
   id: string;
@@ -66,7 +66,7 @@ export interface AppNotification {
   created_at: string;
 }
 
-/** Corps d'erreur RFC 9457 (application/problem+json), contrats.md §1.3. */
+/** RFC 9457 error body (application/problem+json), contrats.md §1.3. */
 export interface ProblemDetails {
   type?: string;
   title?: string;
@@ -76,7 +76,7 @@ export interface ProblemDetails {
   correlation_id?: string;
 }
 
-/** Corps de POST /articles (montants en chaîne décimale). */
+/** Body of POST /articles (amounts as decimal strings). */
 export interface ArticleCreateBody {
   shop_id: string;
   category_id: string;

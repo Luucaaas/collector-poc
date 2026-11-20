@@ -20,7 +20,7 @@ import { formatDateTime, formatMoney } from "../format";
 
 export const NOTIFICATIONS_PAGE_SIZE = 10;
 
-/** Page « Mes centres d'intérêt » (buyer, US-05) : catégories, préférences, notifications. */
+/** "Mes centres d'intérêt" page (buyer, US-05): categories, preferences, notifications. */
 export function InterestsPage() {
   return (
     <Stack spacing={4}>
@@ -156,7 +156,7 @@ function PreferencesForm({ initial }: { initial: Preferences }) {
   );
 }
 
-/** Texte lisible d'une notification, d'après son type (contrats.md §2.2). */
+/** Readable text of a notification, from its type (contrats.md §2.2). */
 export function notificationText(n: AppNotification): string {
   const c = n.content;
   const money = (amount: string | undefined) => (amount ? formatMoney(amount, c.currency ?? "EUR") : "?");

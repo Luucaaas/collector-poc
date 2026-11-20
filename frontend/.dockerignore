@@ -1,4 +1,4 @@
-# Contexte de build minimal. e2e/ reste dans le contexte : `tsc -b` vérifie aussi les types des parcours Playwright.
+# Minimal build context. e2e/ stays in the context: `tsc -b` also type-checks the Playwright journeys.
 node_modules
 dist
 playwright-report

@@ -2,18 +2,18 @@ import { useCallback, useRef, useState } from "react";
 import { ApiError, describeError } from "./errors";
 
 export interface ActionState {
-  /** Vrai pendant l'envoi : les boutons doivent être désactivés (pas de double soumission). */
+  /** True while sending: buttons must be disabled (no double submission). */
   pending: boolean;
-  /** Message en français de la dernière erreur, ou null. */
+  /** French message of the last error, or null. */
   message: string | null;
-  /** Champs désignés par la dernière erreur 422 (pour les marquer en rouge). */
+  /** Fields named by the last 422 error (to mark them in red). */
   errorFields: string[];
-  /** Exécute l'action ; renvoie son résultat, ou undefined si elle a échoué ou si une autre est en cours. */
+  /** Runs the action; returns its result, or undefined if it failed or another one is running. */
   run: <T>(action: () => Promise<T>, options?: { conflict?: string }) => Promise<T | undefined>;
   reset: () => void;
 }
 
-/** Envoi d'un formulaire : état « en cours », erreur traduite, garde contre la double soumission. */
+/** Form submission: "pending" state, translated error, guard against double submission. */
 export function useAction(): ActionState {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

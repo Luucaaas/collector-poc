@@ -8,13 +8,13 @@ const PASSWORD_VARIABLES: Record<Account, string> = {
   chloe: "E2E_CHLOE_PASSWORD",
 };
 
-/** Suffixe unique par exécution : les parcours se relancent sans réinitialiser la base. */
+/** Unique suffix per run: journeys can be rerun without resetting the database. */
 export const RUN = Date.now().toString(36);
 
 /**
- * Connexion par la vraie page de Keycloak. Le mot de passe vient de l'environnement ; il est posé
- * par `evaluate` (et non `fill`) car les arguments de `evaluate` n'apparaissent ni dans le journal
- * d'appels ni dans les messages d'erreur de Playwright.
+ * Sign-in through the real Keycloak page. The password comes from the environment; it is set
+ * by `evaluate` (not `fill`) because the arguments of `evaluate` appear neither in the call log
+ * nor in Playwright error messages.
  */
 export async function login(
   page: Page,
@@ -23,7 +23,7 @@ export async function login(
 ): Promise<void> {
   const variable = PASSWORD_VARIABLES[account];
   const password = process.env[variable];
-  if (!password) throw new Error(`Variable d'environnement ${variable} absente (voir e2e/run-compose.sh).`);
+  if (!password) throw new Error(`Environment variable ${variable} missing (see e2e/run-compose.sh).`);
 
   await page.goto("/");
   await page.getByRole("button", { name: "Connexion" }).click();
@@ -40,14 +40,14 @@ export async function login(
 }
 
 /**
- * Sur le cluster (hôte `app.127.0.0.1.sslip.io`), la page de connexion doit venir de
- * `https://auth.127.0.0.1.sslip.io` et être en français. Sur la pile compose, Keycloak est sur
- * localhost : seul le français est vérifié.
+ * On the cluster (host `app.127.0.0.1.sslip.io`), the sign-in page must come from
+ * `https://auth.127.0.0.1.sslip.io` and be in French. On the compose stack, Keycloak is on
+ * localhost: only French is checked.
  */
 async function checkKeycloakPage(page: Page): Promise<void> {
   const url = new URL(page.url());
   if (new URL(process.env.E2E_BASE_URL ?? "http://localhost").hostname.startsWith("app.")) {
-    expect(url.origin, "origine de la page de connexion").toBe("https://auth.127.0.0.1.sslip.io");
+    expect(url.origin, "origin of the sign-in page").toBe("https://auth.127.0.0.1.sslip.io");
   }
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
 }
@@ -57,17 +57,17 @@ export async function goTo(page: Page, menu: string): Promise<void> {
 }
 
 /**
- * `test` du projet : en plus du `test` de Playwright, un contrôle automatique sur chaque test.
- * Il fait échouer le test si, pendant le parcours, le navigateur signale une violation de la
- * Content-Security-Policy (événement `securitypolicyviolation` ou message de console) ou si un
- * appel à l'API (`/api/v1/`) échoue (erreur réseau ou statut 4xx/5xx non attendu).
+ * The project's `test`: besides Playwright's `test`, an automatic check on every test.
+ * It fails the test if, during the journey, the browser reports a violation of the
+ * Content-Security-Policy (`securitypolicyviolation` event or console message) or if an
+ * API call (`/api/v1/`) fails (network error or unexpected 4xx/5xx status).
  */
 export const test = base.extend<{ watchBrowser: void }>({
   watchBrowser: [
     async ({ page }, use) => {
       const problems: string[] = [];
       await page.exposeFunction("__reportCsp", (directive: string, blocked: string) => {
-        problems.push(`violation CSP : ${directive} a bloqué ${blocked}`);
+        problems.push(`CSP violation: ${directive} blocked ${blocked}`);
       });
       await page.addInitScript(() => {
         const report = (window as unknown as { __reportCsp: (d: string, b: string) => void }).__reportCsp;
@@ -76,24 +76,24 @@ export const test = base.extend<{ watchBrowser: void }>({
         });
       });
       page.on("console", (message) => {
-        if (/Content[- ]Security[- ]Policy/i.test(message.text())) problems.push(`console : ${message.text()}`);
+        if (/Content[- ]Security[- ]Policy/i.test(message.text())) problems.push(`console: ${message.text()}`);
       });
       page.on("requestfailed", (request) => {
         const error = request.failure()?.errorText ?? "";
-        // Une requête interrompue par une navigation (déconnexion) n'est pas une erreur de l'API.
+        // A request aborted by a navigation (sign-out) is not an API error.
         if (request.url().includes("/api/v1/") && !error.includes("ERR_ABORTED")) {
-          problems.push(`appel API en échec : ${request.method()} ${request.url()} (${error})`);
+          problems.push(`API call failed: ${request.method()} ${request.url()} (${error})`);
         }
       });
       page.on("response", (response) => {
         if (response.url().includes("/api/v1/") && response.status() >= 400) {
-          problems.push(`appel API en erreur : ${response.request().method()} ${response.url()} (${response.status()})`);
+          problems.push(`API call error: ${response.request().method()} ${response.url()} (${response.status()})`);
         }
       });
       await use();
-      // Laisse arriver les derniers événements (rapport CSP, réponse d'API) avant le contrôle.
+      // Lets the last events (CSP report, API response) arrive before the check.
       await page.waitForLoadState("networkidle").catch(() => undefined);
-      expect(problems, "violations CSP ou erreurs réseau pendant le parcours").toEqual([]);
+      expect(problems, "CSP violations or network errors during the journey").toEqual([]);
     },
     { auto: true },
   ],

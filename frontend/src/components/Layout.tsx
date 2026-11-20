@@ -10,7 +10,7 @@ const NAV: { to: string; label: string; role?: Role }[] = [
   { to: "/categories", label: "Catégories", role: "admin" },
 ];
 
-/** Barre de navigation (menus selon les rôles, affichage seulement) et zone de contenu. */
+/** Navigation bar (menus by role, display only) and content area. */
 export function Layout() {
   const auth = useAuth();
   const location = useLocation();

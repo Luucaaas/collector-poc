@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-/** Configuration d'exécution, lue dans /config.json avant le démarrage de l'application. */
+/** Runtime configuration, read from /config.json before the application starts. */
 export interface AppConfig {
   authority: string;
   clientId: string;
@@ -22,7 +22,7 @@ function isHttpUrl(value: unknown): value is string {
   }
 }
 
-/** Valide un objet JSON déjà décodé ; les adresses perdent leur éventuelle barre finale. */
+/** Validates an already decoded JSON object; addresses lose any trailing slash. */
 export function parseConfig(raw: unknown): AppConfig {
   if (typeof raw !== "object" || raw === null) {
     throw new ConfigError("Le fichier de configuration /config.json est invalide : objet JSON attendu.");
@@ -45,7 +45,7 @@ export function parseConfig(raw: unknown): AppConfig {
   };
 }
 
-/** Charge /config.json ; toute erreur devient une ConfigError au message lisible. */
+/** Loads /config.json; any error becomes a ConfigError with a readable (French) message. */
 export async function loadConfig(fetchImpl: typeof fetch = fetch): Promise<AppConfig> {
   let response: Response;
   try {
@@ -71,6 +71,6 @@ export const ConfigContext = createContext<AppConfig | null>(null);
 
 export function useConfig(): AppConfig {
   const config = useContext(ConfigContext);
-  if (config === null) throw new Error("useConfig doit être utilisé sous ConfigContext.Provider");
+  if (config === null) throw new Error("useConfig must be used under ConfigContext.Provider");
   return config;
 }

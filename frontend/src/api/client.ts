@@ -2,20 +2,20 @@ import { ApiError } from "./errors";
 import type { ProblemDetails } from "./types";
 
 export interface RequestOptions {
-  /** Adresse de base de l'API (catalogApiUrl ou notificationApiUrl), sans barre finale. */
+  /** Base address of the API (catalogApiUrl or notificationApiUrl), without trailing slash. */
   baseUrl: string;
-  /** Chemin sous /api/v1, par exemple "/articles?limit=12". */
+  /** Path under /api/v1, for example "/articles?limit=12". */
   path: string;
   method?: "GET" | "POST" | "PUT";
   body?: unknown;
-  /** Jeton d'accès ; l'en-tête Authorization n'est ajouté que s'il est fourni. */
+  /** Access token; the Authorization header is only added when it is provided. */
   token?: string | null;
   signal?: AbortSignal;
 }
 
 /**
- * Identifiant de corrélation conforme au contrat : au plus 128 caractères de [A-Za-z0-9._-].
- * Un UUID v4 (36 caractères, chiffres hexadécimaux et tirets) convient.
+ * Correlation identifier compliant with the contract: at most 128 characters of [A-Za-z0-9._-].
+ * A UUID v4 (36 characters, hexadecimal digits and hyphens) fits.
  */
 export function newRequestId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -24,7 +24,7 @@ export function newRequestId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
-/** Fonction unique d'appel des API : jeton, X-Request-ID et erreurs RFC 9457 traduites en ApiError. */
+/** Single function for API calls: token, X-Request-ID and RFC 9457 errors translated into ApiError. */
 export async function apiRequest<T>(options: RequestOptions): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/json",

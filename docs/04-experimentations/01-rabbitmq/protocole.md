@@ -55,6 +55,8 @@ Aucune image ni aucun chart Bitnami. Aucun secret dans le dépôt.
 
 ## 4. Étapes reproductibles
 
+**Langue des messages (19/11/2026).** Depuis le 19/11/2026, les scripts de cette expérimentation (`run.sh`, programmes Python de `app/`) affichent leurs messages en anglais ; les journaux d'exécution versionnés dans `resultats/`, antérieurs à cette date, restent en français et citent donc les anciens libellés.
+
 Commande unique, depuis `docs/04-experimentations/01-rabbitmq/` : `./run.sh` (option `--keep` pour garder le cluster). Prérequis : Docker Desktop démarré, `k3d`, `kubectl`, `uv`, `python3`, `perl`, 5 Go de disque libre. Le script écrit sa sortie complète dans `resultats/run-AAAAMMJJ-HHMM.log`. Toutes les attentes sont bornées (`--timeout`, boucles à nombre d'essais fixe) et affichent un message d'échec clair ; en cas d'échec, le script affiche l'état des pods et les derniers événements.
 
 | Étape | Ce que fait le script |

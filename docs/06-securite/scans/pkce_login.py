@@ -1,13 +1,13 @@
-"""Connexion d'alice par le flux Authorization Code + PKCE S256, pour l'audit ZAP.
+"""Login of alice through the Authorization Code + PKCE S256 flow, for the ZAP audit.
 
-Réutilise les fonctions pures de tests/load/auth.py (PKCE, lecture du formulaire de Keycloak) : la
-connexion traverse exactement ce que traverse le navigateur, sans client en plus dans le realm.
+Reuses the pure functions of tests/load/auth.py (PKCE, reading Keycloak's form): the
+login goes through exactly what the browser goes through, with no extra client in the realm.
 
-Entrée : variables d'environnement SCAN_USER et SCAN_PASSWORD (jamais en argument de commande),
-REQUESTS_CA_BUNDLE (autorité de mkcert, la vérification TLS n'est jamais désactivée).
-Sortie : deux lignes sur la sortie standard, le jeton d'accès puis le jeton de rafraîchissement.
-run-scans.sh les capture dans des variables du shell sans jamais les afficher. En cas d'échec, le
-message ne contient ni mot de passe ni jeton.
+Input: environment variables SCAN_USER and SCAN_PASSWORD (never as a command argument),
+REQUESTS_CA_BUNDLE (mkcert authority, TLS verification is never disabled).
+Output: two lines on standard output, the access token then the refresh token.
+run-scans.sh captures them in shell variables without ever displaying them. On failure, the
+message contains neither password nor token.
 """
 
 import os
@@ -29,11 +29,11 @@ def main() -> int:
     user = os.environ.get("SCAN_USER")
     password = os.environ.get("SCAN_PASSWORD")
     if not user or not password:
-        print("SCAN_USER et SCAN_PASSWORD doivent être définies.", file=sys.stderr)
+        print("SCAN_USER and SCAN_PASSWORD must be set.", file=sys.stderr)
         return 1
     verifier, challenge = auth.pkce_pair()
     state = secrets.token_urlsafe(16)
-    http = requests.Session()  # garde les cookies de session de Keycloak entre les étapes
+    http = requests.Session()  # keeps Keycloak's session cookies between the steps
     params = {
         "client_id": CLIENT_ID,
         "redirect_uri": REDIRECT_URI,
@@ -46,7 +46,7 @@ def main() -> int:
     }
     page = http.get(f"{KEYCLOAK}/auth", params=params, timeout=15)
     if page.status_code != 200:
-        print(f"page d'autorisation : HTTP {page.status_code}", file=sys.stderr)
+        print(f"authorization page: HTTP {page.status_code}", file=sys.stderr)
         return 1
     submit = http.post(
         auth.extract_form_action(page.text),
@@ -55,7 +55,7 @@ def main() -> int:
         timeout=15,
     )
     if submit.status_code != 302:
-        print(f"formulaire de connexion : HTTP {submit.status_code}", file=sys.stderr)
+        print(f"login form: HTTP {submit.status_code}", file=sys.stderr)
         return 1
     code = auth.extract_code(submit.headers.get("Location", ""), state)
     reply = http.post(
@@ -70,7 +70,7 @@ def main() -> int:
         timeout=15,
     )
     if reply.status_code != 200:
-        print(f"échange du code : HTTP {reply.status_code}", file=sys.stderr)
+        print(f"code exchange: HTTP {reply.status_code}", file=sys.stderr)
         return 1
     tokens = reply.json()
     print(tokens["access_token"])

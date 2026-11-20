@@ -1,9 +1,9 @@
-"""Générateur de charge : un nombre connu de requêtes, dans des proportions connues.
+"""Load generator: a known number of requests, in known proportions.
 
-Cycle de 20 requêtes : 17 GET /items, 2 GET /slow, 1 GET /fail (85 %, 10 %, 5 %), envoyées à
-cadence fixe (--rate par seconde, une requête lancée toutes les 1/rate s, sans attendre la
-réponse de la précédente). Écrit une ligne `RESULT {...}` : horodatages de début et de fin
-(horloge du cluster), compteurs réellement envoyés et latences mesurées côté client.
+Cycle of 20 requests: 17 GET /items, 2 GET /slow, 1 GET /fail (85 %, 10 %, 5 %), sent at a
+fixed rate (--rate per second, one request started every 1/rate s, without waiting for the
+response of the previous one). Writes a `RESULT {...}` line: start and end timestamps
+(cluster clock), counters actually sent and latencies measured client-side.
 """
 
 import argparse
@@ -17,7 +17,7 @@ import httpx
 
 
 def path_for(index: int) -> str:
-    """Répartit les chemins dans le cycle, en intercalant les lents et l'échec."""
+    """Spreads the paths over the cycle, interleaving the slow ones and the failure."""
     slot = index % 20
     if slot in (0, 10):
         return "/slow"
@@ -27,7 +27,7 @@ def path_for(index: int) -> str:
 
 
 def percentile(values: list[float], q: float) -> float:
-    """Percentile par rang (méthode du plus proche rang)."""
+    """Percentile by rank (nearest-rank method)."""
     ordered = sorted(values)
     return ordered[max(0, math.ceil(q * len(ordered)) - 1)]
 

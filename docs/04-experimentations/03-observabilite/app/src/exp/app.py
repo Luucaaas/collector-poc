@@ -1,11 +1,11 @@
-"""Application de test : trois routes aux comportements connus, instrumentée pour Prometheus.
+"""Test application: three routes with known behaviours, instrumented for Prometheus.
 
-- GET /items : réponse immédiate ;
-- GET /slow  : attente fixe de SLOW_SECONDS (200 ms) ;
-- GET /fail  : réponse 500.
+- GET /items: immediate response;
+- GET /slow: fixed wait of SLOW_SECONDS (200 ms);
+- GET /fail: 500 response.
 
-Les métriques sont exposées sur /metrics, les journaux sont des lignes JSON (structlog) qui
-portent l'identifiant de corrélation X-Request-ID (contrats.md §1).
+Metrics are exposed on /metrics, logs are JSON lines (structlog) that carry the
+X-Request-ID correlation identifier (contrats.md §1).
 """
 
 import asyncio
@@ -20,8 +20,8 @@ from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 SLOW_SECONDS = 0.2
 
-# Bornes de l'histogramme « fin » : plus serrées autour de l'attente de 200 ms que celles de
-# la bibliothèque (0,1 / 0,5 / 1 s pour http_request_duration_seconds).
+# Bounds of the "fine" histogram: tighter around the 200 ms wait than those of
+# the library (0.1 / 0.5 / 1 s for http_request_duration_seconds).
 FINE_BUCKETS = (0.05, 0.1, 0.2, 0.25, 0.3, 0.5, 1, 2.5)
 
 structlog.configure(
@@ -35,16 +35,16 @@ structlog.configure(
 )
 logger = structlog.get_logger()
 
-app = FastAPI(title="Application de test de l'observabilité")
+app = FastAPI(title="Observability test application")
 
-# /metrics et les sondes /health ne sont pas comptées : seules les requêtes de la charge le sont.
+# /metrics and the /health probes are not counted: only the load requests are.
 (
     Instrumentator(excluded_handlers=["/metrics", "/health/.*"])
     .add(metrics.default())
     .add(
         metrics.latency(
             metric_name="http_request_duration_fine_seconds",
-            metric_doc="Durée des requêtes HTTP, bornes serrées autour de 200 ms",
+            metric_doc="HTTP request duration, tight buckets around 200 ms",
             buckets=FINE_BUCKETS,
         )
     )
@@ -57,7 +57,7 @@ app = FastAPI(title="Application de test de l'observabilité")
 async def correlation_and_log(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    """Reprend ou génère X-Request-ID, le renvoie, et journalise chaque requête en JSON."""
+    """Picks up or generates X-Request-ID, returns it, and logs every request as JSON."""
     correlation_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
@@ -93,4 +93,4 @@ async def slow() -> dict[str, float]:
 
 @app.get("/fail")
 async def fail() -> JSONResponse:
-    return JSONResponse({"detail": "échec volontaire"}, status_code=500)
+    return JSONResponse({"detail": "deliberate failure"}, status_code=500)

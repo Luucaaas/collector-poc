@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# ruff: noqa: E501  (outil de documentation : phrases françaises longues, hors du lint des services)
-"""Produit matrice-risques.svg : matrice impact x probabilité des 62 risques de analyse-risques.md.
+# ruff: noqa: E501  (documentation tool: long lines with French sentences, outside the services' lint)
+"""Produces matrice-risques.svg: impact x probability matrix of the 62 risks of analyse-risques.md.
 
-Bibliothèque standard seulement. Les notes sont lues dans le registre (docs/06-securite/analyse-risques.md),
-jamais recopiées : la matrice ne peut donc pas diverger du registre. Les positions visées après traitement
-des 7 risques critiques (TARGETS) doivent rester identiques à celles du plan (plan-remediation.md, § 6) ;
-verifier-plan.py le contrôle.
+Standard library only. The scores are read from the register (docs/06-securite/analyse-risques.md),
+never copied: the matrix therefore cannot diverge from the register. The positions aimed at after
+treatment of the 7 critical risks (TARGETS) must stay identical to those of the plan
+(plan-remediation.md, section 6); verifier-plan.py checks it.
 
-Usage : python3 docs/06-securite/img/matrice-risques.py   (écrit matrice-risques.svg à côté du script)
+Usage: python3 docs/06-securite/img/matrice-risques.py   (writes matrice-risques.svg next to the script)
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ HERE = Path(__file__).resolve().parent
 REGISTRY = HERE.parent / "analyse-risques.md"
 OUT = HERE / "matrice-risques.svg"
 
-# Position visée (impact, probabilité) après traitement, pour les 7 risques critiques.
+# Target position (impact, probability) after treatment, for the 7 critical risks.
 TARGETS = {1: (5, 2), 29: (5, 1), 31: (4, 2), 32: (5, 1), 34: (5, 2), 48: (4, 2), 55: (3, 2)}
 
 CELL_W, CELL_H = 270, 170
@@ -27,7 +27,7 @@ LEFT, TOP = 150, 150
 
 
 def read_registry() -> dict[int, tuple[int, int]]:
-    """Retourne {numéro: (impact, probabilité)} depuis les lignes du registre (R-01 à R-62)."""
+    """Returns {number: (impact, probability)} from the register lines (R-01 to R-62)."""
     risks: dict[int, tuple[int, int]] = {}
     for line in REGISTRY.read_text(encoding="utf-8").splitlines():
         if not line.startswith("| **R-"):
@@ -36,14 +36,14 @@ def read_registry() -> dict[int, tuple[int, int]]:
         number = int(cells[1].strip("*").removeprefix("R-"))
         impact, probability, score = int(cells[5]), int(cells[6]), cells[7]
         assert str(impact * probability) in score, (
-            f"R-{number:02d} : note incohérente ({cells[5:8]})"
+            f"R-{number:02d}: inconsistent score ({cells[5:8]})"
         )
         risks[number] = (impact, probability)
     return risks
 
 
 def zone(score: int) -> tuple[str, str]:
-    """Couleur de fond et libellé de la zone selon les seuils de l'analyse (15, 10, 5)."""
+    """Background colour and label of the zone according to the analysis thresholds (15, 10, 5)."""
     if score >= 15:
         return "#f4b6b0", "Critique"
     if score >= 10:
@@ -71,12 +71,12 @@ def pill(x: float, y: float, number: int, target: bool, critical: bool) -> str:
 
 def build() -> str:
     risks = read_registry()
-    assert len(risks) == 62, f"{len(risks)} risques lus au lieu de 62"
+    assert len(risks) == 62, f"{len(risks)} risks read instead of 62"
     cells: dict[tuple[int, int], list[tuple[int, bool]]] = {}
     for number, (impact, probability) in sorted(risks.items()):
         cells.setdefault((impact, probability), []).append((number, False))
     for number, (impact, probability) in sorted(TARGETS.items()):
-        assert risks[number][0] * risks[number][1] >= 15, f"R-{number:02d} n'est pas critique"
+        assert risks[number][0] * risks[number][1] >= 15, f"R-{number:02d} is not critical"
         cells.setdefault((impact, probability), []).append((number, True))
 
     width = LEFT + 5 * CELL_W + 30
@@ -164,4 +164,4 @@ def build() -> str:
 
 if __name__ == "__main__":
     OUT.write_text(build(), encoding="utf-8")
-    print(f"écrit {OUT.relative_to(HERE.parent.parent.parent)}")
+    print(f"written {OUT.relative_to(HERE.parent.parent.parent)}")

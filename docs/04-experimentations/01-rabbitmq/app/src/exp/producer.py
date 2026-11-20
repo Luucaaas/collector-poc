@@ -1,4 +1,4 @@
-"""Producteur : publie N messages numérotés, persistants, avec confirmation du broker."""
+"""Producer: publishes N numbered, persistent messages, with broker confirmation."""
 
 import argparse
 import asyncio
@@ -44,7 +44,7 @@ async def main() -> None:
             try:
                 await exchange.publish(message, routing_key=ROUTING_KEY, timeout=PUBLISH_TIMEOUT)
                 break
-            except Exception as exc:  # noqa: BLE001 - tout échec = on republie le même message
+            except Exception as exc:  # noqa: BLE001 - any failure = republish the same message
                 retries += 1
                 if first_failure is None:
                     first_failure = time.monotonic()
@@ -56,7 +56,7 @@ async def main() -> None:
             log("publish_recovered", message_id=message_id, outage_s=round(outage, 3))
         if i % 100 == 0:
             log("progress", confirmed=i)
-        # cadence : le i-ième message est dû à started + i / rate
+        # pacing: the i-th message is due at started + i / rate
         delay = started + i / args.rate - time.monotonic()
         if delay > 0:
             await asyncio.sleep(delay)

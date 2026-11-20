@@ -1,11 +1,11 @@
-"""Synthèse chiffrée d'une exécution de run-scans.sh (écrite dans resume.md).
+"""Numeric summary of a run-scans.sh run (written to resume.md).
 
-Usage : python3 summarize.py <dossier des résultats>
-Ne lit que les fichiers du dossier ; un fichier absent (étape non lancée) est simplement ignoré.
-Sans dépendance : bibliothèque standard seulement.
+Usage: python3 summarize.py <results folder>
+Only reads the files of the folder; a missing file (stage not run) is simply ignored.
+No dependency: standard library only.
 """
 
-# ruff: noqa: E501  (phrases de rapport en français, volontairement non coupées)
+# ruff: noqa: E501  (report sentences in French, deliberately not wrapped)
 import json
 import sys
 from collections import Counter

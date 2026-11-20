@@ -1,34 +1,34 @@
 #!/usr/bin/env bash
-# Pic de charge en direct (moins de 2 minutes) : version courte et visuelle du protocole 5
-# (docs/04-experimentations/05-charge-disponibilite). À regarder dans le terminal :
+# Live load peak (under 2 minutes): short, visual version of protocol 5
+# (docs/04-experimentations/05-charge-disponibilite). To watch in the terminal:
 #
 #   docs/07-soutenance/demo/pic-charge.sh
 #
-# Déroulé :
-#   1. Locust (tests/load, profil « peak ») envoie un pic de 300 utilisateurs simulés tout de suite
-#      (pas de charge de référence avant : le protocole 5 l'a déjà mesurée) ;
-#   2. l'écran se rafraîchit toutes les 2 s : HPA, pods de catalog-service, requêtes et échecs ;
-#   3. quand les 5 réplicas sont prêts (ou au bout de 75 s), un pod de catalog-service est supprimé
-#      après quelques secondes : automatiquement, ou tout de suite si tu appuies sur la touche « s » ;
-#   4. le remplacement est chronométré, la charge continue 10 s, puis s'arrête ;
-#   5. bilan : réplicas atteints, délai de remplacement, requêtes, échecs.
-# Le retour à 2 réplicas se fait ensuite seul (fenêtre de stabilisation de l'HPA : 5 à 10 minutes mesurées) :
-# il n'est pas attendu ici.
+# Flow:
+#   1. Locust (tests/load, "peak" profile) sends a peak of 300 simulated users right away
+#      (no reference load first: protocol 5 already measured it);
+#   2. the screen refreshes every 2 s: HPA, catalog-service pods, requests and failures;
+#   3. when the 5 replicas are ready (or after 75 s), a catalog-service pod is deleted
+#      after a few seconds: automatically, or immediately if you press the "s" key;
+#   4. the replacement is timed, the load continues for 10 s, then stops;
+#   5. summary: replicas reached, replacement delay, requests, failures.
+# The return to 2 replicas then happens on its own (HPA stabilization window: 5 to 10 minutes measured):
+# it is not awaited here.
 #
-# Variables facultatives (valeurs par défaut entre parenthèses) :
-#   PEAK_USERS (300) PEAK_RATE (20)   utilisateurs simulés, arrivée par seconde (300 et non 200 : le pic de 200
-#                                     du protocole 5 suit 4 minutes de charge de référence ; ici le pic démarre
-#                                     à froid, 300 fait atteindre les 5 réplicas de façon plus régulière)
-#   AFTER_FIVE (12)                   secondes d'attente à 5 réplicas avant la suppression automatique
-#   MAX_WAIT (75)                     attente maximale des 5 réplicas, puis suppression quand même
-#   AFTER_DELETE (10)                 secondes de charge maintenues après le retour des réplicas
-#   AUTO (1)                          0 : supprime seulement sur la touche « s »
+# Optional variables (default values in parentheses):
+#   PEAK_USERS (300) PEAK_RATE (20)   simulated users, arrival per second (300 and not 200: the 200 peak
+#                                     of protocol 5 follows 4 minutes of reference load; here the peak starts
+#                                     cold, 300 reaches the 5 replicas more consistently)
+#   AFTER_FIVE (12)                   seconds of waiting at 5 replicas before the automatic deletion
+#   MAX_WAIT (75)                     maximum wait for the 5 replicas, then deletion anyway
+#   AFTER_DELETE (10)                 seconds of load kept after the replicas are back
+#   AUTO (1)                          0: deletes only on the "s" key
 #
-# Sur le cluster, ce script ne fait que du trafic HTTP, des lectures (kubectl get) et UNE
-# modification : `kubectl delete pod` sur un pod de catalog-service. Il refuse de démarrer si
-# catalog-service n'est pas à 2 réplicas prêts. Les mots de passe sont lus dans deploy/local/.env et
-# donnés au seul processus Locust (jamais affichés, jamais en argument, jamais écrits).
-# Si tu interromps (Ctrl+C), Locust est arrêté proprement.
+# On the cluster, this script only does HTTP traffic, reads (kubectl get) and ONE
+# change: `kubectl delete pod` on a catalog-service pod. It refuses to start if
+# catalog-service is not at 2 ready replicas. Passwords are read from deploy/local/.env and
+# given only to the Locust process (never displayed, never as an argument, never written).
+# If you interrupt (Ctrl+C), Locust is stopped cleanly.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -49,24 +49,24 @@ AUTO="${AUTO:-1}"
 now() { perl -MTime::HiRes=time -e 'printf "%.3f\n", time'; }
 read_var() {
   grep -m1 -E "^$1=" "$ENV_FILE" | cut -d= -f2- | grep . \
-    || { echo "Clé $1 absente ou vide dans deploy/local/.env." >&2; return 1; }
+    || { echo "Key $1 missing or empty in deploy/local/.env." >&2; return 1; }
 }
 ready_count() { $K get deploy catalog-service -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true; }
 
-command -v uv >/dev/null || { echo "uv est requis (brew install uv)." >&2; exit 1; }
-command -v mkcert >/dev/null || { echo "mkcert est requis." >&2; exit 1; }
-[[ -f "$ENV_FILE" ]] || { echo "deploy/local/.env introuvable : le cluster est-il déployé ?" >&2; exit 1; }
+command -v uv >/dev/null || { echo "uv is required (brew install uv)." >&2; exit 1; }
+command -v mkcert >/dev/null || { echo "mkcert is required." >&2; exit 1; }
+[[ -f "$ENV_FILE" ]] || { echo "deploy/local/.env not found: is the cluster deployed?" >&2; exit 1; }
 admin_pw="$(read_var ADMIN_PASSWORD)"; alice_pw="$(read_var ALICE_PASSWORD)"
 bob_pw="$(read_var BOB_PASSWORD)"; chloe_pw="$(read_var CHLOE_PASSWORD)"
 REQUESTS_CA_BUNDLE="$(mkcert -CAROOT)/rootCA.pem"
-[[ -f "$REQUESTS_CA_BUNDLE" ]] || { echo "Autorité mkcert introuvable (mkcert -install fait ?)." >&2; exit 1; }
+[[ -f "$REQUESTS_CA_BUNDLE" ]] || { echo "mkcert authority not found (was mkcert -install done?)." >&2; exit 1; }
 export REQUESTS_CA_BUNDLE
 
-[[ "$(ready_count)" == 2 ]] || { echo "catalog-service n'est pas à 2 réplicas prêts : attendre le retour au repos (preparer.sh --rapide)." >&2; exit 1; }
+[[ "$(ready_count)" == 2 ]] || { echo "catalog-service is not at 2 ready replicas: wait for the return to rest (preparer.sh --rapide)." >&2; exit 1; }
 
 WORK="$(mktemp -d)"
-LOG="${WORK}/requetes.csv"
-STOP="${WORK}/arret"
+LOG="${WORK}/requests.csv"
+STOP="${WORK}/stop"
 locust_pid=""
 tty_mode=0; [[ -t 1 ]] && tty_mode=1
 cleanup() {
@@ -77,21 +77,21 @@ cleanup() {
   rm -rf "$WORK"
 }
 trap cleanup EXIT
-trap 'echo; echo "Interrompu : arrêt de Locust."; exit 130' INT TERM
+trap 'echo; echo "Interrupted: stopping Locust."; exit 130' INT TERM
 
-# Nombre de requêtes et d'échecs de la charge (les lignes « [connexion] » et « [prépa] » sont exclues).
+# Number of requests and failures of the load (the "[...]" setup and login lines are excluded).
 counts() {
   awk -F, 'NR > 1 && $2 !~ /^\[/ {n++; f += $5} END {printf "%d %d", n, f}' "$LOG" 2>/dev/null || printf '0 0'
 }
 
-# Affiche l'écran de suivi.
-screen() {   # $1 : message de la ligne d'état
+# Displays the monitoring screen.
+screen() {   # $1: message of the status line
   local elapsed total failed
   elapsed="$(python3 -c "print(int($(now) - $t_start))")"
   read -r total failed <<< "$(counts)"
   [[ $tty_mode -eq 1 ]] && printf '\033[H\033[2J'
-  echo "PIC DE CHARGE : ${PEAK_USERS} utilisateurs simulés, t = ${elapsed} s"
-  echo "Requêtes envoyées : ${total}    échecs : ${failed}"
+  echo "LOAD PEAK: ${PEAK_USERS} simulated users, t = ${elapsed} s"
+  echo "Requests sent: ${total}    failures: ${failed}"
   echo
   $K get hpa catalog-service || true
   echo
@@ -101,7 +101,7 @@ screen() {   # $1 : message de la ligne d'état
 }
 
 : > "$LOG"
-echo "Démarrage de Locust (connexion de l'admin et de chloe, création de la catégorie de charge)..."
+echo "Starting Locust (login of admin and chloe, creation of the load category)..."
 cd "$LOAD"
 LOAD_PROFILE=peak LOAD_NOMINAL_USERS=1 LOAD_NOMINAL_RATE=1 LOAD_NOMINAL_SECONDS=0 \
 LOAD_PEAK_USERS="$PEAK_USERS" LOAD_PEAK_RATE="$PEAK_RATE" LOAD_MAX_SECONDS=600 \
@@ -116,25 +116,25 @@ cd "$HERE"
 t_start="$(now)"
 max_ready=2; t_five=""
 victim=""; t_delete=""; t_new_ready=""; t_recovered=""; fails_at_delete=0
-phase=attente   # attente -> supprime -> maintien
+phase=waiting   # waiting -> deleted -> holding
 five_since=""
 manual=0
 
-# Boucle de suivi : un tour toutes les 2 s (`read -t` sert aussi de pause et lit la touche « s »).
+# Monitoring loop: one turn every 2 s (`read -t` also serves as a pause and reads the "s" key).
 while true; do
-  kill -0 "$locust_pid" 2>/dev/null || { echo "Locust s'est arrêté (voir ci-dessous)." >&2; tail -5 "${WORK}/locust.log" >&2; exit 1; }
+  kill -0 "$locust_pid" 2>/dev/null || { echo "Locust stopped (see below)." >&2; tail -5 "${WORK}/locust.log" >&2; exit 1; }
   ready="$(ready_count)"; ready="${ready:-0}"
   t_now="$(now)"
   (( ready > max_ready )) && max_ready=$ready
   if [[ -z "$t_five" && "$ready" -ge 5 ]]; then t_five="$t_now"; fi
 
   case "$phase" in
-    attente)
+    waiting)
       since_start="$(python3 -c "print($t_now - $t_start)")"
-      msg="En attente des 5 réplicas prêts (prêts : ${ready}/5)."
-      [[ -n "$t_five" ]] && msg="5 réplicas prêts en $(python3 -c "print(f'{$t_five - $t_start:.0f}')") s."
-      [[ "$AUTO" == 1 ]] && msg="${msg} Touche « s » : supprimer un pod maintenant (sinon, ${AFTER_FIVE} s après les 5 réplicas)." \
-        || msg="${msg} Touche « s » : supprimer un pod maintenant."
+      msg="Waiting for the 5 ready replicas (ready: ${ready}/5)."
+      [[ -n "$t_five" ]] && msg="5 replicas ready in $(python3 -c "print(f'{$t_five - $t_start:.0f}')") s."
+      [[ "$AUTO" == 1 ]] && msg="${msg} Key "s": delete a pod now (otherwise, ${AFTER_FIVE} s after the 5 replicas)." \
+        || msg="${msg} Key "s": delete a pod now."
       go=0
       [[ $manual -eq 1 ]] && go=1
       if [[ "$AUTO" == 1 ]]; then
@@ -143,18 +143,18 @@ while true; do
       fi
       if [[ $go -eq 1 ]]; then
         victim="$($K get pods -l "$LABEL" -o jsonpath='{range .items[?(@.status.containerStatuses[0].ready==true)]}{.metadata.name}{"\n"}{end}' | sed -n 1p)"
-        [[ -n "$victim" ]] || { echo "Aucun pod prêt à supprimer." >&2; exit 1; }
+        [[ -n "$victim" ]] || { echo "No ready pod to delete." >&2; exit 1; }
         before_ready="$ready"
         before_names="$($K get pods -l "$LABEL" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')"
         read -r _ fails_at_delete <<< "$(counts)"
         t_delete="$(now)"
         $K delete pod "$victim" --wait=false >/dev/null
-        phase=supprime
-        msg="Pod supprimé : ${victim}. Kubernetes le remplace."
+        phase=deleted
+        msg="Pod deleted: ${victim}. Kubernetes replaces it."
       fi
       screen "$msg"
       ;;
-    supprime)
+    deleted)
       listing="$($K get pods -l "$LABEL" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.containerStatuses[0].ready}{" "}{.metadata.deletionTimestamp}{"\n"}{end}')"
       if [[ -z "$t_new_ready" ]]; then
         while read -r name state terminating; do
@@ -163,17 +163,17 @@ while true; do
         done <<< "$listing"
       fi
       if [[ -n "$t_new_ready" && "$ready" -ge "$before_ready" ]]; then
-        t_recovered="$(now)"; phase=maintien
+        t_recovered="$(now)"; phase=holding
       fi
-      screen "Pod supprimé : ${victim}. En attente du remplaçant prêt."
-      # Délai maximal : sans remplaçant au bout de 120 s, on sort de la boucle (bilan sans remplacement).
+      screen "Pod deleted: ${victim}. Waiting for the ready replacement."
+      # Maximum delay: with no replacement after 120 s, leave the loop (summary without replacement).
       if python3 -c "import sys; sys.exit(0 if $t_now - $t_delete >= 120 else 1)"; then
-        echo "Pas de remplaçant prêt après 120 s : arrêt de la charge." >&2
+        echo "No ready replacement after 120 s: stopping the load." >&2
         break
       fi
       ;;
-    maintien)
-      screen "Remplaçant prêt en $(python3 -c "print(f'{$t_new_ready - $t_delete:.1f}')") s. La charge continue ${AFTER_DELETE} s encore."
+    holding)
+      screen "Replacement ready in $(python3 -c "print(f'{$t_new_ready - $t_delete:.1f}')") s. The load continues for ${AFTER_DELETE} s more."
       python3 -c "import sys; sys.exit(0 if $t_now - $t_recovered >= $AFTER_DELETE else 1)" && break
       ;;
   esac
@@ -186,13 +186,13 @@ while true; do
   fi
 done
 
-# Arrêt de la charge, puis bilan.
+# Stopping the load, then summary.
 : > "$STOP"
 t_stop="$(now)"
 wait "$locust_pid" 2>/dev/null || true
 locust_pid=""
 read -r total failed <<< "$(counts)"
-bilan="$(python3 - "$LOG" "${t_delete:-0}" "${t_recovered:-$(now)}" <<'PY'
+summary="$(python3 - "$LOG" "${t_delete:-0}" "${t_recovered:-$(now)}" <<'PY'
 import csv, sys
 log, t_delete, t_recovered = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
 rows = [r for r in csv.DictReader(open(log)) if not r["name"].startswith("[")]
@@ -204,27 +204,27 @@ p95 = reads[int(0.95 * (len(reads) - 1))] if reads else 0
 print(f"{s5xx} {len(window)} {failed_window} {p95:.0f}")
 PY
 )"
-read -r s5xx window_total window_failed p95 <<< "$bilan"
+read -r s5xx window_total window_failed p95 <<< "$summary"
 [[ $tty_mode -eq 1 ]] && printf '\033[H\033[2J'
-# Le bilan est affiché puis enregistré (horodaté, sans secret) dans resultats/.
+# The summary is displayed then saved (timestamped, without secrets) to resultats/.
 mkdir -p "${HERE}/resultats"
-BILAN_FILE="${HERE}/resultats/pic-$(date +%Y%m%d-%H%M%S).txt"
+SUMMARY_FILE="${HERE}/resultats/pic-$(date +%Y%m%d-%H%M%S).txt"
 {
-echo "================ BILAN DU PIC DE CHARGE ================"
-echo "Charge             : ${PEAK_USERS} utilisateurs simulés, ${total} requêtes en $(python3 -c "print(f'{$t_stop - $t_start:.0f}')") s"
+echo "================ LOAD PEAK SUMMARY ================"
+echo "Load                : ${PEAK_USERS} simulated users, ${total} requests in $(python3 -c "print(f'{$t_stop - $t_start:.0f}')") s"
 if [[ -n "$t_five" ]]; then
-  echo "Montée de l'HPA    : 2 à ${max_ready} réplicas prêts, 5 atteints $(python3 -c "print(f'{$t_five - $t_start:.0f}')") s après le début"
+  echo "HPA scale-up        : 2 to ${max_ready} ready replicas, 5 reached $(python3 -c "print(f'{$t_five - $t_start:.0f}')") s after the start"
 else
-  echo "Montée de l'HPA    : 2 à ${max_ready} réplicas prêts (5 non atteints)"
+  echo "HPA scale-up        : 2 to ${max_ready} ready replicas (5 not reached)"
 fi
-echo "Pod supprimé       : ${victim:-aucun}"
+echo "Pod deleted        : ${victim:-none}"
 if [[ -n "$t_new_ready" ]]; then
-  echo "Remplacement       : remplaçant prêt en $(python3 -c "print(f'{$t_new_ready - $t_delete:.1f}')") s, effectif de nouveau complet en $(python3 -c "print(f'{$t_recovered - $t_delete:.1f}')") s"
-  echo "Pendant le remplacement : ${window_failed} échec(s) sur ${window_total} requêtes"
+  echo "Replacement        : replacement ready in $(python3 -c "print(f'{$t_new_ready - $t_delete:.1f}')") s, workforce complete again in $(python3 -c "print(f'{$t_recovered - $t_delete:.1f}')") s"
+  echo "During the replacement: ${window_failed} failure(s) out of ${window_total} requests"
 fi
-echo "Échecs au total    : ${failed} sur ${total} requêtes (dont ${s5xx} réponse(s) 5xx)"
-echo "Lecture du catalogue : p95 = ${p95} ms (seuil I3 : 300 ms)"
-echo "Retour à 2 réplicas : seul, d'ici 5 à 10 minutes (fenêtre de stabilisation de l'HPA, mesure du protocole 5 et des répétitions)."
+echo "Failures in total: ${failed} out of ${total} requests (including ${s5xx} 5xx response(s))"
+echo "Catalogue read: p95 = ${p95} ms (I3 threshold: 300 ms)"
+echo "Return to 2 replicas: on its own, within 5 to 10 minutes (HPA stabilization window, measured by protocol 5 and the rehearsals)."
 echo "========================================================="
-} | tee "$BILAN_FILE"
-echo "Bilan enregistré : ${BILAN_FILE#"${ROOT}"/}"
+} | tee "$SUMMARY_FILE"
+echo "Summary saved: ${SUMMARY_FILE#"${ROOT}"/}"

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# ruff: noqa: E501  (outil de documentation : phrases françaises longues, hors du lint des services)
-"""Calcule la projection du registre aux jalons 3, 6 et 12 mois à partir de plan-remediation.md.
+# ruff: noqa: E501  (documentation tool: long lines with French sentences, outside the services' lint)
+"""Computes the register projection at the 3, 6 and 12 month milestones from plan-remediation.md.
 
-Bibliothèque standard seulement. Règle (celle du § 8.3 du plan) : un risque est « traité » à un jalon quand
-toutes ses actions sont échues à ce jalon ; il prend alors sa note visée (colonne « I × P visé » du § 6.2).
-Avant cela il garde son palier (tableau du § 8.3) s'il en a un, sinon sa note actuelle. Aucun crédit n'est donc
-pris avant la livraison d'une action.
+Standard library only. Rule (that of section 8.3 of the plan): a risk is "treated" at a milestone when
+all its actions are due at that milestone; it then takes its target score (column "I × P visé" of section 6.2).
+Before that it keeps its step (table of section 8.3) if it has one, otherwise its current score. No credit is therefore
+taken before an action is delivered.
 
-Usage : python3 docs/06-securite/projeter-plan.py   (affiche le tableau du § 8.3)
+Usage: python3 docs/06-securite/projeter-plan.py   (prints the table of section 8.3)
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ def load(text: str) -> Plan:
 
 
 def project(plan: Plan) -> dict[str, tuple[int, int, int]]:
-    """Retourne, par jalon (« 0 », « CT », « MT », « LT »), (critiques, élevés, somme des I × P)."""
+    """Returns, per milestone ("0", "CT", "MT", "LT"), (critical, high, sum of I × P)."""
     out: dict[str, tuple[int, int, int]] = {}
     for milestone in ("0", "CT", "MT", "LT"):
         scores = []

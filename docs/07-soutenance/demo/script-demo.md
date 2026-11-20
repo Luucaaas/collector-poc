@@ -173,7 +173,7 @@ Revenir au terminal **dès que le panneau Réplicas de Grafana montre 4 ou 5 pod
 
 **Ce qu'on dit.** « Maintenant la disponibilité : le script supprime un pod du service catalogue en pleine charge. C'est l'équivalent d'un plantage. Regardez : le pod disparaît, Kubernetes en recrée un tout de suite pour retrouver le nombre de réplicas voulu, et pendant ce temps les 4 autres pods servent le trafic. Le bilan dit combien de temps ça a pris et combien de requêtes ont échoué. »
 
-**Ce que le jury doit voir** : le message « Pod supprimé : catalog-service-... », un nouveau pod qui passe `Running`, puis le **bilan** : réplicas atteints, **remplaçant prêt en environ 5 secondes**, **0 échec pendant le remplacement**, 0 réponse 5xx au total.
+**Ce que le jury doit voir** : le message « Pod deleted: catalog-service-... », un nouveau pod qui passe `Running`, puis le **bilan** (en-tête « LOAD PEAK SUMMARY ») : réplicas atteints, **remplaçant prêt en environ 5 secondes**, **0 échec pendant le remplacement**, 0 réponse 5xx au total.
 
 **Ce qu'on dit pour finir.** « Le retour à 2 pods se fait ensuite tout seul, au bout de 5 à 10 minutes (mesuré au protocole 5 et pendant les répétitions) : c'est la fenêtre de stabilisation de l'HPA, une protection contre les yoyos. Les mesures complètes sont dans le protocole 5 : 200 utilisateurs, 2 à 5 réplicas en 60 secondes, 20 235 requêtes sans une réponse 5xx. »
 
@@ -183,10 +183,10 @@ Revenir au terminal **dès que le panneau Réplicas de Grafana montre 4 ou 5 pod
 
 | Problème | Que faire |
 | --- | --- |
-| `pic-charge.sh` refuse de démarrer (« pas à 2 réplicas prêts ») | Le cluster sort d'une charge : attendre le retour à 2 (`kubectl -n collector get hpa`, 5 à 10 minutes), ou montrer directement le résultat versionné ci-dessous |
+| `pic-charge.sh` refuse de démarrer (« is not at 2 ready replicas ») | Le cluster sort d'une charge : attendre le retour à 2 (`kubectl -n collector get hpa`, 5 à 10 minutes), ou montrer directement le résultat versionné ci-dessous |
 | Locust ne démarre pas ou le terminal se fige | Ctrl+C (Locust s'arrête proprement), puis montrer le [résumé du protocole 5](../../04-experimentations/05-charge-disponibilite/resultats/20261106-1132/resume.md) et ses captures Grafana `grafana-pic-catalog-service.png` dans le même dossier |
-| Les 5 réplicas ne sont pas atteints (le bilan dit « 2 à 4 ») | Ne pas s'en excuser : « la montée dépend de la mesure du processeur, le protocole 5 a mesuré 5 en 60 secondes, ici 4 ; la suppression a eu lieu quand même ». Ce n'est pas un échec du critère (la montée est démontrée) |
-| Une requête échoue pendant la suppression | Le dire tel quel et donner le chiffre du bilan ; le protocole 5 en a mesuré 0 sur 533 |
+| Les 5 réplicas ne sont pas atteints (le bilan « LOAD PEAK SUMMARY » indique « 2 to 4 ready replicas ») | Ne pas s'en excuser : « la montée dépend de la mesure du processeur, le protocole 5 a mesuré 5 en 60 secondes, ici 4 ; la suppression a eu lieu quand même ». Ce n'est pas un échec du critère (la montée est démontrée) |
+| Une requête échoue pendant la suppression | Le dire tel quel et donner le chiffre du bilan (« LOAD PEAK SUMMARY ») ; le protocole 5 en a mesuré 0 sur 533 |
 | Grafana est vide ou ne répond pas | Rester sur le terminal, qui montre HPA et pods ; la capture Grafana de secours : `docs/04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png` |
 | Tout échoue | Vidéo de secours |
 
@@ -206,7 +206,7 @@ deploy/local/deploy.sh all sha-XXXXXXX     # un tag déjà publié sur GHCR ; en
 docs/07-soutenance/demo/donnees-demo.sh    # relançable sans doublon
 
 # 3. Vérification de tout
-docs/07-soutenance/demo/preparer.sh        # doit finir par « PRÊT »
+docs/07-soutenance/demo/preparer.sh        # doit finir par « READY »
 ```
 
 - [ ] **Les 4 hôtes déclarés dans `/etc/hosts`** (une seule fois, par toi, mot de passe demandé) :
@@ -214,7 +214,7 @@ docs/07-soutenance/demo/preparer.sh        # doit finir par « PRÊT »
   sudo sh -c 'printf "127.0.0.1 app.127.0.0.1.sslip.io api.127.0.0.1.sslip.io auth.127.0.0.1.sslip.io grafana.127.0.0.1.sslip.io\n::1 app.127.0.0.1.sslip.io api.127.0.0.1.sslip.io auth.127.0.0.1.sslip.io grafana.127.0.0.1.sslip.io\n" >> /etc/hosts'
   ```
   Sans cela, la démonstration dépend du réseau de la salle. Sur un réseau à DNS64 (partage de connexion d'un iPhone, certains Wi-Fi), Chrome et Safari reçoivent aussi une adresse IPv6 de passerelle (`64:ff9b::7f00:1`), l'essaient en premier, et la connexion est coupée (`ERR_CONNECTION_RESET`) alors que `curl` et `smoke.sh` passent. Sans Internet, `sslip.io` ne répond plus du tout. Constaté le 12/11/2026 sur un partage de connexion ; `preparer.sh` le détecte (ligne « Le navigateur ne joindra pas le cluster »).
-- [ ] Cluster neuf créé, `donnees-demo.sh` lancé, `preparer.sh` répond « PRÊT ».
+- [ ] Cluster neuf créé, `donnees-demo.sh` lancé, `preparer.sh` répond « READY ».
 - [ ] **Ne plus lancer** de test de charge ni de parcours Playwright après (ils polluent le catalogue). Pour répéter la démonstration, recréer le cluster après.
 - [ ] Mac branché sur secteur, mise à jour système et notifications désactivées (mode Ne pas déranger).
 - [ ] Docker Desktop lancé, 10 CPU et 8 Go de mémoire (Settings, Resources).
@@ -230,7 +230,7 @@ docs/07-soutenance/demo/preparer.sh        # doit finir par « PRÊT »
   git push                                                    # lance la CI, qui dure environ 8 min 30
   ```
   Attendre que les **deux** workflows (`backend` et `frontend`) soient verts, puis noter le tag : `sha-$(git rev-parse --short=7 HEAD)`.
-- [ ] `docs/07-soutenance/demo/preparer.sh --veille 3` : doit finir par « PRÊT » (l'option empêche la mise en veille du Mac pendant 3 heures). Si une ligne `MANQUE` apparaît, la commande à lancer est écrite dessous.
+- [ ] `docs/07-soutenance/demo/preparer.sh --veille 3` : doit finir par « READY » (l'option empêche la mise en veille du Mac pendant 3 heures). Si une ligne `MISSING` apparaît, la commande à lancer est écrite dessous. Depuis le 19/11/2026, les messages de `preparer.sh` sont en anglais (`READY`, `NOT READY`, `MISSING`, `WARNING`).
 - [ ] HPA à 2 réplicas, aucun pod en échec (déjà contrôlé par `preparer.sh`).
 - [ ] Ouvrir les fenêtres de la disposition ci-dessus, **se connecter** : alice dans le navigateur normal, chloe dans la fenêtre privée. Les mots de passe se copient sans les montrer : `docs/07-soutenance/demo/mot-de-passe.sh alice` puis Cmd+V (idem `chloe`, `grafana`) ; le presse-papiers est vidé après 30 s.
 - [ ] Onglet 2 : page « Vendre », boutique et catégorie « Figurines » choisies. Fenêtre privée : page « Mes centres d'intérêt », liste des notifications **vide**.

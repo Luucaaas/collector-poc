@@ -45,6 +45,8 @@ Composants en jeu : Locust 2.47.0 (profil de charge « pic » de `tests/load`), 
 
 ## 4. Étapes reproductibles
 
+**Langue des messages (19/11/2026).** Depuis le 19/11/2026, les scripts de cette expérimentation (`run.sh`, `captures.sh`) affichent leurs messages en anglais ; les journaux d'exécution versionnés dans `resultats/`, antérieurs à cette date, restent en français et citent donc les anciens libellés.
+
 Commande unique, **identique à celle de la référence** (les valeurs par défaut sont celles de la référence : 50 utilisateurs pendant 240 s, pic de 200, captures Grafana comprises) : `docs/04-experimentations/05-charge-disponibilite/run.sh` (environ 15 minutes ; paramètres facultatifs en tête du script). `captures.sh` pose lui-même `GRAFANA_CAPTURES=1` ; on peut le relancer seul sur un dossier de résultats, dans les 2 h qui suivent. Prérequis : cluster déployé par `deploy/local/deploy.sh all <tag>`, `uv`, `mkcert`, Chromium de Playwright (`npx playwright install chromium` dans `frontend/`). Les mots de passe sont lus dans `deploy/local/.env` et donnés aux seuls processus qui en ont besoin, en préfixe de commande.
 
 | Étape | Ce que fait le script |

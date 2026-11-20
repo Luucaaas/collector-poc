@@ -54,6 +54,8 @@ Aucune image ni aucun chart Bitnami. Le mot de passe de Grafana est généré pa
 
 ## 4. Étapes reproductibles
 
+**Langue des messages (19/11/2026).** Depuis le 19/11/2026, les scripts de cette expérimentation (`run.sh`, programmes Python de `app/`) affichent leurs messages en anglais ; les journaux d'exécution versionnés dans `resultats/`, antérieurs à cette date, restent en français et citent donc les anciens libellés.
+
 Commande unique, depuis `docs/04-experimentations/03-observabilite/` : `./run.sh` (option `--keep` pour garder le cluster). Prérequis : Docker Desktop démarré avec 8 Go, `k3d`, `kubectl`, `helm`, `uv`, `python3`, `perl`, `curl`, 7 Go de disque libre. Le script écrit sa sortie complète dans `resultats/run-AAAAMMJJ-HHMM.log`. L'exécution de référence a commencé le 02/11/2026 à 22:43 (heure de fin non journalisée).
 
 | Étape | Ce que fait le script |

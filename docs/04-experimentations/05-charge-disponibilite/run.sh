@@ -1,36 +1,36 @@
 #!/usr/bin/env bash
-# Protocole 5 : montée en charge (HPA de 2 à 5 réplicas) et disponibilité (pod supprimé sous charge).
+# Protocol 5: load scaling (HPA from 2 to 5 replicas) and availability (pod deleted under load).
 #
 #   docs/04-experimentations/05-charge-disponibilite/run.sh
 #
-# Variables facultatives (valeurs par défaut entre parenthèses) :
-#   NOMINAL_USERS (50) NOMINAL_SECONDS (240)   charge de référence, montée comprise
-#   PEAK_USERS (200)  PEAK_RATE (5)            pic : utilisateurs, montée par seconde
-#   PEAK_MAX_WAIT (420)                        attente maximale des 5 réplicas prêts, en secondes
-#   HOLD_AT_FIVE (60) HOLD_AFTER (60)          maintien avant la suppression, puis après le retour
-#   SCALE_DOWN_MAX (900)                       attente maximale du retour à 2 réplicas
-#   DELETE_POD (1)                             0 : pas de suppression (essai de calibrage)
-#   CAPTURES (1)                               0 : pas de captures Grafana (captures.sh)
-#   RESULTS_ROOT                               dossier des résultats (défaut : ./resultats)
+# Optional variables (default values in parentheses):
+#   NOMINAL_USERS (50) NOMINAL_SECONDS (240)   reference load, ramp-up included
+#   PEAK_USERS (200)  PEAK_RATE (5)            peak: users, ramp-up per second
+#   PEAK_MAX_WAIT (420)                        maximum wait for the 5 ready replicas, in seconds
+#   HOLD_AT_FIVE (60) HOLD_AFTER (60)          hold before the deletion, then after the recovery
+#   SCALE_DOWN_MAX (900)                       maximum wait for the return to 2 replicas
+#   DELETE_POD (1)                             0: no deletion (calibration run)
+#   CAPTURES (1)                               0: no Grafana captures (captures.sh)
+#   RESULTS_ROOT                               results folder (default: ./resultats)
 #
-# DIFFÉRENCE AVEC LES PROTOCOLES 1 À 4 : ce script ne crée ni ne supprime le cluster. Il s'exécute
-# sur le cluster déjà déployé par `deploy/local/deploy.sh all <tag>` (la montée en charge de l'HPA
-# se mesure sur le déploiement réel, pas sur un cluster jetable). Il refuse de démarrer si
-# `smoke.sh` échoue ou si un composant n'est pas à 2 réplicas.
+# DIFFERENCE WITH PROTOCOLS 1 TO 4: this script neither creates nor deletes the cluster. It runs
+# on the cluster already deployed by `deploy/local/deploy.sh all <tag>` (the HPA load scaling
+# is measured on the real deployment, not on a throwaway cluster). It refuses to start if
+# `smoke.sh` fails or if a component is not at 2 replicas.
 #
-# Sur le cluster, il ne fait que du trafic HTTP, des lectures (kubectl get, top, port-forward) et UNE
-# modification : `kubectl delete pod` sur un pod de catalog-service, pendant le pic.
-# Les mots de passe sont lus dans deploy/local/.env, donnés aux seuls processus qui en ont besoin
-# (Locust, Playwright) en préfixe de commande : jamais affichés, jamais en argument, jamais écrits.
+# On the cluster, it only does HTTP traffic, reads (kubectl get, top, port-forward) and ONE
+# change: `kubectl delete pod` on a catalog-service pod, during the peak.
+# Passwords are read from deploy/local/.env, given only to the processes that need them
+# (Locust, Playwright) as a command prefix: never displayed, never as an argument, never written.
 #
-# Déroulé :
-#   1 vérifications (smoke.sh, 2 réplicas) et relevé de l'environnement ;
-#   2 relevé continu toutes les 5 s (HPA, réplicas prêts, pods, CPU) en arrière-plan ;
-#   3 Locust : charge nominale, puis pic (tests/load, profil « peak ») ;
-#   4 attente des 5 réplicas prêts (ou du délai maximal), maintien, suppression d'un pod,
-#     mesure du remplacement, maintien ;
-#   5 arrêt de la charge, observation de la réduction jusqu'à 2 réplicas ;
-#   6 résumé (tests/load/phases.py), captures Grafana (Playwright), smoke.sh final, anonymisation.
+# Flow:
+#   1 checks (smoke.sh, 2 replicas) and environment snapshot;
+#   2 continuous sampling every 5 s (HPA, ready replicas, pods, CPU) in the background;
+#   3 Locust: nominal load, then peak (tests/load, "peak" profile);
+#   4 wait for the 5 ready replicas (or the maximum delay), hold, delete a pod,
+#     measure the replacement, hold;
+#   5 stop the load, observe the scale-down to 2 replicas;
+#   6 summary (tests/load/phases.py), Grafana captures (Playwright), final smoke.sh, anonymization.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -59,38 +59,38 @@ now() { python3 -c 'import time; print(f"{time.time():.3f}")'; }
 elapsed() { python3 -c "print(f'{$2 - $1:.1f}')"; }
 read_var() {
   grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | grep . \
-    || { echo "Clé $1 absente ou vide dans deploy/local/.env." >&2; return 1; }
+    || { echo "Key $1 missing or empty in deploy/local/.env." >&2; return 1; }
 }
 
-command -v uv >/dev/null || { echo "uv est requis (brew install uv)." >&2; exit 1; }
-command -v mkcert >/dev/null || { echo "mkcert est requis." >&2; exit 1; }
-[[ -f "$ENV_FILE" ]] || { echo "deploy/local/.env introuvable : le cluster est-il déployé ?" >&2; exit 1; }
-# Variables du shell seulement (pas d'export) : donnés en préfixe aux seuls processus concernés.
+command -v uv >/dev/null || { echo "uv is required (brew install uv)." >&2; exit 1; }
+command -v mkcert >/dev/null || { echo "mkcert is required." >&2; exit 1; }
+[[ -f "$ENV_FILE" ]] || { echo "deploy/local/.env not found: is the cluster deployed?" >&2; exit 1; }
+# Shell variables only (no export): given as a prefix to the processes concerned only.
 admin_pw="$(read_var ADMIN_PASSWORD)"; alice_pw="$(read_var ALICE_PASSWORD)"
 bob_pw="$(read_var BOB_PASSWORD)"; chloe_pw="$(read_var CHLOE_PASSWORD)"
-export REQUESTS_CA_BUNDLE="$(mkcert -CAROOT)/rootCA.pem"   # autorité du cluster, TLS toujours vérifié
-[[ -f "$REQUESTS_CA_BUNDLE" ]] || { echo "Autorité mkcert introuvable (mkcert -install fait ?)." >&2; exit 1; }
+export REQUESTS_CA_BUNDLE="$(mkcert -CAROOT)/rootCA.pem"   # cluster authority, TLS always verified
+[[ -f "$REQUESTS_CA_BUNDLE" ]] || { echo "mkcert authority not found (was mkcert -install done?)." >&2; exit 1; }
 
-step "1. Vérifications préalables"
+step "1. Preliminary checks"
 RESULTS_ROOT="${RESULTS_ROOT:-${HERE}/resultats}"
 export LOAD_RUN_ID="$(date +%Y%m%d-%H%M)"
 RESULTS="${RESULTS_ROOT}/${LOAD_RUN_ID}"
-[[ ! -e "$RESULTS" ]] || { echo "${RESULTS} existe déjà (attendre une minute)." >&2; exit 1; }
+[[ ! -e "$RESULTS" ]] || { echo "${RESULTS} already exists (wait a minute)." >&2; exit 1; }
 mkdir -p "$RESULTS"
 export LOAD_RESULTS_DIR="$RESULTS"
 if ! "${ROOT}/deploy/local/smoke.sh" > "${RESULTS}/smoke-avant.txt" 2>&1; then
-  echo "smoke.sh échoue avant le test : arrêt (voir ${RESULTS}/smoke-avant.txt)." >&2; exit 1
+  echo "smoke.sh fails before the test: stopping (see ${RESULTS}/smoke-avant.txt)." >&2; exit 1
 fi
-echo "smoke.sh : OK"
+echo "smoke.sh: OK"
 for name in catalog-service notification-service frontend; do
   replicas="$($K get deploy "$name" -o jsonpath='{.status.readyReplicas}')"
-  [[ "$replicas" == 2 ]] || { echo "${name} n'est pas à 2 réplicas prêts (${replicas:-0}) : arrêt." >&2; exit 1; }
+  [[ "$replicas" == 2 ]] || { echo "${name} is not at 2 ready replicas (${replicas:-0}): stopping." >&2; exit 1; }
 done
-echo "catalog-service, notification-service, frontend : 2 réplicas prêts"
+echo "catalog-service, notification-service, frontend: 2 ready replicas"
 
 sampler=""; portforward=""; locust_pid=""
 chrono() { printf '%s\t%s\n' "$(now)" "$1" >> "${RESULTS}/chronologie.tsv"; }
-# Anonymise ce qui est archivé : nom de la machine (long et court) et dossier personnel.
+# Anonymizes what is archived: machine name (long and short) and home folder.
 sanitize() {
   local short; short="$(hostname -s)"
   local mask='s/\Q$ENV{HOST_SHORT}\E(?:\.[\w-]+)*/<machine>/gi; s{/Us[e]rs/[^\/\s"\x27]+}{<home>}g'
@@ -98,7 +98,7 @@ sanitize() {
     [[ -f "$file" ]] || continue
     HOST_SHORT="$short" perl -pi -e "$mask" "$file"
   done
-  # Fichiers compressés : décompression, masquage, recompression.
+  # Compressed files: decompress, mask, recompress.
   for file in "${RESULTS}"/*.gz; do
     [[ -f "$file" ]] || continue
     gunzip -f "$file"
@@ -115,42 +115,42 @@ cleanup() {
 }
 trap cleanup EXIT
 
-step "2. Environnement"
+step "2. Environment"
 {
-  echo "Date de début : $(date '+%d/%m/%Y %H:%M:%S')"
-  echo "macOS : $(sw_vers -productVersion), $(uname -m)"
-  echo "Docker : $(docker version --format '{{.Server.Version}}'), $(docker info --format '{{.NCPU}} CPU, {{.MemTotal}} octets de mémoire')"
-  echo "k3d $(k3d version | head -n 1 | awk '{print $3}'), k3s des nœuds $($K get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'), $(kubectl version --client | head -n 1), helm $(helm version --short), mkcert $(mkcert -version)"
-  echo "Locust : $(cd "$LOAD" && uv run --quiet locust --version | sed 's/ from .*//')"
-  echo "Commit du dépôt : $(git -C "$ROOT" rev-parse --short HEAD)"
+  echo "Start date: $(date '+%d/%m/%Y %H:%M:%S')"
+  echo "macOS: $(sw_vers -productVersion), $(uname -m)"
+  echo "Docker: $(docker version --format '{{.Server.Version}}'), $(docker info --format '{{.NCPU}} CPU, {{.MemTotal}} bytes of memory')"
+  echo "k3d $(k3d version | head -n 1 | awk '{print $3}'), k3s of the nodes $($K get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'), $(kubectl version --client | head -n 1), helm $(helm version --short), mkcert $(mkcert -version)"
+  echo "Locust: $(cd "$LOAD" && uv run --quiet locust --version | sed 's/ from .*//')"
+  echo "Repository commit: $(git -C "$ROOT" rev-parse --short HEAD)"
   echo
-  echo "Images déployées :"
+  echo "Deployed images:"
   $K get deploy catalog-service notification-service frontend \
     -o jsonpath='{range .items[*]}  {.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
   echo
-  echo "Digests lus sur les pods :"
+  echo "Digests read from the pods:"
   $K get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.containerStatuses[0].imageID}{"\n"}{end}' \
     | grep -E '^(catalog-service|notification-service|frontend)-' | sed 's/^/  /'
   echo
-  echo "Ressources de catalog-service (requêtes et limites) :"
+  echo "Resources of catalog-service (requests and limits):"
   $K get deploy catalog-service -o jsonpath='  {.spec.template.spec.containers[0].resources}{"\n"}'
   echo
-  echo "Nœuds :"; kubectl --context "$CTX" top nodes
+  echo "Nodes:"; kubectl --context "$CTX" top nodes
   echo
-  echo "HPA avant :"; $K get hpa
+  echo "HPA before:"; $K get hpa
   echo
-  echo "Politique de réduction de l'HPA de catalog-service (vide : valeurs par défaut de Kubernetes) :"
+  echo "HPA scale-down policy of catalog-service (empty: Kubernetes defaults):"
   $K get hpa catalog-service -o jsonpath='  {.spec.behavior}{"\n"}'
-  echo "Pods avant :"; $K get pods -o wide | grep -E '^(NAME|catalog|notification|frontend)'
+  echo "Pods before:"; $K get pods -o wide | grep -E '^(NAME|catalog|notification|frontend)'
 } > "${RESULTS}/environnement.txt"
 {
-  echo "Paramètres : charge nominale ${NOMINAL_USERS} utilisateurs pendant ${NOMINAL_SECONDS} s (montée de 1 par seconde), "
-  echo "pic de ${PEAK_USERS} utilisateurs (montée de ${PEAK_RATE} par seconde), attente maximale des 5 réplicas ${PEAK_MAX_WAIT} s,"
-  echo "maintien de ${HOLD_AT_FIVE} s à 5 réplicas puis de ${HOLD_AFTER} s après le retour, observation de la réduction ${SCALE_DOWN_MAX} s au plus."
-  echo "Exécution du $(date '+%d/%m/%Y %H:%M'), commit $(git -C "$ROOT" rev-parse --short HEAD), images $($K get deploy catalog-service -o jsonpath='{.spec.template.spec.containers[0].image}' | sed 's/@.*//; s/.*://')."
+  echo "Parameters: nominal load ${NOMINAL_USERS} users for ${NOMINAL_SECONDS} s (ramp-up of 1 per second), "
+  echo "peak of ${PEAK_USERS} users (ramp-up of ${PEAK_RATE} per second), maximum wait for the 5 replicas ${PEAK_MAX_WAIT} s,"
+  echo "hold of ${HOLD_AT_FIVE} s at 5 replicas then ${HOLD_AFTER} s after the recovery, scale-down observation ${SCALE_DOWN_MAX} s at most."
+  echo "Run of $(date '+%d/%m/%Y %H:%M'), commit $(git -C "$ROOT" rev-parse --short HEAD), images $($K get deploy catalog-service -o jsonpath='{.spec.template.spec.containers[0].image}' | sed 's/@.*//; s/.*://')."
 } > "${RESULTS}/parametres.txt"
 
-# Relevé continu toutes les 5 s (lectures seules) : HPA, réplicas prêts, pods, CPU.
+# Continuous sampling every 5 s (read-only): HPA, ready replicas, pods, CPU.
 sample_loop() {
   while true; do
     ts="$(date +%s)"
@@ -166,7 +166,7 @@ sample_loop & sampler=$!
 disown "$sampler"
 
 ready_count() { $K get deploy catalog-service -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true; }
-# Vrai si les 3 composants sont revenus à 2 réplicas (souhaités, existants et prêts).
+# True if the 3 components are back at 2 replicas (desired, existing and ready).
 at_rest() {
   local name state
   for name in catalog-service notification-service frontend; do
@@ -180,7 +180,7 @@ catalog_at_rest() {
     && [[ "$($K get hpa catalog-service -o jsonpath='{.status.desiredReplicas}' 2>/dev/null || true)" == 2 ]]
 }
 
-step "3. Locust : charge nominale (${NOMINAL_USERS} utilisateurs, ${NOMINAL_SECONDS} s), puis pic (${PEAK_USERS})"
+step "3. Locust: nominal load (${NOMINAL_USERS} users, ${NOMINAL_SECONDS} s), then peak (${PEAK_USERS})"
 cd "$LOAD"
 LOAD_PROFILE=peak LOAD_NOMINAL_USERS="$NOMINAL_USERS" LOAD_NOMINAL_RATE=1 \
 LOAD_NOMINAL_SECONDS="$NOMINAL_SECONDS" LOAD_PEAK_USERS="$PEAK_USERS" LOAD_PEAK_RATE="$PEAK_RATE" \
@@ -193,10 +193,10 @@ uv run --quiet locust -f locustfile.py --headless --host "$API" \
 locust_pid=$!
 cd "$HERE"
 
-# Attend le début du pic (daté par le profil de charge dans fenetre.json).
+# Waits for the start of the peak (dated by the load profile in fenetre.json).
 peak_start=""
 for _ in $(seq 1 $((NOMINAL_SECONDS + 120))); do
-  kill -0 "$locust_pid" 2>/dev/null || { echo "Locust s'est arrêté avant le pic (voir locust.log)." >&2; exit 1; }
+  kill -0 "$locust_pid" 2>/dev/null || { echo "Locust stopped before the peak (see locust.log)." >&2; exit 1; }
   peak_start="$(python3 - "${RESULTS}/fenetre.json" <<'PY' 2>/dev/null || true
 import json, sys
 print(json.load(open(sys.argv[1])).get("peak_start", ""))
@@ -205,31 +205,31 @@ PY
   [[ -z "$peak_start" ]] || break
   sleep 1
 done
-[[ -n "$peak_start" ]] || { echo "Le pic n'a pas démarré." >&2; exit 1; }
-echo "Pic démarré ; HPA : $($K get hpa catalog-service --no-headers)"
+[[ -n "$peak_start" ]] || { echo "The peak did not start." >&2; exit 1; }
+echo "Peak started; HPA: $($K get hpa catalog-service --no-headers)"
 
-step "4. Attente des 5 réplicas prêts (au plus ${PEAK_MAX_WAIT} s)"
+step "4. Waiting for the 5 ready replicas (at most ${PEAK_MAX_WAIT} s)"
 five=0
 for _ in $(seq 1 $((PEAK_MAX_WAIT * 2))); do
-  kill -0 "$locust_pid" 2>/dev/null || { echo "Locust s'est arrêté pendant le pic." >&2; exit 1; }
+  kill -0 "$locust_pid" 2>/dev/null || { echo "Locust stopped during the peak." >&2; exit 1; }
   if [[ "$(ready_count)" == 5 ]]; then five=1; chrono five_ready; break; fi
   sleep 0.5
 done
 if [[ $five -eq 1 ]]; then
-  echo "5 réplicas prêts, maintien ${HOLD_AT_FIVE} s"
+  echo "5 replicas ready, hold of ${HOLD_AT_FIVE} s"
   sleep "$HOLD_AT_FIVE"
 else
   chrono five_timeout
-  echo "5 réplicas non atteints en ${PEAK_MAX_WAIT} s (prêts : $(ready_count)) ; la suppression a lieu quand même." >&2
+  echo "5 replicas not reached within ${PEAK_MAX_WAIT} s (ready: $(ready_count)); the deletion takes place anyway." >&2
 fi
 $K get hpa catalog-service --no-headers
 
 if [[ "$DELETE_POD" == 1 ]]; then
-  step "4b. Suppression d'un pod de catalog-service pendant le pic"
+  step "4b. Deleting a catalog-service pod during the peak"
   before_ready="$(ready_count)"
   before_names="$($K get pods -l "$CATALOG_LABEL" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')"
   victim="$($K get pods -l "$CATALOG_LABEL" -o jsonpath='{range .items[?(@.status.containerStatuses[0].ready==true)]}{.metadata.name}{"\n"}{end}' | head -n 1)"
-  echo "Pod supprimé : ${victim} ; prêts avant : ${before_ready}"
+  echo "Pod deleted: ${victim}; ready before: ${before_ready}"
   chrono delete
   t0="$(now)"
   $K delete pod "$victim" --wait=false >/dev/null
@@ -240,7 +240,7 @@ if [[ "$DELETE_POD" == 1 ]]; then
       gone=1; chrono old_gone
     fi
     if [[ -z "$new_ready" ]]; then
-      # Un pod absent de la liste d'avant, prêt et non en cours d'arrêt : le remplaçant.
+      # A pod absent from the earlier list, ready and not terminating: the replacement.
       while read -r name ready terminating; do
         [[ -n "$name" && "$ready" == true && -z "$terminating" ]] || continue
         echo "$before_names" | grep -qx "$name" || { new_ready=1; chrono new_ready; break; }
@@ -249,31 +249,31 @@ if [[ "$DELETE_POD" == 1 ]]; then
     if [[ -n "$gone" && "$(ready_count)" -ge "$before_ready" ]]; then recovered=1; chrono recovered; break; fi
     sleep 0.5
   done
-  [[ -n "$recovered" ]] || echo "Réplicas prêts non retrouvés en 180 s après la suppression." >&2
-  echo "Remplacement mesuré (voir chronologie.tsv) ; maintien ${HOLD_AFTER} s"
+  [[ -n "$recovered" ]] || echo "Ready replicas not recovered within 180 s after the deletion." >&2
+  echo "Replacement measured (see chronologie.tsv); hold of ${HOLD_AFTER} s"
   sleep "$HOLD_AFTER"
 fi
 
-step "5. Arrêt de la charge, observation de la réduction (au plus ${SCALE_DOWN_MAX} s)"
+step "5. Stopping the load, observing the scale-down (at most ${SCALE_DOWN_MAX} s)"
 : > "${RESULTS}/arret"
 chrono stop
 wait "$locust_pid" 2>/dev/null || true
 locust_pid=""
 chrono locust_ended
-echo "Charge arrêtée ; HPA : $($K get hpa catalog-service --no-headers)"
+echo "Load stopped; HPA: $($K get hpa catalog-service --no-headers)"
 back2=0
 for _ in $(seq 1 $((SCALE_DOWN_MAX / 5))); do
   if [[ $back2 -eq 0 ]] && catalog_at_rest; then back2=1; chrono catalog_back_2; fi
   if at_rest; then chrono all_back_2; break; fi
   sleep 5
 done
-at_rest || echo "Les 3 composants ne sont pas revenus à 2 réplicas en ${SCALE_DOWN_MAX} s." >&2
-sleep 20   # quelques points de plus sur les graphiques
+at_rest || echo "The 3 components did not return to 2 replicas within ${SCALE_DOWN_MAX} s." >&2
+sleep 20   # a few more points on the charts
 chrono observation_end
 kill "$sampler" 2>/dev/null || true; sampler=""
 
-step "6. Événements, résumé, captures"
-# Événements du test, avec leur heure absolue (ceux d'une exécution précédente sont écartés).
+step "6. Events, summary, captures"
+# Events of the test, with their absolute time (those of a previous run are discarded).
 $K get events -o json | python3 -c '
 import calendar, json, sys, time
 start = float(sys.argv[1])
@@ -293,22 +293,22 @@ $K port-forward svc/kps-prometheus "${PROM_PORT}:9090" >/dev/null 2>&1 &
 portforward=$!
 disown "$portforward"
 for _ in $(seq 1 30); do curl -s -o /dev/null --max-time 2 "http://127.0.0.1:${PROM_PORT}/-/ready" && break; sleep 1; done
-sleep 35   # deux cycles de collecte (15 s) après la fin
+sleep 35   # two scrape cycles (15 s) after the end
 sanitize
 (cd "$LOAD" && uv run --quiet python phases.py "$RESULTS" "http://127.0.0.1:${PROM_PORT}")
 sanitize
 
 if [[ "$CAPTURES" == 1 ]]; then
-  step "6b. Captures du tableau de bord Grafana"
-  "${HERE}/captures.sh" "$RESULTS" || echo "Captures Grafana en échec (voir ci-dessus)." >&2
+  step "6b. Captures of the Grafana dashboard"
+  "${HERE}/captures.sh" "$RESULTS" || echo "Grafana captures failed (see above)." >&2
 fi
 
-step "7. Fin : état du cluster et smoke.sh"
+step "7. End: cluster state and smoke.sh"
 $K get hpa; $K get pods -o wide | grep -E '^(NAME|catalog|notification|frontend)'
 "${ROOT}/deploy/local/smoke.sh" > "${RESULTS}/smoke-apres.txt" 2>&1 \
-  && echo "smoke.sh : OK" || echo "smoke.sh : ÉCHEC (voir smoke-apres.txt)" >&2
+  && echo "smoke.sh: OK" || echo "smoke.sh: FAILURE (see smoke-apres.txt)" >&2
 $K get hpa > "${RESULTS}/hpa-apres.txt"
 gzip -9 -f "${RESULTS}/requetes.csv"
 rm -f "${RESULTS}/arret"
 sanitize
-echo "Résultats : ${RESULTS}"
+echo "Results: ${RESULTS}"

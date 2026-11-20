@@ -1,4 +1,4 @@
-"""Analyse : vide exp.receipts et calcule les mesures d'un scénario (JSON sur la sortie)."""
+"""Analysis: drains exp.receipts and computes the measures of a scenario (JSON on the output)."""
 
 import argparse
 import asyncio
@@ -21,7 +21,7 @@ async def main() -> None:
     args = parser.parse_args()
 
     expected_ids = {f"{args.run_id}-{i:05d}" for i in range(1, args.expected + 1)}
-    expected_ids.discard(args.poison_id)  # le message empoisonné ne doit jamais être traité
+    expected_ids.discard(args.poison_id)  # the poison message must never be processed
 
     connection = await connect()
     channel = await connection.channel()
@@ -65,7 +65,7 @@ async def main() -> None:
         "max_gap_end_ts": round(gap_b.get("ts", 0.0), 3),
     }
     if args.delete_ts and ok:
-        # Pod le plus ancien = celui supprimé (scénario A) ; le suivant = son remplaçant.
+        # Oldest pod = the deleted one (scenario A); the next one = its replacement.
         first_seen: dict[str, float] = {}
         for r in ok:
             first_seen.setdefault(r["pod"], r["ts"])

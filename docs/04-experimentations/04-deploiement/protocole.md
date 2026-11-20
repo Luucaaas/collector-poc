@@ -39,6 +39,8 @@ Composants déployés (images épinglées par `tag@sha256`, relevées par `kubec
 
 ## 4. Étapes reproductibles
 
+**Langue des messages (19/11/2026).** Depuis le 19/11/2026, les scripts de cette expérimentation (`run.sh`) affichent leurs messages en anglais ; les journaux d'exécution versionnés dans `resultats/`, antérieurs à cette date, restent en français et citent donc les anciens libellés.
+
 Commande unique : `docs/04-experimentations/04-deploiement/run.sh [<tag>]` (défaut `sha-bec38ed`). **Elle supprime puis recrée le cluster `collector`** ; le certificat mkcert et `deploy/local/.env` sont conservés. Durée : environ 11 minutes dont 5 min d'attente du déploiement défaillant. Le script échoue (code non nul) si `deploy.sh` ne rend pas 1 pour la version défaillante ou si une requête de la boucle échoue pendant l'auto-réparation ou le retour arrière ; si une erreur survient après le lancement de la version défaillante, son `trap` redéploie la configuration nominale. La sortie est écrite dans `resultats/run-AAAAMMJJ-HHMM.log` ; aucun mot de passe n'est affiché.
 
 | Étape | Ce que fait le script |

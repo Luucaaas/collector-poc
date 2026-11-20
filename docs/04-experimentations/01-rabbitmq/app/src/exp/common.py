@@ -1,4 +1,4 @@
-"""Éléments communs : connexion, topologie (identique à contrats.md §3.1) et journal JSON."""
+"""Common pieces: connection, topology (identical to contrats.md §3.1) and JSON log."""
 
 import json
 import os
@@ -21,12 +21,12 @@ PREFETCH = 10
 
 
 def log(event: str, **fields: Any) -> None:
-    """Écrit une ligne JSON sur la sortie standard (lisible par `kubectl logs`)."""
+    """Writes a JSON line to standard output (readable with `kubectl logs`)."""
     print(json.dumps({"ts": time.time(), "event": event, **fields}), flush=True)
 
 
 async def connect() -> AbstractRobustConnection:
-    """Connexion robuste : aio-pika se reconnecte seul après une coupure du broker."""
+    """Robust connection: aio-pika reconnects on its own after a broker outage."""
     connection = await aio_pika.connect_robust(
         host=os.environ["RABBITMQ_HOST"],
         login=os.environ["RABBITMQ_USER"],
@@ -36,7 +36,7 @@ async def connect() -> AbstractRobustConnection:
     state = {"down": False}
 
     def on_lost(*_: Any) -> None:
-        if not state["down"]:  # aio-pika rappelle ce hook à chaque tentative échouée
+        if not state["down"]:  # aio-pika calls this hook on every failed attempt
             state["down"] = True
             log("amqp_connection_lost")
 
@@ -50,7 +50,7 @@ async def connect() -> AbstractRobustConnection:
 
 
 async def declare_topology(channel: AbstractRobustChannel) -> AbstractQueue:
-    """Déclare exchange et file durables, liés par `article.*`, plus la file des accusés."""
+    """Declares a durable exchange and queue, bound by `article.*`, plus the receipts queue."""
     exchange = await channel.declare_exchange(EXCHANGE, aio_pika.ExchangeType.TOPIC, durable=True)
     queue = await channel.declare_queue(QUEUE, durable=True)
     await queue.bind(exchange, routing_key=BINDING_KEY)

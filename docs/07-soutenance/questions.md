@@ -909,7 +909,7 @@ Les chiffres viennent de fichiers du dépôt, cités en lien relatif ; `python3 
 
 **Critères** : 5, 10.
 
-**À dire.** Je le dis tel quel. Si le bilan indique 4 réplicas, la montée dépend de la mesure du processeur : le protocole a mesuré 5 en 60 secondes, ici 4, et la suppression a eu lieu. Si une requête échoue, je donne le chiffre du bilan : le protocole en a mesuré zéro sur 533, mais un échec isolé serait cohérent avec les requêtes en cours sur le pod supprimé. Si Grafana est vide, je reste sur le terminal et j'ouvre la capture.
+**À dire.** Je le dis tel quel. Si le bilan (« LOAD PEAK SUMMARY ») indique 4 réplicas, la montée dépend de la mesure du processeur : le protocole a mesuré 5 en 60 secondes, ici 4, et la suppression a eu lieu. Si une requête échoue, je donne le chiffre du bilan : le protocole en a mesuré zéro sur 533, mais un échec isolé serait cohérent avec les requêtes en cours sur le pod supprimé. Si Grafana est vide, je reste sur le terminal et j'ouvre la capture.
 
 **Chiffres.** 0 échec sur 533 requêtes ; 4,9 s ([index](../04-experimentations/README.md)).
 

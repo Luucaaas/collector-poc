@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
-# ruff: noqa: E501  (outil de documentation : phrases françaises longues, hors du lint des services)
-"""Vérifie la cohérence du plan de remédiation (plan-remediation.md) avec le registre de risques.
+# ruff: noqa: E501  (documentation tool: long lines with French sentences, outside the services' lint)
+"""Checks the consistency of the remediation plan (plan-remediation.md) with the risk register.
 
-Bibliothèque standard seulement. Code de sortie 0 si tout est conforme, 1 sinon.
+Standard library only. Exit code 0 if everything is consistent, 1 otherwise.
 
-Ce que le script contrôle, et ce qu'il ne prouve pas. Ce sont des contrôles de **cohérence et de présence** :
-chaque chiffre, lien, fichier ou ligne cité existe et concorde avec le registre ; un échantillon d'assertions
-vérifie qu'un motif attendu figure à la ligne citée. Il ne prouve **pas** que la mesure citée fonctionne (c'est
-le rôle des tests, des scans et des exécutions auxquels les preuves renvoient), ni que l'effort ou le coût
-d'une action est juste.
+What the script checks, and what it does not prove. These are checks of **consistency and presence**:
+every figure, link, file or line cited exists and agrees with the register; a sample of assertions
+checks that an expected pattern appears on the cited line. It does **not** prove that the cited measure works (that is
+the role of the tests, scans and runs the proofs refer to), nor that the effort or the cost
+of an action is right.
 
-Contrôles :
-  1. chaque risque R-01 à R-62 du registre apparaît dans le plan, avec les mêmes notes (impact, probabilité) ;
-  2. chaque risque critique ou élevé a au moins une action, et chaque action citée existe ;
-  3. la liste des actions de chaque risque est celle que donnent les tableaux d'actions ;
-  4. le résiduel d'une action (final ou palier) est celui du tableau par risque et du § 8.3 ; les 7 critiques
-     sont les mêmes que dans la matrice SVG ;
-  5. chaque actif A, B, C, chaque limite L1 à L25 et chaque hypothèse H-S, H-P est cité dans la section prévue ;
-  6. les totaux (actions, jours) du § 1 sont ceux des tableaux d'actions ;
-  7. au moins 10 bonnes pratiques citées : chaque fichier et chaque ligne cités existent, et un échantillon
-     d'assertions vérifie le contenu de la ligne ;
-  8. aucune action GitHub non épinglée par un SHA dans .github/workflows ;
-  9. les liens relatifs du plan, de son index et des renvois ajoutés existent (fichier et ancre) ;
- 10. la matrice SVG correspond au registre (régénération en mémoire) ;
- 11. toute action dont l'horizon diffère de celui que R1 à R4 donnent à son risque directeur porte la mention
-     « Exception » ;
- 12. la projection du § 8.3 et du § 1 est celle que calcule projeter-plan.py ; la règle d'ouverture est
-     énoncée à l'identique à chaque endroit où elle figure.
+Checks:
+  1. every risk R-01 to R-62 of the register appears in the plan, with the same scores (impact, probability);
+  2. every critical or high risk has at least one action, and every cited action exists;
+  3. the list of actions of each risk is the one given by the action tables;
+  4. the residual of an action (final or step) is the one of the per-risk table and of section 8.3; the 7 critical
+     risks are the same as in the SVG matrix;
+  5. every asset A, B, C, every limit L1 to L25 and every hypothesis H-S, H-P is cited in the intended section;
+  6. the totals (actions, days) of section 1 are those of the action tables;
+  7. at least 10 good practices cited: every file and every line cited exist, and a sample
+     of assertions checks the content of the line;
+  8. no GitHub action not pinned by a SHA in .github/workflows;
+  9. the relative links of the plan, of its index and of the added cross-references exist (file and anchor);
+ 10. the SVG matrix matches the register (in-memory regeneration);
+ 11. every action whose horizon differs from the one that R1 to R4 give its lead risk carries the mention
+     "Exception";
+ 12. the projection of section 8.3 and section 1 is the one computed by projeter-plan.py; the opening rule is
+     stated identically everywhere it appears.
 
-Usage : python3 docs/06-securite/verifier-plan.py
+Usage: python3 docs/06-securite/verifier-plan.py
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ passes: list[str] = []
 
 
 def check(ok: bool, label: str, detail: str = "") -> None:
-    (passes if ok else failures).append(label if ok else f"{label} : {detail}")
+    (passes if ok else failures).append(label if ok else f"{label}: {detail}")
 
 
 def rid(n: int) -> str:
@@ -66,7 +66,7 @@ def cells(line: str) -> list[str]:
 
 def must(pattern: str, text: str) -> re.Match[str]:
     match = re.match(pattern, text)
-    assert match is not None, f"motif {pattern!r} introuvable dans {text!r}"
+    assert match is not None, f"pattern {pattern!r} not found in {text!r}"
     return match
 
 
@@ -91,14 +91,14 @@ class Row:
 plan = read(PLAN)
 registry = read(REGISTRY)
 
-# ---------------------------------------------------------------- registre
+# ---------------------------------------------------------------- register
 reg: dict[int, tuple[int, int]] = {}
 for line in registry.splitlines():
     if line.startswith("| **R-"):
         c = cells(line)
         reg[int(c[0].strip("*").removeprefix("R-"))] = (int(c[4]), int(c[5]))
-check(len(reg) == 62, "registre : 62 risques lus", f"{len(reg)} lus")
-check(sorted(reg) == list(range(1, 63)), "registre : numéros R-01 à R-62 consécutifs")
+check(len(reg) == 62, "register: 62 risks read", f"{len(reg)} read")
+check(sorted(reg) == list(range(1, 63)), "register: numbers R-01 to R-62 consecutive")
 
 # ---------------------------------------------------------------- actions
 actions: dict[str, Action] = {}
@@ -128,19 +128,19 @@ for line in plan.splitlines():
             effort=float(effort.group(1).replace(",", ".")) if effort else None,
             residual=c[7],
         )
-check(len(actions) >= 40, "plan : au moins 40 actions", str(len(actions)))
-check(all(len(a.cells) == 8 for a in actions.values()), "plan : 8 colonnes par action")
+check(len(actions) >= 40, "plan: at least 40 actions", str(len(actions)))
+check(all(len(a.cells) == 8 for a in actions.values()), "plan: 8 columns per action")
 empty = [p for p, a in actions.items() if any(not x for x in a.cells)]
-check(not empty, "plan : aucune cellule vide dans les tableaux d'actions", ", ".join(empty))
+check(not empty, "plan: no empty cell in the action tables", ", ".join(empty))
 no_effort = [p for p, a in actions.items() if a.effort is None]
-check(not no_effort, "plan : effort chiffré pour chaque action", ", ".join(no_effort))
+check(not no_effort, "plan: quantified effort for every action", ", ".join(no_effort))
 for horizon_code in ("CT", "MT", "LT"):
     check(
         any(a.h == horizon_code for a in actions.values()),
-        f"plan : des actions à l'horizon {horizon_code}",
+        f"plan: actions at horizon {horizon_code}",
     )
 
-# ---------------------------------------------------------------- tableau par risque
+# ---------------------------------------------------------------- per-risk table
 section = plan.split("### 6.2")[1].split("## 7.")[0]
 table: dict[int, Row] = {}
 for line in section.splitlines():
@@ -159,21 +159,21 @@ for line in section.splitlines():
 
 check(
     sorted(table) == list(range(1, 63)),
-    "plan : les 62 risques figurent dans le tableau du § 6.2",
-    f"{len(table)} lignes",
+    "plan: the 62 risks appear in the table of section 6.2",
+    f"{len(table)} rows",
 )
 for n in range(1, 63):
-    check(rid(n) in plan, f"{rid(n)} apparaît dans le plan")
+    check(rid(n) in plan, f"{rid(n)} appears in the plan")
 bad = [rid(n) for n in table if n in reg and table[n].before != reg[n]]
-check(not bad, "notes « avant » identiques à celles du registre", ", ".join(bad))
+check(not bad, "\"before\" scores identical to those of the register", ", ".join(bad))
 bad = [rid(n) for n, t in table.items() if t.score != t.before[0] * t.before[1]]
-check(not bad, "scores = impact × probabilité", ", ".join(bad))
+check(not bad, "scores = impact × probability", ", ".join(bad))
 bad = [rid(n) for n, t in table.items() if not t.acts]
-check(not bad, "chaque risque a au moins une action ou un traitement explicite", ", ".join(bad))
+check(not bad, "every risk has at least one action or an explicit treatment", ", ".join(bad))
 unknown = sorted({a for t in table.values() for a in t.acts if a not in actions})
-check(not unknown, "chaque action citée par un risque existe", ", ".join(unknown))
+check(not unknown, "every action cited by a risk exists", ", ".join(unknown))
 bad = [rid(n) for n, t in table.items() if t.score >= 10 and not t.acts]
-check(not bad, "chaque risque critique ou élevé a au moins une action", ", ".join(bad))
+check(not bad, "every critical or high risk has at least one action", ", ".join(bad))
 mismatch = []
 for n, t in table.items():
     expected = sorted(p for p, a in actions.items() if n in a.risks)
@@ -181,11 +181,11 @@ for n, t in table.items():
         mismatch.append(rid(n))
 check(
     not mismatch,
-    "actions de chaque risque = actions dont la colonne « Risques traités » le cite",
+    "actions of each risk = actions whose \"Risques traités\" column cites it",
     ", ".join(mismatch),
 )
 bad = [rid(n) for n, t in table.items() if t.after[0] * t.after[1] > t.score]
-check(not bad, "aucun résiduel supérieur à la criticité actuelle", ", ".join(bad))
+check(not bad, "no residual above the current criticality", ", ".join(bad))
 untreated = [
     rid(n)
     for n, t in table.items()
@@ -193,15 +193,15 @@ untreated = [
 ]
 check(
     not untreated,
-    "un risque non réduit est explicitement accepté, avec sa raison",
+    "a risk that is not reduced is explicitly accepted, with its reason",
     ", ".join(untreated),
 )
 bad = [rid(n) for n, t in table.items() if t.treatment != "Réduire" and len(str(t.treatment)) < 30]
-check(not bad, "traitement autre que « Réduire » : raison donnée", ", ".join(bad))
+check(not bad, "treatment other than \"Réduire\": reason given", ", ".join(bad))
 for n, t in table.items():
     if t.score >= 15:
         horizons = {actions[a].h for a in t.acts}
-        check("CT" in horizons, f"{rid(n)} (critique) a une action de court terme")
+        check("CT" in horizons, f"{rid(n)} (critical) has a short-term action")
 mains: dict[int, list[tuple[str, int]]] = {n: [] for n in table}
 for p, a in actions.items():
     for n_text, _before, after in re.findall(r"R-(\d+) : (\d+) → (\d+)", str(a.residual)):
@@ -209,8 +209,8 @@ for p, a in actions.items():
         n = int(n_text)
         check(
             table[n].after[0] * table[n].after[1] == int(after),
-            f"{p} : résiduel de {rid(n)} identique au tableau par risque",
-            f"{after} au lieu de {table[n].after}",
+            f"{p}: residual of {rid(n)} identical to the per-risk table",
+            f"{after} instead of {table[n].after}",
         )
     for n_text, _before, _palier, cible in re.findall(
         r"R-(\d+) : (\d+) → palier (\d+) \(\d×\d\) après le court terme, cible (\d+)",
@@ -221,10 +221,10 @@ for n, t in table.items():
     if t.score >= 10:
         check(
             bool(mains[n]),
-            f"{rid(n)} (critique ou élevé) a une action principale avec résiduel chiffré",
+            f"{rid(n)} (critical or high) has a main action with a quantified residual",
         )
 
-# ---------------------------------------------------------------- matrice SVG
+# ---------------------------------------------------------------- SVG matrix
 spec = importlib.util.spec_from_file_location(
     "matrice_risques", HERE / "img" / "matrice-risques.py"
 )
@@ -234,28 +234,28 @@ spec.loader.exec_module(module)
 for n, target in module.TARGETS.items():
     check(
         table[n].after == target,
-        f"matrice SVG : position visée de {rid(n)} = plan",
+        f"SVG matrix: target position of {rid(n)} = plan",
         f"{target} / {table[n].after}",
     )
 check(
     sorted(module.TARGETS) == sorted(n for n, t in table.items() if t.score >= 15),
-    "matrice SVG : les 7 critiques sont ceux du registre",
+    "SVG matrix: the 7 critical risks are those of the register",
 )
 check(
     (HERE / "img" / "matrice-risques.svg").read_text(encoding="utf-8") == module.build(),
-    "matrice SVG à jour (régénérée = commitée)",
+    "SVG matrix up to date (regenerated = committed)",
 )
 
-# ---------------------------------------------------------------- couverture
+# ---------------------------------------------------------------- coverage
 for token in sorted(set(re.findall(r"\b([ABC]-\d\d)\b", registry.split("## 2.")[0]))):
-    check(token in plan, f"actif {token} couvert par le plan")
+    check(token in plan, f"asset {token} covered by the plan")
 for n in range(1, 26):
     check(
         re.search(rf"\bL{n}\b", plan.split("### 5.3")[1].split("### 5.4")[0]) is not None,
-        f"limite L{n} traitée au § 5.3",
+        f"limit L{n} handled in section 5.3",
     )
 for token in sorted(set(re.findall(r"\bH-[SP]\d\d\b", registry))):
-    check(token in plan, f"hypothèse {token} citée dans le plan")
+    check(token in plan, f"hypothesis {token} cited in the plan")
 for token in (
     "F-04",
     "F-06",
@@ -272,9 +272,9 @@ for token in (
     "F-25",
     "F-26",
 ):
-    check(token in plan.split("### 5.4")[1].split("## 6.")[0], f"constat {token} traité au § 5.4")
+    check(token in plan.split("### 5.4")[1].split("## 6.")[0], f"finding {token} handled in section 5.4")
 
-# ---------------------------------------------------------------- totaux
+# ---------------------------------------------------------------- totals
 lecture = plan.split("## 1.")[1].split("## 2.")[0]
 for code, label in (("CT", "Court terme"), ("MT", "Moyen terme"), ("LT", "Long terme")):
     row = re.search(rf"\| {label} \([^)]*\) \| (\d+) \| ([\d,]+) j \|", lecture)
@@ -287,14 +287,14 @@ for code, label in (("CT", "Court terme"), ("MT", "Moyen terme"), ("LT", "Long t
     )
     check(
         ok,
-        f"§ 1 : nombre d'actions et effort du {label.lower()} = tableaux",
+        f"section 1: number of actions and effort of {label.lower()} = tables",
         f"{len(mine)} actions, {total} j",
     )
 
-# ---------------------------------------------------------------- preuves
+# ---------------------------------------------------------------- proofs
 proof = plan.split("### 7.1")[1].split("### 7.2")[0]
 rows = [cells(line) for line in proof.splitlines() if line.startswith("| BP-")]
-check(len(rows) >= 10, "au moins 10 bonnes pratiques prouvées", str(len(rows)))
+check(len(rows) >= 10, "at least 10 proven good practices", str(len(rows)))
 refs = 0
 for c in rows:
     last_path = ""
@@ -305,7 +305,7 @@ for c in rows:
             m2 = re.fullmatch(r"[\w./-]+\.\w+", token)
             if m2 and "/" in token:
                 found += 1
-                check((ROOT / token).exists(), f"{c[0]} : fichier {token} existe")
+                check((ROOT / token).exists(), f"{c[0]}: file {token} exists")
                 last_path = token
             continue
         path = m.group(1) or last_path
@@ -315,17 +315,17 @@ for c in rows:
         end = int(m.group(3) or m.group(2))
         target = ROOT / path
         if not target.exists():
-            check(False, f"{c[0]} : {path}", "fichier introuvable")
+            check(False, f"{c[0]}: {path}", "file not found")
             continue
         count = len(target.read_text(encoding="utf-8").splitlines())
         found += 1
         refs += 1
         check(
             1 <= start <= end <= count,
-            f"{c[0]} : {path}:{start}-{end} existe ({count} lignes)",
-            f"{count} lignes",
+            f"{c[0]}: {path}:{start}-{end} exists ({count} lines)",
+            f"{count} lines",
         )
-    check(found > 0, f"{c[0]} : au moins une preuve citée")
+    check(found > 0, f"{c[0]}: at least one proof cited")
 
 ASSERTIONS = [
     ("deploy/keycloak/collector-realm.json", 6, r'"bruteForceProtected": true'),
@@ -392,9 +392,9 @@ ASSERTIONS = [
 for path, line_no, pattern in ASSERTIONS:
     lines = (ROOT / path).read_text(encoding="utf-8").splitlines()
     ok = line_no <= len(lines) and re.search(pattern, lines[line_no - 1]) is not None
-    check(ok, f"preuve {path}:{line_no} contient /{pattern}/", "contenu différent à cette ligne")
+    check(ok, f"proof {path}:{line_no} contains /{pattern}/", "different content at this line")
 
-# ---------------------------------------------------------------- actions GitHub épinglées
+# ---------------------------------------------------------------- GitHub actions pinned
 for workflow in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
     for number, text in enumerate(read(workflow).splitlines(), 1):
         uses = re.match(r"\s*-?\s*uses:\s*(\S+)", text)
@@ -402,12 +402,12 @@ for workflow in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
             ref = uses.group(1).split("@")[-1]
             check(
                 re.fullmatch(r"[0-9a-f]{40}", ref) is not None,
-                f"{workflow.name}:{number} action épinglée par SHA",
+                f"{workflow.name}:{number} action pinned by SHA",
                 uses.group(1),
             )
 
 
-# ---------------------------------------------------------------- liens relatifs
+# ---------------------------------------------------------------- relative links
 def slugs(path: Path) -> set[str]:
     out = set()
     in_code = False
@@ -429,9 +429,9 @@ def check_links(path: Path) -> None:
         file_part, _, anchor = target.partition("#")
         dest = (path.parent / file_part).resolve() if file_part else path
         ok = dest.exists()
-        check(ok, f"{path.name} : lien {target}", "cible introuvable")
+        check(ok, f"{path.name}: link {target}", "target not found")
         if ok and anchor and dest.suffix == ".md":
-            check(anchor in slugs(dest), f"{path.name} : ancre {target}", "ancre introuvable")
+            check(anchor in slugs(dest), f"{path.name}: anchor {target}", "anchor not found")
 
 
 for doc in (
@@ -444,14 +444,14 @@ for doc in (
 
 check(
     "plan-remediation.md" in read(HERE / "README.md"),
-    "README de docs/06-securite : renvoi vers le plan",
+    "README of docs/06-securite: reference to the plan",
 )
 check(
     "plan-remediation.md" in read(ROOT / "docs/02-architecture/architecture-poc.md"),
-    "architecture-poc.md § 8 : renvoi vers le plan",
+    "architecture-poc.md section 8: reference to the plan",
 )
 
-# ---------------------------------------------------------------- exceptions d'horizon (règles R1 à R4, R9)
+# ---------------------------------------------------------------- horizon exceptions (rules R1 to R4, R9)
 for pid, action in actions.items():
     drivers = {int(x) for x in re.findall(r"R-(\d+) :", action.residual)} or action.risks
     drivers = {n for n in drivers if n in table}
@@ -467,11 +467,11 @@ for pid, action in actions.items():
         expected_h = action.h
     check(
         expected_h == action.h or "Exception" in action.cells[3],
-        f"{pid} : horizon {action.h} conforme à R1-R4 (attendu {expected_h}) ou mention « Exception »",
-        "écart sans mention d'exception",
+        f"{pid}: horizon {action.h} compliant with R1-R4 (expected {expected_h}) or 'Exception' mention",
+        "gap without exception mention",
     )
 
-# ---------------------------------------------------------------- projection, paliers, règle d'ouverture
+# ---------------------------------------------------------------- projection, steps, opening rule
 spec_p = importlib.util.spec_from_file_location("projeter_plan", HERE / "projeter-plan.py")
 assert spec_p is not None and spec_p.loader is not None
 projeter = importlib.util.module_from_spec(spec_p)
@@ -486,20 +486,20 @@ for key, label in (
 ):
     row = re.search(rf"\| {label}[^|]*\| (\d+) \| (\d+) \| (\d+) \|", section_83)
     ok = row is not None and tuple(int(x) for x in row.groups()) == projection[key]
-    check(ok, f"§ 8.3 : jalon « {label} » = projeter-plan.py", f"{projection[key]}")
+    check(ok, f"§ 8.3: milestone '{label}' = projeter-plan.py", f"{projection[key]}")
 final_text = plan.split("## 1.")[1].split("## 2.")[0]
 check(
     f"criticité cumulée de {projection['0'][2]} aujourd'hui à {projection['LT'][2]} au bout de 12 mois"
     in final_text,
-    "§ 1 : criticité cumulée avant et après = projeter-plan.py",
+    "section 1: cumulative criticality before and after = projeter-plan.py",
 )
-check(projection["MT"][0] == 0, "plus aucun risque critique à 6 mois", str(projection["MT"]))
-check(projection["LT"][0] == 0, "plus aucun risque critique à 12 mois", str(projection["LT"]))
+check(projection["MT"][0] == 0, "no critical risk left at 6 months", str(projection["MT"]))
+check(projection["LT"][0] == 0, "no critical risk left at 12 months", str(projection["LT"]))
 opening = re.findall(r"\*\*Règle d'ouverture de la plateforme\*\* : [^\n]*?vérifiés\.", plan)
 check(
     len(opening) >= 3 and len(set(opening)) == 1,
-    "règle d'ouverture énoncée à l'identique (synthèse, § 1, § 6.1)",
-    f"{len(opening)} occurrences, {len(set(opening))} formulations",
+    "opening rule stated identically (summary, section 1, section 6.1)",
+    f"{len(opening)} occurrences, {len(set(opening))} wordings",
 )
 paliers = projeter.load(plan).paliers
 for pid, action in actions.items():
@@ -507,33 +507,33 @@ for pid, action in actions.items():
         n = int(n_text)
         check(
             paliers.get(n) == int(shown),
-            f"{pid} : palier de {rid(n)} = tableau du § 8.3",
+            f"{pid}: step of {rid(n)} = table of section 8.3",
             f"{shown} / {paliers.get(n)}",
         )
 check(
     all(table[n].after[0] * table[n].after[1] <= paliers[n] <= table[n].score for n in paliers),
-    "paliers compris entre la cible et la note actuelle",
+    "steps between the target and the current score",
 )
 check(
     "accepté par la direction" not in plan,
-    "aucun résiduel présenté comme déjà accepté par la direction",
+    "no residual presented as already accepted by management",
 )
 check(
     all("à faire accepter" in table[n].treatment for n in (1, 30, 34)),
-    "R-01, R-30, R-34 : résiduel élevé « à faire accepter par la direction »",
+    "R-01, R-30, R-34: high residual \"à faire accepter par la direction\"",
 )
 check(
-    "R1 à R9" in read(ROOT / "docs/01-qualite/devsecops.md"), "devsecops.md cite les règles R1 à R9"
+    "R1 à R9" in read(ROOT / "docs/01-qualite/devsecops.md"), "devsecops.md cites rules R1 to R9"
 )
 check(
     "sauf L14" in read(ROOT / "docs/02-architecture/architecture-poc.md"),
-    "architecture-poc.md § 8 : exception L14 dite",
+    "architecture-poc.md section 8: exception L14 stated",
 )
 
-# ---------------------------------------------------------------- bilan
+# ---------------------------------------------------------------- summary
 for message in failures:
-    print(f"ÉCHEC  {message}")
+    print(f"FAILURE {message}")
 print(
-    f"{len(passes)} contrôles réussis, {len(failures)} échec(s) ; {len(actions)} actions, {len(table)} risques, {len(rows)} bonnes pratiques, {refs} références de preuve."
+    f"{len(passes)} checks passed, {len(failures)} failure(s); {len(actions)} actions, {len(table)} risks, {len(rows)} good practices, {refs} proof references."
 )
 sys.exit(1 if failures else 0)

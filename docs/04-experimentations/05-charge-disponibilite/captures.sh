@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
-# Captures du tableau de bord Grafana « Collector - service » pour une exécution du protocole 5.
+# Captures of the Grafana dashboard "Collector - service" for a run of protocol 5.
 #
-#   docs/04-experimentations/05-charge-disponibilite/captures.sh <dossier de résultats> [<motif>]
+#   docs/04-experimentations/05-charge-disponibilite/captures.sh <results folder> [<pattern>]
 #
-# Le motif (facultatif) ne garde que les captures dont le nom de fichier le contient, pour reprendre
-# celles qui manquent. Avant le relèvement de sa limite à 768 Mi, Grafana était tué par manque de
-# mémoire (limite de 384 Mi) pendant une série de captures (voir protocole.md, difficultés).
+# The pattern (optional) keeps only the captures whose file name contains it, to redo
+# the missing ones. Before its limit was raised to 768 Mi, Grafana was killed for lack of
+# memory (limit of 384 Mi) during a series of captures (see protocole.md, difficulties).
 #
-# Lancé par run.sh (CAPTURES=1) ou à part, sur un dossier de résultats existant : Prometheus ne
-# garde que 2 h de mesures, il faut donc le lancer dans les 2 h qui suivent l'exécution.
-# Écrit dans le dossier de résultats 4 PNG : grafana-pic-<service>.png (de 1 min avant le pic à
-# 15 s après l'arrêt de la charge) et grafana-retour-<service>.png (de 1 min avant la charge à
-# 30 s après le retour à 2 réplicas), pour catalog-service et notification-service.
-# Le mot de passe de Grafana est lu dans deploy/local/.env et donné au seul processus Playwright en
-# préfixe de commande (jamais affiché, jamais en argument, jamais écrit) ; la spécification le pose
-# dans le champ par `evaluate` et ne photographie jamais la page de connexion.
+# Launched by run.sh (CAPTURES=1) or separately, on an existing results folder: Prometheus only
+# keeps 2 h of measurements, so it must be launched within 2 h of the run.
+# Writes 4 PNG files to the results folder: grafana-pic-<service>.png (from 1 min before the peak to
+# 15 s after the end of the load) and grafana-retour-<service>.png (from 1 min before the load to
+# 30 s after the return to 2 replicas), for catalog-service and notification-service.
+# The Grafana password is read from deploy/local/.env and given only to the Playwright process as a
+# command prefix (never displayed, never as an argument, never written); the spec puts it
+# into the field through `evaluate` and never photographs the login page.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "${HERE}/../../.." && pwd)"
-RESULTS="${1:?usage : captures.sh <dossier de résultats> [<motif>]}"
+RESULTS="${1:?usage: captures.sh <results folder> [<pattern>]}"
 PATTERN="${2:-}"
 ENV_FILE="${ROOT}/deploy/local/.env"
 [[ -f "${RESULTS}/fenetre.json" && -f "${RESULTS}/chronologie.tsv" ]] \
-  || { echo "${RESULTS} ne contient pas fenetre.json et chronologie.tsv." >&2; exit 1; }
+  || { echo "${RESULTS} does not contain fenetre.json and chronologie.tsv." >&2; exit 1; }
 RESULTS="$(cd "$RESULTS" && pwd)"
 grafana_pw="$(grep -E '^GRAFANA_ADMIN_PASSWORD=' "$ENV_FILE" | head -1 | cut -d= -f2- | grep .)" \
-  || { echo "Clé GRAFANA_ADMIN_PASSWORD absente ou vide dans deploy/local/.env." >&2; exit 1; }
+  || { echo "Key GRAFANA_ADMIN_PASSWORD missing or empty in deploy/local/.env." >&2; exit 1; }
 
 plan="$(python3 - "$RESULTS" "$PATTERN" <<'PY'
 import json, sys

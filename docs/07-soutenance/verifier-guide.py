@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""Vérifie le guide du jury et le README racine.
+"""Checks the jury guide and the root README.
 
-Contrôles :
-  1. chaque lien relatif de `README.md` et de `docs/07-soutenance/*.md` pointe vers un fichier
-     ou un dossier qui existe, et chaque ancre vers un titre qui existe ;
-  2. les liens entrants vers le README (ancres citées par d'autres documents) existent ;
-  3. chaque chiffre de la liste FIGURES figure dans le guide (ou le README) ET dans son
-     fichier source ;
-  4. quelques comptages recoupés dans le dépôt (tests d'acceptation, captures, schémas) ;
-  5. le guide traite les 10 critères, et aucun chemin de dossier personnel n'apparaît ;
-  6. le support de présentation (`support.md`) : liens et visuels existants, chiffres recoupés
-     avec leur source (SUPPORT_FIGURES), minutage de 20 minutes, structure de chaque
-     diapositive, correspondance diapositive et critère, annexes.
+Checks:
+  1. every relative link of `README.md` and `docs/07-soutenance/*.md` points to a file
+     or folder that exists, and every anchor to a heading that exists;
+  2. the incoming links to the README (anchors cited by other documents) exist;
+  3. every figure of the FIGURES list appears in the guide (or the README) AND in its
+     source file;
+  4. a few counts cross-checked in the repository (acceptance tests, captures, diagrams);
+  5. the guide covers the 10 criteria, and no personal folder path appears;
+  6. the presentation support (`support.md`): links and visuals that exist, figures cross-checked
+     against their source (SUPPORT_FIGURES), 20-minute timing, structure of each
+     slide, slide-to-criterion mapping, appendices.
 
-Bibliothèque standard seulement. À lancer depuis n'importe où :
+Standard library only. Run from anywhere:
     python3 -I docs/07-soutenance/verifier-guide.py
-    python3 -I docs/07-soutenance/verifier-guide.py --root <copie du dépôt>   (essais)
-Code de sortie : 0 si tout passe, 1 sinon.
+    python3 -I docs/07-soutenance/verifier-guide.py --root <copy of the repository>   (trials)
+Exit code: 0 if everything passes, 1 otherwise.
 """
 
 from __future__ import annotations
@@ -38,14 +38,14 @@ CHECKED_FILES = [
     ROOT / "docs/07-soutenance/glossaire.md",
 ]
 
-# Liens entrants : (document qui cite, ancre du README qu'il vise).
+# Incoming links: (document that cites, README anchor it targets).
 INCOMING_LINKS = [
     ("docs/04-experimentations/04-deploiement/protocole.md", "README.md#déployer-sur-le-cluster-local"),
 ]
 
-# (description, texte tel qu'écrit dans le guide ou le README, texte tel qu'écrit dans le
-# fichier source, fichier source). La comparaison ignore le gras, les accents graves et les
-# espaces insécables.
+# (description, text as written in the guide or the README, text as written in the
+# source file, source file). The comparison ignores bold, backticks and
+# non-breaking spaces.
 FIGURES: list[tuple[str, str, str, str]] = [
     ('RabbitMQ : aucun message perdu', '0 message perdu sur 2 × 1 000', '0 message perdu sur 2 × 1 000', 'docs/04-experimentations/README.md'),
     ('RabbitMQ : retour à Ready', '10 s au lieu de 54 s', '10 s au lieu de 54 s', 'docs/04-experimentations/README.md'),
@@ -109,9 +109,9 @@ FIGURES: list[tuple[str, str, str, str]] = [
     ('Recrutements', 'trois profils', 'Trois profils', 'docs/05-competences/matrice.md'),
 ]
 
-# Chiffres du support : (diapositive, description, texte tel qu'écrit dans le tableau « Chiffres et
-# sources » de cette diapositive de support.md, texte tel qu'écrit
-# dans le fichier source, fichier source). Même normalisation que FIGURES.
+# Support figures: (slide, description, text as written in the "Chiffres et sources" table of
+# this slide of support.md, text as written
+# in the source file, source file). Same normalization as FIGURES.
 SUPPORT_FIGURES: list[tuple[str, str, str, str, str]] = [
     ('1', 'Commission', 'Commission de 5 %', 'commission de 5 %', 'docs/03-backlog/exigences.md'),
     ('1', 'Stories, points, critères', "5 user stories, 17 points, 17 critères d'acceptation", 'Total | | **17** | **17**', 'docs/03-backlog/user-stories.md'),
@@ -213,7 +213,7 @@ def normalize(text: str) -> str:
 
 
 def github_slug(title: str) -> str:
-    """Ancre GitHub d'un titre : minuscules, ponctuation retirée, espaces en tirets."""
+    """GitHub anchor of a heading: lowercase, punctuation removed, spaces to hyphens."""
     title = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", title)
     title = title.replace("`", "").replace("*", "").strip().lower()
     title = re.sub(r"[^\w\- ]", "", title, flags=re.UNICODE)
@@ -221,7 +221,7 @@ def github_slug(title: str) -> str:
 
 
 def anchors(path: Path) -> set[str]:
-    """Ancres d'un fichier Markdown (hors blocs de code), avec le suffixe -1, -2 des doublons."""
+    """Anchors of a Markdown file (outside code blocks), with the -1, -2 suffix of duplicates."""
     seen: dict[str, int] = {}
     result: set[str] = set()
     in_code = False
@@ -239,7 +239,7 @@ def anchors(path: Path) -> set[str]:
 
 
 def links(path: Path) -> list[tuple[int, str]]:
-    """Liens Markdown [texte](cible) hors blocs de code, avec leur numéro de ligne."""
+    """Markdown links [text](target) outside code blocks, with their line number."""
     found: list[tuple[int, str]] = []
     in_code = False
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -258,7 +258,7 @@ def check_links(failures: list[str]) -> int:
     total = 0
     for file in CHECKED_FILES:
         if not file.exists():
-            failures.append(f"fichier absent : {file.relative_to(ROOT)}")
+            failures.append(f"file missing: {file.relative_to(ROOT)}")
             continue
         for number, target in links(file):
             if re.match(r"^[a-z]+:", target):  # http:, https:, mailto:
@@ -268,10 +268,10 @@ def check_links(failures: list[str]) -> int:
             destination = file if path_part == "" else (file.parent / path_part).resolve()
             name = f"{file.relative_to(ROOT)}:{number}"
             if not destination.exists():
-                failures.append(f"{name} : lien cassé vers {target}")
+                failures.append(f"{name}: broken link to {target}")
                 continue
             if anchor and destination.suffix == ".md" and anchor not in anchors(destination):
-                failures.append(f"{name} : ancre introuvable #{anchor} dans {destination.relative_to(ROOT)}")
+                failures.append(f"{name}: anchor not found #{anchor} in {destination.relative_to(ROOT)}")
     return total
 
 
@@ -280,12 +280,12 @@ def check_incoming_links(failures: list[str]) -> int:
         path = ROOT / document
         readme_anchor = target.partition("#")[2]
         if not path.exists():
-            failures.append(f"lien entrant : document absent {document}")
+            failures.append(f"incoming link: document missing {document}")
             continue
         if target not in path.read_text(encoding="utf-8"):
-            failures.append(f"lien entrant : {document} ne cite plus {target}")
+            failures.append(f"incoming link: {document} no longer cites {target}")
         if readme_anchor not in anchors(ROOT / "README.md"):
-            failures.append(f"lien entrant : le README n'a plus l'ancre #{readme_anchor} (citée par {document})")
+            failures.append(f"incoming link: the README no longer has the anchor #{readme_anchor} (cited by {document})")
     return len(INCOMING_LINKS)
 
 
@@ -296,12 +296,12 @@ def check_figures(failures: list[str]) -> int:
     )
     for description, in_guide, in_source, source in FIGURES:
         if normalize(in_guide) not in guide_text:
-            failures.append(f"chiffre « {in_guide} » ({description}) absent du guide et du README")
+            failures.append(f"figure \"{in_guide}\" ({description}) missing from the guide and the README")
         path = ROOT / source
         if not path.exists():
-            failures.append(f"chiffre « {in_source} » ({description}) : source absente {source}")
+            failures.append(f"figure \"{in_source}\" ({description}): source missing {source}")
         elif normalize(in_source) not in normalize(path.read_text(encoding="utf-8")):
-            failures.append(f"chiffre « {in_source} » ({description}) introuvable dans {source}")
+            failures.append(f"figure \"{in_source}\" ({description}) not found in {source}")
     return len(FIGURES)
 
 
@@ -313,18 +313,18 @@ def check_counts(failures: list[str]) -> int:
         nonlocal checks
         checks += 1
         if got != wanted:
-            failures.append(f"{description} : {got} trouvé(s), {wanted} attendu(s)")
+            failures.append(f"{description}: {got} found, {wanted} expected")
 
     tests = sum(
         len(re.findall(r"^(?:async )?def test_us\d\d_ca\d_", f.read_text(encoding="utf-8"), re.M))
         for f in (ROOT / "tests/acceptance").glob("test_us*.py")
     )
-    expect("tests d'acceptation (fonctions test_usXX_caY_)", tests, 17)
-    expect("captures d'écran du parcours", len(list((ROOT / "frontend/e2e/resultats/captures").glob("*.png"))), 7)
+    expect("acceptance tests (functions test_usXX_caY_)", tests, 17)
+    expect("screenshots of the walkthrough", len(list((ROOT / "frontend/e2e/resultats/captures").glob("*.png"))), 7)
     section10 = guide.split("## 10. Qualité de la présentation", 1)[1].split("**Démonstration.**", 1)[0]
     schemas = {m.group(1) for m in re.finditer(r"\]\(([^)]+\.svg)\)", section10)}
-    expect("schémas SVG cités à la section 10 (le guide annonce 14)", len(schemas), 14)
-    expect("sections de critères du guide", len(re.findall(r"^## (\d{1,2})\. ", guide, re.M)), 10)
+    expect("SVG diagrams cited in section 10 (the guide announces 14)", len(schemas), 14)
+    expect("criteria sections of the guide", len(re.findall(r"^## (\d{1,2})\. ", guide, re.M)), 10)
     return checks
 
 
@@ -338,7 +338,7 @@ def to_seconds(text: str) -> int:
 
 
 def sections(text: str) -> dict[str, str]:
-    """Sections « ### titre » du support, hors blocs de code, dans l'ordre."""
+    """Sections "### title" of the support, outside code blocks, in order."""
     found: dict[str, str] = {}
     title = None
     buffer: list[str] = []
@@ -359,14 +359,14 @@ def sections(text: str) -> dict[str, str]:
 
 
 def field(body: str, label: str) -> str:
-    """Texte d'un champ « **label** » jusqu'au champ suivant."""
+    """Text of a "**label**" field up to the next field."""
     match = re.search(r"\*\*" + re.escape(label) + r"\*\*[^\n]*\n?(.*?)(?=\n\*\*[A-Za-zÀ-ÿ' ]+\*\*|\Z)", body, re.S)
     first = re.search(r"\*\*" + re.escape(label) + r"\*\*([^\n]*)", body)
     return ((first.group(1) if first else "") + "\n" + (match.group(1) if match else "")).strip()
 
 
 def check_support_figures(failures: list[str]) -> int:
-    """Chaque chiffre est cherché dans le tableau « Chiffres et sources » de SA diapositive."""
+    """Each figure is searched in the "Chiffres et sources" table of ITS slide."""
     all_sections = sections(SUPPORT.read_text(encoding="utf-8"))
     blocks: dict[str, str] = {}
     for title, body in all_sections.items():
@@ -377,12 +377,12 @@ def check_support_figures(failures: list[str]) -> int:
             blocks["D"] = normalize(field(body, "Chiffres et sources"))
     for slide, description, in_support, in_source, source in SUPPORT_FIGURES:
         if normalize(in_support) not in blocks.get(slide, ""):
-            failures.append(f"support, diapositive {slide} : chiffre « {in_support} » ({description}) absent de son tableau « Chiffres et sources »")
+            failures.append(f"support, slide {slide}: figure \"{in_support}\" ({description}) missing from its \"Chiffres et sources\" table")
         path = ROOT / source
         if not path.exists():
-            failures.append(f"support : source absente {source} ({description})")
+            failures.append(f"support: source missing {source} ({description})")
         elif normalize(in_source) not in normalize(path.read_text(encoding="utf-8")):
-            failures.append(f"support : « {in_source} » ({description}) introuvable dans {source}")
+            failures.append(f"support: \"{in_source}\" ({description}) not found in {source}")
     return len(SUPPORT_FIGURES)
 
 
@@ -391,7 +391,7 @@ def check_support_structure(failures: list[str]) -> int:
     checks = 0
     all_sections = sections(text)
 
-    # Plan minuté : tableau « N° | Titre | Durée | Cumul ».
+    # Timed plan: table "N° | Titre | Durée | Cumul".
     plan = text.split("## Plan minuté", 1)[1].split("###", 1)[0]
     rows = re.findall(r"^\| (\d+|D) \| (.+?) \| (\d+:\d\d) \| (\d+:\d\d) \|$", plan, re.M)
     durations: dict[str, int] = {}
@@ -401,66 +401,66 @@ def check_support_structure(failures: list[str]) -> int:
         durations[number] = to_seconds(duration)
         checks += 1
         if to_seconds(cumulative) != total:
-            failures.append(f"plan minuté : cumul de la ligne {number} = {cumulative}, attendu {total // 60}:{total % 60:02d}")
+            failures.append(f"timed plan: cumulative of row {number} = {cumulative}, expected {total // 60}:{total % 60:02d}")
     checks += 1
     if total != 20 * 60:
-        failures.append(f"plan minuté : total {total // 60}:{total % 60:02d}, attendu 20:00")
+        failures.append(f"timed plan: total {total // 60}:{total % 60:02d}, expected 20:00")
     slide_numbers = [n for n, *_ in rows if n != "D"]
     checks += 1
     if not 14 <= len(slide_numbers) <= 18:
-        failures.append(f"plan minuté : {len(slide_numbers)} diapositives hors démonstration, 14 à 18 attendues")
+        failures.append(f"timed plan: {len(slide_numbers)} slides outside the demo, 14 to 18 expected")
     checks += 1
     if durations.get("D") != 6 * 60:
-        failures.append("plan minuté : la démonstration doit durer 6:00")
+        failures.append("timed plan: the demo must last 6:00")
     checks += 1
     if [int(n) for n in slide_numbers] != list(range(1, len(slide_numbers) + 1)):
-        failures.append("plan minuté : numéros de diapositives non consécutifs")
+        failures.append("timed plan: slide numbers not consecutive")
 
-    # Chaque diapositive : champs, contenu, notes, chiffres sourcés.
+    # Each slide: fields, content, notes, sourced figures.
     slide_criteria: dict[str, set[int]] = {}
     for number in [*slide_numbers, "D"]:
         key = next((t for t in all_sections if (t.startswith(f"Diapositive {number} ") if number != "D" else t.startswith("Démonstration en direct"))), None)
         checks += 1
         if key is None:
-            failures.append(f"diapositive {number} : section absente")
+            failures.append(f"slide {number}: section missing")
             continue
         body = all_sections[key]
         for label in SLIDE_LABELS:
             checks += 1
             if f"**{label}**" not in body:
-                failures.append(f"diapositive {number} : champ « {label} » absent")
+                failures.append(f"slide {number}: field \"{label}\" missing")
         minutes = re.search(r"\*\*Minutes\*\* : (\d+:\d\d)", body)
         checks += 1
         if not minutes or to_seconds(minutes.group(1)) != durations.get(number):
-            failures.append(f"diapositive {number} : durée du champ Minutes différente de celle du plan")
+            failures.append(f"slide {number}: duration of the Minutes field differs from the plan's")
         content = field(body, "Contenu")
         bullets = len(re.findall(r"^- ", content, re.M))
         table_rows = max(0, len(re.findall(r"^\|", content, re.M)) - 2)
         checks += 1
         if bullets > 4 or table_rows > 4:
-            failures.append(f"diapositive {number} : contenu trop long ({bullets} puces, {table_rows} lignes de tableau, 4 au plus)")
+            failures.append(f"slide {number}: content too long ({bullets} bullets, {table_rows} table rows, 4 at most)")
         visual = field(body, "Visuel")
         checks += 1
         if "](" not in visual and "à dessiner" not in visual.lower():
-            failures.append(f"diapositive {number} : visuel sans lien ni mention « à dessiner »")
+            failures.append(f"slide {number}: visual without a link or the mention \"à dessiner\"")
         figures_block = field(body, "Chiffres et sources")
         data_rows = [r for r in figures_block.splitlines() if r.startswith("|")][2:]
         checks += 1
         if not data_rows:
-            failures.append(f"diapositive {number} : aucun chiffre sourcé")
+            failures.append(f"slide {number}: no sourced figure")
         for row in data_rows:
             checks += 1
             if "](" not in row.split("|")[-2]:
-                failures.append(f"diapositive {number} : chiffre sans lien de source : {row[:70]}")
+                failures.append(f"slide {number}: figure without a source link: {row[:70]}")
         notes = re.sub(r"\s+", " ", field(body, "Notes orales"))
         words = len(notes.split())
         checks += 1
         if number != "D" and not 100 <= words <= 160:
-            failures.append(f"diapositive {number} : notes orales de {words} mots (100 à 160 attendus, soit 45 à 80 s)")
+            failures.append(f"slide {number}: spoken notes of {words} words (100 to 160 expected, i.e. 45 to 80 s)")
         criteria_text = re.sub(r"\([^)]*\)", "", field(body, "Critères"))
         slide_criteria[number] = {int(c) for c in re.findall(r"\b(10|[1-9])\b", criteria_text)}
 
-    # Correspondance diapositive et critère.
+    # Slide-to-criterion mapping.
     table = text.split("## Correspondance diapositive et critère", 1)[1].split("\n## ", 1)[0]
     covered: set[int] = set()
     for row in re.findall(r"^\| (\d+)\. [^|]+\| ([^|]+) \|", table, re.M):
@@ -472,45 +472,45 @@ def check_support_structure(failures: list[str]) -> int:
         covered.add(criterion)
         checks += 1
         if not cited:
-            failures.append(f"correspondance : critère {criterion} sans diapositive")
+            failures.append(f"mapping: criterion {criterion} without a slide")
         for slide in cited:
             checks += 1
             if criterion not in slide_criteria.get(slide, set()):
-                failures.append(f"correspondance : le critère {criterion} cite la diapositive {slide}, qui ne le déclare pas")
+                failures.append(f"mapping: criterion {criterion} cites slide {slide}, which does not declare it")
     checks += 1
     if covered != set(range(1, 11)):
-        failures.append(f"correspondance : critères présents {sorted(covered)}, 1 à 10 attendus")
+        failures.append(f"mapping: criteria present {sorted(covered)}, 1 to 10 expected")
 
-    # Annexes : 4 à 6, chacune avec une source liée.
+    # Appendices: 4 to 6, each with a linked source.
     annexes = {t: b for t, b in all_sections.items() if t.startswith("Annexe ")}
     checks += 1
     if not 4 <= len(annexes) <= 6:
-        failures.append(f"annexes : {len(annexes)} trouvées, 4 à 6 attendues")
+        failures.append(f"appendices: {len(annexes)} found, 4 to 6 expected")
     for title, body in annexes.items():
         checks += 1
         if not re.search(r"\*\*Source\*\* : .*\]\(", body):
-            failures.append(f"{title.split(' — ')[0]} : source sans lien")
+            failures.append(f"{title.split(' — ')[0]}: source without a link")
     return checks
 
 
 def check_support_counts(failures: list[str]) -> int:
-    """Comptages annoncés dans le support : 26 compétences, 10 types de tests formalisés."""
+    """Counts announced in the support: 26 skills, 10 formalized test types."""
     text = SUPPORT.read_text(encoding="utf-8")
     matrix = (ROOT / "docs/05-competences/matrice.md").read_text(encoding="utf-8")
     section = matrix.split("## 3. Matrice", 1)[1].split("## 4.", 1)[0]
     rows = [r for r in section.splitlines() if r.startswith("|")][2:]
     if len(rows) != 26 or "26 compétences cartographiées" not in text:
-        failures.append(f"support : la matrice compte {len(rows)} compétences, le support en annonce 26")
+        failures.append(f"support: the matrix has {len(rows)} skills, the support announces 26")
     tests = (ROOT / "docs/01-qualite/processus-test.md").read_text(encoding="utf-8")
     table = tests.split("### Tableau des types de tests", 1)[1].split("\n###", 1)[0]
     types = [r for r in table.splitlines() if r.startswith("|")][2:]
     if len(types) != 10 or "Dix types de tests formalisés" not in text:
-        failures.append(f"support : le processus de test compte {len(types)} types, le support en annonce 10")
+        failures.append(f"support: the test process has {len(types)} types, the support announces 10")
     return 2
 
 
-# Chiffres de questions.md : (texte tel qu'écrit dans questions.md ou glossaire.md, texte tel qu'écrit
-# dans le fichier source, fichier source). Même normalisation que FIGURES.
+# Figures of questions.md: (text as written in questions.md or glossaire.md, text as written
+# in the source file, source file). Same normalization as FIGURES.
 QUESTIONS_FIGURES: list[tuple[str, str, str]] = [
     ('9,995 s sans opérateur contre 54,164 s', '9,995 s', 'docs/02-architecture/adr/0008-infrastructure-images-officielles.md'),
     ('9,995 s sans opérateur contre 54,164 s', '54,164 s', 'docs/02-architecture/adr/0008-infrastructure-images-officielles.md'),
@@ -542,43 +542,43 @@ QUESTIONS_FIGURES: list[tuple[str, str, str]] = [
 
 
 def check_questions(failures: list[str]) -> int:
-    """questions.md : au moins 40 questions complètes ; glossaire.md : au moins 40 termes ; chiffres recoupés."""
+    """questions.md: at least 40 complete questions; glossaire.md: at least 40 terms; figures cross-checked."""
     questions = ROOT / "docs/07-soutenance/questions.md"
     glossary = ROOT / "docs/07-soutenance/glossaire.md"
     qtext = questions.read_text(encoding="utf-8")
     gtext = glossary.read_text(encoding="utf-8")
     blocks = re.split(r"^### (?=Q\d+\.)", qtext, flags=re.M)[1:]
     if len(blocks) < 40:
-        failures.append(f"questions.md : {len(blocks)} questions, au moins 40 attendues")
+        failures.append(f"questions.md: {len(blocks)} questions, at least 40 expected")
     for block in blocks:
         title = block.splitlines()[0]
         for label in ("**Critères**", "**À dire.**", "**Chiffres", "**À montrer", "**Limite à reconnaître"):
             if label not in block:
-                failures.append(f"questions.md : « {title} » sans le champ {label}")
+                failures.append(f"questions.md: \"{title}\" without the field {label}")
     numbers = re.findall(r"^### (Q\d+)\.", qtext, re.M)
     if numbers != [f"Q{i}" for i in range(1, len(numbers) + 1)]:
-        failures.append("questions.md : numérotation des questions non continue")
+        failures.append("questions.md: question numbering not continuous")
     for number in range(1, 11):
         if not re.search(rf"\*\*Critères\*\* : [^\n]*\b{number}\b", qtext):
-            failures.append(f"questions.md : aucune question ne porte sur le critère {number}")
+            failures.append(f"questions.md: no question covers criterion {number}")
     terms = [r for r in gtext.splitlines() if r.startswith("| **")]
     if len(terms) < 40:
-        failures.append(f"glossaire.md : {len(terms)} termes, au moins 40 attendus")
+        failures.append(f"glossaire.md: {len(terms)} terms, at least 40 expected")
     both = normalize(qtext + gtext)
     for in_text, in_source, source in QUESTIONS_FIGURES:
         path = ROOT / source
         if normalize(in_text) not in both:
-            failures.append(f"questions et glossaire : « {in_text} » absent")
+            failures.append(f"questions and glossary: \"{in_text}\" missing")
         if not path.exists() or normalize(in_source) not in normalize(path.read_text(encoding="utf-8")):
-            failures.append(f"questions et glossaire : « {in_source} » introuvable dans {source}")
+            failures.append(f"questions and glossary: \"{in_source}\" not found in {source}")
     return len(blocks) + len(terms) + len(QUESTIONS_FIGURES)
 
 
 def check_privacy(failures: list[str]) -> None:
-    pattern = "/" + "Users" + "/"  # écrit en deux morceaux pour ne pas se contenir lui-même
+    pattern = "/" + "Users" + "/"  # written in two pieces so as not to contain itself
     for file in CHECKED_FILES:
         if file.exists() and pattern in file.read_text(encoding="utf-8"):
-            failures.append(f"{file.relative_to(ROOT)} : chemin personnel ({pattern}) présent")
+            failures.append(f"{file.relative_to(ROOT)}: personal path ({pattern}) present")
 
 
 def main() -> int:
@@ -591,19 +591,19 @@ def main() -> int:
     n_structure = check_support_structure(failures) + check_support_counts(failures)
     n_questions = check_questions(failures)
     check_privacy(failures)
-    print(f"Liens relatifs contrôlés : {n_links}")
-    print(f"Liens entrants contrôlés : {n_incoming}")
-    print(f"Chiffres recoupés (guide et source) : {n_figures}")
-    print(f"Comptages recoupés dans le dépôt : {n_counts}")
-    print(f"Support : chiffres recoupés avec leur source : {n_support}")
-    print(f"Support : contrôles de structure (minutage, champs, critères, annexes) : {n_structure}")
-    print(f"Questions, glossaire : contrôles (questions, termes, chiffres) : {n_questions}")
+    print(f"Relative links checked: {n_links}")
+    print(f"Incoming links checked: {n_incoming}")
+    print(f"Figures cross-checked (guide and source): {n_figures}")
+    print(f"Counts cross-checked in the repository: {n_counts}")
+    print(f"Support: figures cross-checked with their source: {n_support}")
+    print(f"Support: structure checks (timing, fields, criteria, appendices): {n_structure}")
+    print(f"Questions, glossary: checks (questions, terms, figures): {n_questions}")
     if failures:
-        print(f"\n{len(failures)} échec(s) :")
+        print(f"\n{len(failures)} failure(s):")
         for failure in failures:
             print(f"  - {failure}")
         return 1
-    print("\nTout est conforme : 0 échec.")
+    print("\nAll consistent: 0 failure.")
     return 0
 
 

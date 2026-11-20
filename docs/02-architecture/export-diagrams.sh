@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Exporte en SVG les diagrammes Mermaid des documents d'architecture et de qualité.
+# Exports the Mermaid diagrams of the architecture and quality documents as SVG.
 #
-# Source unique : les blocs ```mermaid des fichiers .md de docs/02-architecture
-# et de docs/01-qualite.
-# Chaque bloc à exporter contient une ligne « %% id: <nom> », qui donne le
-# nom du fichier produit : img/<nom>.svg, dans le dossier img/ voisin du .md
-# source. Les blocs sans id sont ignorés.
+# Single source: the ```mermaid blocks of the .md files in docs/02-architecture
+# and docs/01-qualite.
+# Each block to export contains a line "%% id: <name>", which gives the
+# name of the file produced: img/<name>.svg, in the img/ folder next to the
+# source .md. Blocks without an id are ignored.
 #
-# Usage : docs/02-architecture/export-diagrams.sh (depuis n'importe quel dossier)
-# Prérequis : Node.js >= 20 (mermaid-cli télécharge un Chromium headless au
-# premier lancement).
+# Usage: docs/02-architecture/export-diagrams.sh (from any folder)
+# Prerequisites: Node.js >= 20 (mermaid-cli downloads a headless Chromium on
+# first launch).
 
 set -euo pipefail
 
@@ -18,7 +18,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-# Dossiers contenant des .md à exporter : la sortie va dans <dossier>/img.
+# Folders containing .md files to export: the output goes to <folder>/img.
 DOCS_DIRS=("$ROOT/docs/02-architecture" "$ROOT/docs/01-qualite")
 
 count=0
@@ -49,5 +49,5 @@ for dir in "${DOCS_DIRS[@]}"; do
   done
 done
 
-[ "$count" -gt 0 ] || { echo "Aucun diagramme avec « %% id: » trouvé." >&2; exit 1; }
-echo "${count} diagramme(s) exporté(s)."
+[ "$count" -gt 0 ] || { echo "No diagram with a \"%% id:\" line found." >&2; exit 1; }
+echo "${count} diagram(s) exported."

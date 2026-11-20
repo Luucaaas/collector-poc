@@ -1,12 +1,12 @@
-"""Application de test : validation locale des JWT émis par Keycloak (contrats.md §1.2).
+"""Test application: local validation of the JWTs issued by Keycloak (contrats.md §1.2).
 
-- GET /api/v1/public : sans jeton ;
-- GET /api/v1/me     : tout utilisateur authentifié, renvoie `sub` et rôles ;
-- GET /api/v1/seller : rôle `seller` requis.
+- GET /api/v1/public: without token;
+- GET /api/v1/me    : any authenticated user, returns `sub` and roles;
+- GET /api/v1/seller: `seller` role required.
 
-Le jeton est validé sans appel à Keycloak par requête : signature RS256 (clés JWKS récupérées par
-l'URL interne du service Keycloak et mises en cache), puis `iss` (URL publique), `aud` et `exp`.
-Les journaux sont des lignes JSON (structlog) qui portent `correlation_id`.
+The token is validated without a Keycloak call per request: RS256 signature (JWKS keys fetched via
+the internal URL of the Keycloak service and cached), then `iss` (public URL), `aud` and `exp`.
+Logs are JSON lines (structlog) that carry `correlation_id`.
 """
 
 import asyncio
@@ -29,8 +29,8 @@ JWKS_URL = os.environ.get(
     "/realms/collector/protocol/openid-connect/certs",
 )
 AUDIENCE = os.environ.get("AUDIENCE", "collector-api")
-JWKS_TTL_S = 600.0  # durée de vie du cache des clés
-JWKS_MIN_REFETCH_S = 30.0  # délai minimal entre deux rechargements déclenchés par un `kid` inconnu
+JWKS_TTL_S = 600.0  # lifetime of the key cache
+JWKS_MIN_REFETCH_S = 30.0  # minimum delay between two reloads triggered by an unknown `kid`
 
 structlog.configure(
     processors=[
@@ -45,7 +45,7 @@ logger = structlog.get_logger()
 
 
 class ApiError(Exception):
-    """Erreur renvoyée au format RFC 9457 ; `reason` n'est écrit que dans les journaux."""
+    """Error returned in RFC 9457 format; `reason` is only written to the logs."""
 
     def __init__(self, status: int, title: str, reason: str) -> None:
         super().__init__(reason)
@@ -55,7 +55,7 @@ class ApiError(Exception):
 
 
 class JwksCache:
-    """Clés publiques du realm, récupérées par l'URL interne puis gardées en mémoire."""
+    """Realm public keys, fetched through the internal URL then kept in memory."""
 
     def __init__(self, url: str, ttl: float, min_refetch: float) -> None:
         self._url = url
@@ -115,7 +115,7 @@ class JwksCache:
 
 jwks = JwksCache(JWKS_URL, JWKS_TTL_S, JWKS_MIN_REFETCH_S)
 
-app = FastAPI(title="Application de test de la validation des JWT")
+app = FastAPI(title="JWT validation test application")
 
 
 @app.exception_handler(ApiError)
@@ -139,7 +139,7 @@ async def api_error_handler(request: Request, error: ApiError) -> JSONResponse:
 async def correlation_and_log(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    """Reprend ou génère X-Request-ID, le renvoie, et journalise chaque requête en JSON."""
+    """Picks up or generates X-Request-ID, returns it, and logs every request as JSON."""
     correlation_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
@@ -158,12 +158,12 @@ async def correlation_and_log(
 
 
 async def authenticate(request: Request) -> dict[str, Any]:
-    """Valide le jeton Bearer et renvoie ses claims ; 401 au moindre défaut."""
+    """Validates the Bearer token and returns its claims; 401 on the slightest defect."""
     scheme, _, token = request.headers.get("Authorization", "").partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise ApiError(401, "Non authentifié", "missing_token")
     try:
-        header = jwt.get_unverified_header(token)  # sert uniquement à choisir la clé (`kid`)
+        header = jwt.get_unverified_header(token)  # only used to pick the key (`kid`)
         if header.get("alg") != "RS256":
             raise ApiError(401, "Non authentifié", "invalid_algorithm")
         kid = header.get("kid")

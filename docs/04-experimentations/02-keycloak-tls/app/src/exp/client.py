@@ -1,15 +1,15 @@
-"""Client de test de l'expérimentation 2 : obtient des jetons et rejoue la matrice d'autorisation.
+"""Test client of experiment 2: obtains tokens and replays the authorization matrix.
 
-Les clients Keycloak `collector-tests*` utilisent le flux « Resource Owner Password » : c'est un
-artefact de l'expérience (déconseillé par la RFC 9700, ce n'est pas le flux du front).
+The Keycloak `collector-tests*` clients use the "Resource Owner Password" flow: it is an
+artifact of the experiment (discouraged by RFC 9700, it is not the front end's flow).
 
-Sous-commandes :
-- matrix : depuis le Mac, par les URL publiques (HTTPS, CA mkcert), matrice d'autorisation ;
-- burst : depuis le Mac, N requêtes avec un même jeton valide (compte les appels JWKS) ;
-- iss-internal : depuis le cluster, jeton obtenu par l'URL interne de Keycloak, puis appel de l'API.
+Subcommands:
+- matrix: from the Mac, through the public URLs (HTTPS, mkcert CA), authorization matrix;
+- burst: from the Mac, N requests with the same valid token (counts the JWKS calls);
+- iss-internal: from the cluster, token obtained through Keycloak's internal URL, then API call.
 
-Les mots de passe viennent des variables d'environnement `<UTILISATEUR>_PASSWORD`. Aucun jeton
-complet n'est écrit : seuls des claims sont affichés.
+Passwords come from the `<USER>_PASSWORD` environment variables. No full token is written:
+only claims are displayed.
 """
 
 import base64
@@ -50,7 +50,7 @@ def get_token(client: httpx.Client, base: str, client_id: str, user: str) -> str
 
 
 def claims_of(token: str) -> dict[str, Any]:
-    """Claims sans vérification de signature (affichage uniquement)."""
+    """Claims without signature verification (display only)."""
     claims: dict[str, Any] = jwt.decode(token, options={"verify_signature": False})
     return claims
 
@@ -118,34 +118,34 @@ def matrix() -> int:
         noaud = get_token(client, KC_PUBLIC, "collector-tests-noaud", "alice")
         short = get_token(client, KC_PUBLIC, "collector-tests-short", "alice")
         print("ISS_PUBLIC", json.dumps(describe(tokens["chloe"])))
-        print("JETON_SANS_AUDIENCE", json.dumps(describe(noaud)))
-        print("JETON_COURT", json.dumps(describe(short)))
+        print("TOKEN_NO_AUDIENCE", json.dumps(describe(noaud)))
+        print("SHORT_TOKEN", json.dumps(describe(short)))
         kid = jwt.get_unverified_header(tokens["chloe"])["kid"]
         cases = [
-            Case("/public sans jeton", "/api/v1/public", None, 200),
-            Case("/me sans jeton", "/api/v1/me", None, 401),
-            Case("chloe (buyer) sur /me", "/api/v1/me", tokens["chloe"], 200),
-            Case("chloe (buyer) sur /seller", "/api/v1/seller", tokens["chloe"], 403),
-            Case("bob (seller) sur /seller", "/api/v1/seller", tokens["bob"], 200),
-            Case("alice (seller, buyer) sur /seller", "/api/v1/seller", tokens["alice"], 200),
-            Case("admin sur /seller", "/api/v1/seller", tokens["admin"], 403),
-            Case("jeton sans audience collector-api", "/api/v1/me", noaud, 401),
-            Case("signature altérée", "/api/v1/me", altered_signature(tokens["chloe"]), 401),
+            Case("/public without token", "/api/v1/public", None, 200),
+            Case("/me without token", "/api/v1/me", None, 401),
+            Case("chloe (buyer) on /me", "/api/v1/me", tokens["chloe"], 200),
+            Case("chloe (buyer) on /seller", "/api/v1/seller", tokens["chloe"], 403),
+            Case("bob (seller) on /seller", "/api/v1/seller", tokens["bob"], 200),
+            Case("alice (seller, buyer) on /seller", "/api/v1/seller", tokens["alice"], 200),
+            Case("admin on /seller", "/api/v1/seller", tokens["admin"], 403),
+            Case("token without collector-api audience", "/api/v1/me", noaud, 401),
+            Case("altered signature", "/api/v1/me", altered_signature(tokens["chloe"]), 401),
             Case(
-                "signé par une autre clé (kid inconnu)",
+                "signed by another key (unknown kid)",
                 "/api/v1/me",
-                signed_by_other_key(tokens["chloe"], "autre-cle"),
+                signed_by_other_key(tokens["chloe"], "other-key"),
                 401,
             ),
             Case(
-                "signé par une autre clé (kid du realm)",
+                "signed by another key (realm kid)",
                 "/api/v1/me",
                 signed_by_other_key(tokens["chloe"], kid),
                 401,
             ),
-            Case("algorithme none", "/api/v1/me", alg_none(tokens["chloe"]), 401),
-            Case("sonde /health/live par l'ingress", "/health/live", None, 404),
-            Case("jeton court, avant expiration", "/api/v1/me", short, 200),
+            Case("none algorithm", "/api/v1/me", alg_none(tokens["chloe"]), 401),
+            Case("/health/live probe through the ingress", "/health/live", None, 404),
+            Case("short token, before expiry", "/api/v1/me", short, 200),
         ]
         results: list[tuple[str, str, int, int]] = []
         for number, case in enumerate(cases, start=1):
@@ -158,27 +158,27 @@ def matrix() -> int:
                     call(client, case.path, case.token, request_id),
                 )
             )
-        # Jeton court rejoué après son expiration (exp du jeton, plus 2 s de marge).
+        # Short token replayed after its expiry (token exp, plus a 2 s margin).
         wait = claims_of(short)["exp"] + 2 - time.time()
-        print(f"Attente de {max(wait, 0):.0f} s pour l'expiration du jeton court...", flush=True)
+        print(f"Waiting {max(wait, 0):.0f} s for the short token to expire...", flush=True)
         time.sleep(max(wait, 0))
         request_id = f"exp2-case-{len(cases) + 1:02d}"
         results.append(
             (
                 request_id,
-                "jeton court, après expiration",
+                "short token, after expiry",
                 401,
                 call(client, "/api/v1/me", short, request_id),
             )
         )
     print()
-    print(f"{'X-Request-ID':<16}{'Cas':<44}{'Attendu':>8}{'Obtenu':>8}  Verdict")
+    print(f"{'X-Request-ID':<16}{'Case':<44}{'Expected':>8}{'Got':>8}  Verdict")
     ok = 0
     for request_id, name, expected, got in results:
-        verdict = "OK" if expected == got else "ECART"
+        verdict = "OK" if expected == got else "MISMATCH"
         ok += expected == got
         print(f"{request_id:<16}{name:<44}{expected:>8}{got:>8}  {verdict}")
-    print(f"MATRICE {ok}/{len(results)} cas conformes")
+    print(f"MATRIX {ok}/{len(results)} cases as expected")
     return 0 if ok == len(results) else 1
 
 
@@ -186,7 +186,7 @@ def burst(count: int) -> int:
     with host_client() as client:
         token = get_token(client, KC_PUBLIC, "collector-tests", "chloe")
         statuses = [call(client, "/api/v1/me", token, f"exp2-burst-{i:03d}") for i in range(count)]
-    print(f"BURST {count} requêtes /me avec un même jeton : {statuses.count(200)} réponses 200")
+    print(f"BURST {count} /me requests with the same token: {statuses.count(200)} 200 responses")
     return 0 if statuses.count(200) == count else 1
 
 
@@ -200,8 +200,8 @@ def iss_internal() -> int:
                 "X-Request-ID": f"exp2-iss-{uuid.uuid4()}",
             },
         ).status_code
-    print("ISS_INTERNE", json.dumps(describe(token)))
-    print(f"API_APRES_JETON_INTERNE statut {status}")
+    print("ISS_INTERNAL", json.dumps(describe(token)))
+    print(f"API_AFTER_INTERNAL_TOKEN status {status}")
     return 0 if status == 200 else 1
 
 
@@ -213,7 +213,7 @@ def main() -> int:
         return burst(int(sys.argv[2]))
     if command == "iss-internal":
         return iss_internal()
-    print("usage : python -m exp.client matrix | burst N | iss-internal", file=sys.stderr)
+    print("usage: python -m exp.client matrix | burst N | iss-internal", file=sys.stderr)
     return 2
 
 

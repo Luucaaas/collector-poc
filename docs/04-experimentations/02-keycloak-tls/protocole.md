@@ -50,6 +50,8 @@ Aucun opérateur, aucune CRD ajoutée, aucun cert-manager, aucune image ni aucun
 
 ## 4. Étapes reproductibles
 
+**Langue des messages (19/11/2026).** Depuis le 19/11/2026, les scripts de cette expérimentation (`run.sh`, programmes Python de `app/`) affichent leurs messages en anglais ; les journaux d'exécution versionnés dans `resultats/`, antérieurs à cette date, restent en français et citent donc les anciens libellés.
+
 Commande unique, depuis `docs/04-experimentations/02-keycloak-tls/` : `./run.sh` (option `--keep` pour garder le cluster). Prérequis : Docker Desktop démarré, `k3d`, `kubectl`, `uv`, `python3`, `perl`, `curl`, `openssl`, `lsof`, `mkcert` (CA déjà installée), 7 Go de disque libres, ports 80 et 443 libres. La sortie est écrite dans `resultats/run-AAAAMMJJ-HHMM.log`. Le certificat (clé privée comprise) et les mots de passe générés sont écrits dans `.local/`, ignoré par Git (`.gitignore` du dossier) ; ils ne sont jamais affichés.
 
 | Étape | Ce que fait le script |

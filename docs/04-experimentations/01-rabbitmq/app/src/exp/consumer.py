@@ -1,7 +1,7 @@
-"""Consommateur : traite 20 ms, publie un accusé dans exp.receipts, puis acquitte le message.
+"""Consumer: processes for 20 ms, publishes a receipt to exp.receipts, then acks the message.
 
-Règle d'échec de contrats.md §3.1 : au premier échec, `nack(requeue=True)` ; si le message
-est déjà relivré, `reject(requeue=False)` et une ligne de journal.
+Failure rule of contrats.md §3.1: on the first failure, `nack(requeue=True)`; if the message
+is already redelivered, `reject(requeue=False)` and a log line.
 """
 
 import asyncio
@@ -18,7 +18,7 @@ PROCESSING_SECONDS = 0.02
 
 
 class ProcessingError(Exception):
-    """Échec volontaire du traitement (message « empoisonné »)."""
+    """Deliberate processing failure ("poison" message)."""
 
 
 async def main() -> None:
@@ -45,7 +45,7 @@ async def main() -> None:
         await receipts.default_exchange.publish(receipt, routing_key=RECEIPTS_QUEUE)
 
     async def process(message: AbstractIncomingMessage) -> None:
-        await asyncio.sleep(PROCESSING_SECONDS)  # traitement simulé
+        await asyncio.sleep(PROCESSING_SECONDS)  # simulated processing
         if json.loads(message.body).get("poison"):
             raise ProcessingError(message.message_id)
 
@@ -64,13 +64,13 @@ async def main() -> None:
                     await message.nack(requeue=True)
                 return
             await send_receipt(message, "ok")
-            await message.ack()  # acquittement après traitement
-        except Exception as exc:  # noqa: BLE001 - sans ack, le broker relivrera le message
+            await message.ack()  # acknowledgement after processing
+        except Exception as exc:  # noqa: BLE001 - no ack: the broker will redeliver the message
             log("handle_failed", message_id=message.message_id, error=type(exc).__name__)
 
     await queue.consume(handle, no_ack=False)
     log("consumer_start", pod=pod, queue=QUEUE, prefetch=PREFETCH)
-    await asyncio.Future()  # tourne jusqu'à la suppression du pod
+    await asyncio.Future()  # runs until the pod is deleted
 
 
 if __name__ == "__main__":

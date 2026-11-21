@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Article } from "../api/types";
 import { ConfigContext } from "../config";
@@ -43,16 +44,20 @@ function route(handler: (url: URL) => Response) {
     "fetch",
     vi.fn((input: string) => {
       calls.push(input);
-      return Promise.resolve(handler(new URL(input)));
+      const url = new URL(input);
+      if (url.pathname.includes("/shops/")) return Promise.resolve(Response.json({ id: "s1", name: "Boutique Rétro" }));
+      return Promise.resolve(handler(url));
     }),
   );
 }
 
 const renderPage = () =>
   render(
-    <ConfigContext.Provider value={CONFIG}>
-      <CataloguePage />
-    </ConfigContext.Provider>,
+    <MemoryRouter>
+      <ConfigContext.Provider value={CONFIG}>
+        <CataloguePage />
+      </ConfigContext.Provider>
+    </MemoryRouter>,
   );
 
 beforeEach(() => {
@@ -73,6 +78,26 @@ describe("CataloguePage", () => {
     expect(item.textContent?.replace(/\s/g, " ")).toContain("Frais de port : 8,00 €");
     await waitFor(() => expect(within(item).getByText("Figurines")).toBeInTheDocument());
     expect(calls.some((u) => u.includes("/articles?limit=12&offset=0"))).toBe(true);
+    expect(await within(item).findByText("Boutique Rétro")).toBeInTheDocument();
+    expect(within(item).getByRole("link")).toHaveAttribute("href", "/catalogue/a1");
+  });
+
+  it("shows loading skeletons while the articles load", () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+    renderPage();
+    expect(screen.getByRole("status", { name: "Chargement des articles" })).toBeInTheDocument();
+  });
+
+  it("shows free delivery when the shipping fee is zero", async () => {
+    route((url) =>
+      url.pathname.endsWith("/categories")
+        ? Response.json(CATEGORIES)
+        : Response.json({ items: [article({ shipping_fee: "0.00", price: "1234.50" })], total: 1 }),
+    );
+    renderPage();
+    const item = (await screen.findByText("Boba Fett Kenner 1979")).closest("li") as HTMLElement;
+    expect(item.textContent).toContain("Livraison offerte");
+    expect(item.textContent?.replace(/\s/g, " ")).toContain("1 234,50 €");
   });
 
   it("filters by category", async () => {
@@ -83,9 +108,10 @@ describe("CataloguePage", () => {
     );
     renderPage();
     await screen.findByText("Boba Fett Kenner 1979");
-    await userEvent.click(screen.getByRole("combobox", { name: "Catégorie" }));
-    await userEvent.click(await screen.findByRole("option", { name: "Cartes" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cartes" }));
     await waitFor(() => expect(calls.some((u) => u.includes("category_id=c2"))).toBe(true));
+    expect(screen.getByRole("button", { name: "Cartes" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Toutes les catégories" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("shows a message when the list is empty", async () => {

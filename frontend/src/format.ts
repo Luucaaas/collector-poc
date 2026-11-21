@@ -13,5 +13,5 @@ export function formatMoney(amount: string, currency = "EUR"): string {
 
 /** Local date and time in French, from a UTC ISO 8601 date: "02/11/2026 15:05:00". */
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "medium" });
+  return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 }

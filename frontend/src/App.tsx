@@ -6,6 +6,7 @@ import { Layout } from "./components/Layout";
 // One chunk per page: the browser downloads a page only when it is visited.
 const HomePage = lazy(() => import("./pages/HomePage").then((m) => ({ default: m.HomePage })));
 const CataloguePage = lazy(() => import("./pages/CataloguePage").then((m) => ({ default: m.CataloguePage })));
+const ArticleDetailPage = lazy(() => import("./pages/ArticleDetailPage").then((m) => ({ default: m.ArticleDetailPage })));
 const CategoriesPage = lazy(() => import("./pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })));
 const InterestsPage = lazy(() => import("./pages/InterestsPage").then((m) => ({ default: m.InterestsPage })));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
@@ -17,6 +18,7 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="catalogue" element={<CataloguePage />} />
+        <Route path="catalogue/:articleId" element={<ArticleDetailPage />} />
         <Route
           path="vendre"
           element={

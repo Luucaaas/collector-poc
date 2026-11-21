@@ -87,7 +87,7 @@ test("screenshots: demo journey", async ({ page }) => {
   await page.getByRole("button", { name: "Déconnexion" }).click();
 
   // public catalogue (signed out), with the published article
-  await page.goto("/");
+  await page.goto("/catalogue");
   await expect(page.getByText(TITLE).first()).toBeVisible();
   await page.screenshot({ path: `${DIR}/01-catalogue-public.png`, fullPage: true });
 });

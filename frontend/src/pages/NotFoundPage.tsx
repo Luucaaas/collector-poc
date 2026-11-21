@@ -1,12 +1,11 @@
-import { Alert, Typography } from "@mui/material";
+import { Alert, Stack } from "@mui/material";
+import { PageHeader } from "../components/PageHeader";
 
 export function NotFoundPage() {
   return (
-    <>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Page introuvable
-      </Typography>
+    <Stack spacing={2}>
+      <PageHeader title="Page introuvable" />
       <Alert severity="info">Cette adresse ne correspond à aucune page de l'application.</Alert>
-    </>
+    </Stack>
   );
 }

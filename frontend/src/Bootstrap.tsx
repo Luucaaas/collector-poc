@@ -1,9 +1,10 @@
-import { Alert, Container, CssBaseline, CircularProgress } from "@mui/material";
+import { Alert, Container, CssBaseline, CircularProgress, ThemeProvider } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { AuthProvider } from "react-oidc-context";
 import { BrowserRouter, useNavigate } from "react-router";
 import { App } from "./App";
 import { createOidcSettings } from "./auth/oidc";
+import { theme } from "./theme";
 import { ConfigContext, loadConfig, type AppConfig } from "./config";
 
 function AuthShell({ config }: { config: AppConfig }) {
@@ -35,7 +36,7 @@ export function Bootstrap() {
   }, []);
 
   return (
-    <>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
       {error ? (
         <Container sx={{ py: 4 }}>
@@ -54,6 +55,6 @@ export function Bootstrap() {
           <CircularProgress aria-label="Chargement" />
         </Container>
       )}
-    </>
+    </ThemeProvider>
   );
 }

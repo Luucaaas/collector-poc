@@ -4,6 +4,7 @@ import type { Category, Page, Shop } from "../api/types";
 import { useAction } from "../api/useAction";
 import { useApi } from "../api/useApi";
 import { useAsync } from "../api/useAsync";
+import { PageHeader } from "../components/PageHeader";
 import { ArticleForm } from "./sell/ArticleForm";
 import { ShopArticles } from "./sell/ShopArticles";
 
@@ -19,9 +20,7 @@ export function SellPage() {
 
   return (
     <Stack spacing={4}>
-      <Typography variant="h4" component="h1">
-        Vendre
-      </Typography>
+      <PageHeader title="Vendre" />
 
       <Stack spacing={2} component="section" aria-labelledby="shops-title">
         <Typography variant="h5" component="h2" id="shops-title">

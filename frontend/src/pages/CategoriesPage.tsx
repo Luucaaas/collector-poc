@@ -1,3 +1,4 @@
+import { PageHeader } from "../components/PageHeader";
 import { Alert, Button, CircularProgress, List, ListItem, ListItemText, Stack, TextField, Typography } from "@mui/material";
 import { useState, type FormEvent } from "react";
 import type { Category, Page } from "../api/types";
@@ -33,9 +34,7 @@ export function CategoriesPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h4" component="h1">
-        Catégories
-      </Typography>
+      <PageHeader title="Catégories" />
 
       <Stack component="form" spacing={2} onSubmit={submit} sx={{ maxWidth: 420 }} aria-label="Créer une catégorie">
         <TextField

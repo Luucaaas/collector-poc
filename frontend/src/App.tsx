@@ -1,17 +1,22 @@
+import { lazy } from "react";
 import { Route, Routes } from "react-router";
 import { RequireRole } from "./auth/RequireRole";
 import { Layout } from "./components/Layout";
-import { CataloguePage } from "./pages/CataloguePage";
-import { CategoriesPage } from "./pages/CategoriesPage";
-import { InterestsPage } from "./pages/InterestsPage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { SellPage } from "./pages/SellPage";
+
+// One chunk per page: the browser downloads a page only when it is visited.
+const HomePage = lazy(() => import("./pages/HomePage").then((m) => ({ default: m.HomePage })));
+const CataloguePage = lazy(() => import("./pages/CataloguePage").then((m) => ({ default: m.CataloguePage })));
+const CategoriesPage = lazy(() => import("./pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })));
+const InterestsPage = lazy(() => import("./pages/InterestsPage").then((m) => ({ default: m.InterestsPage })));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
+const SellPage = lazy(() => import("./pages/SellPage").then((m) => ({ default: m.SellPage })));
 
 export function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<CataloguePage />} />
+        <Route index element={<HomePage />} />
+        <Route path="catalogue" element={<CataloguePage />} />
         <Route
           path="vendre"
           element={

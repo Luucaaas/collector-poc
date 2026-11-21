@@ -61,3 +61,11 @@ describe("RequireRole", () => {
     expect(signinRedirect).not.toHaveBeenCalled();
   });
 });
+
+describe("isAppRole", () => {
+  it("accepts only the application roles, not inherited object keys", async () => {
+    const { isAppRole } = await import("./roles");
+    expect(["buyer", "seller", "admin"].every(isAppRole)).toBe(true);
+    expect(["constructor", "toString", "__proto__", "other"].some(isAppRole)).toBe(false);
+  });
+});

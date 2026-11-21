@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
 import { useLocation } from "react-router";
-import { getRoles, type Role } from "./roles";
+import { getRoles, ROLE_LABELS, type Role } from "./roles";
 
 /**
  * Route guard: signed out → redirect to the Keycloak sign-in (then back to the requested
@@ -35,7 +35,7 @@ export function RequireRole({ role, children }: { role: Role; children: ReactNod
   if (!getRoles(auth.user).includes(role)) {
     return (
       <Alert severity="warning">
-        Accès refusé : cette page est réservée aux utilisateurs ayant le rôle « {role} ».
+        Accès refusé : cette page est réservée aux utilisateurs ayant le rôle « {ROLE_LABELS[role]} ».
       </Alert>
     );
   }

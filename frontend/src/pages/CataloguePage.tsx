@@ -13,6 +13,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 import { useApi } from "../api/useApi";
 import { useAsync } from "../api/useAsync";
 import type { Article, Category, Page } from "../api/types";
@@ -41,9 +43,7 @@ export function CataloguePage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h4" component="h1">
-        Catalogue
-      </Typography>
+      <PageHeader title="Catalogue" />
 
       <FormControl sx={{ maxWidth: 320 }}>
         <InputLabel id="category-filter-label">Catégorie</InputLabel>
@@ -69,7 +69,10 @@ export function CataloguePage() {
       {articles.status === "loading" && <CircularProgress aria-label="Chargement des articles" />}
       {articles.status === "error" && <Alert severity="error">{articles.message}</Alert>}
       {articles.status === "success" && articles.data.items.length === 0 && (
-        <Alert severity="info">Aucun article à afficher pour le moment.</Alert>
+        <EmptyState
+          title="Aucun article à afficher pour le moment."
+          description="Revenez bientôt ou essayez une autre catégorie."
+        />
       )}
       {articles.status === "success" && articles.data.items.length > 0 && (
         <>

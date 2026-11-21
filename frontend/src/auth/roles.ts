@@ -2,6 +2,11 @@ import type { User } from "oidc-client-ts";
 
 export type Role = "buyer" | "seller" | "admin";
 
+/** French labels shown to people; the technical role values never change. */
+export const ROLE_LABELS: Record<Role, string> = { buyer: "acheteur", seller: "vendeur", admin: "administrateur" };
+
+export const isAppRole = (role: string): role is Role => Object.hasOwn(ROLE_LABELS, role);
+
 function decodePayload(jwt: string): Record<string, unknown> {
   try {
     const part = jwt.split(".")[1] ?? "";

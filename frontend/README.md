@@ -1,6 +1,6 @@
 # Front React de Collector.shop
 
-Application web en **React + TypeScript** (outil de build : Vite), interface **MUI** en français. Elle couvre les 5 user stories : connexion à Keycloak, appels aux deux API, et 4 pages (voir ci-dessous).
+Application web en **React + TypeScript** (outil de build : Vite), interface **MUI** en français. Elle couvre les 5 user stories : connexion à Keycloak, appels aux deux API, et 5 pages : accueil et les 4 pages métier (voir ci-dessous).
 
 ## Prérequis
 
@@ -38,7 +38,8 @@ L'application charge `/config.json` **avant** de démarrer : `authority` (adress
 | `config.ts` | Lecture et validation de `/config.json` |
 | `auth/` | `oidc.ts` (réglages OIDC), `roles.ts` (lecture des rôles), `RequireRole.tsx` (garde de route) |
 | `api/` | `client.ts` (fonction unique `apiRequest`), `errors.ts` (erreurs RFC 9457 traduites en français), `types.ts` (réponses, d'après `docs/02-architecture/contrats.md`), `useApi.ts` et `useAsync.ts` (hooks maison) |
-| `components/` | `Layout.tsx` : barre de navigation (nom, rôles, connexion, déconnexion) |
+| `theme.ts`, `usePageTitle.ts` | Thème MUI unique (palette, typographie système sans police externe, formes) ; titre de l'onglet par page |
+| `components/` | `Layout.tsx` (en-tête, navigation par rôle, menu mobile, lien d'évitement), `Logo`, `PageHeader` (seul `h1` + titre de page), `EmptyState`, `LoadingSkeleton`, `ItemCard` (illustration générée localement : couleur et initiales), `Toast` (notifications globales, `useToast`) |
 | `pages/` | Une page par route (détail ci-dessous) ; `pages/sell/` : formulaire de mise en vente et liste des articles du vendeur |
 | `format.ts`, `money.ts`, `reasons.ts` | Montants en euros et dates en `fr-FR` ; validation des montants saisis (chaîne décimale, jamais de `number`) ; motifs de rejet traduits |
 | `api/useAction.ts` | Hook d'envoi de formulaire : bouton désactivé pendant l'envoi, erreur traduite, pas de double soumission |
@@ -46,11 +47,14 @@ L'application charge `/config.json` **avant** de démarrer : `authority` (adress
 
 Les tests sont à côté du code qu'ils vérifient (`*.test.ts` et `*.test.tsx`).
 
-## Les 4 pages
+## Les pages
+
+Chaque page est chargée à la demande (`React.lazy` + `Suspense` dans `App.tsx`) : le fichier principal du build passe de 609 Ko à 399 Ko, sans avertissement de Vite.
 
 | Route | Rôle | Contenu |
 | --- | --- | --- |
-| `/` Catalogue | public | Articles `PUBLISHED`, filtre par catégorie, pagination |
+| `/` Accueil | public | Présentation et raccourcis selon les rôles |
+| `/catalogue` Catalogue | public | Articles `PUBLISHED`, filtre par catégorie, pagination |
 | `/categories` Catégories | `admin` (US-01) | Liste et création ; nom déjà utilisé ou invalide affiché en français |
 | `/vendre` Vendre | `seller` (US-02 à US-04) | Mes boutiques et création ; mise en vente avec le résultat du contrôle automatique (`Article publié`, `Article rejeté` avec motifs, ou `Saisie à corriger` pour un 422) ; mes articles par boutique, modification du prix et historique |
 | `/centres-interet` Mes centres d'intérêt | `buyer` (US-05) | Catégories suivies, préférences `new_article` et `price_changed`, notifications (bouton « Actualiser », pas de rafraîchissement automatique) |

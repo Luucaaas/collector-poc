@@ -11,6 +11,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { PageHeader } from "../components/PageHeader";
 import { useState } from "react";
 import type { AppNotification, Category, Interests, Page, Preferences } from "../api/types";
 import { useAction } from "../api/useAction";
@@ -24,9 +25,7 @@ export const NOTIFICATIONS_PAGE_SIZE = 10;
 export function InterestsPage() {
   return (
     <Stack spacing={4}>
-      <Typography variant="h4" component="h1">
-        Mes centres d'intérêt
-      </Typography>
+      <PageHeader title="Mes centres d'intérêt" />
       <InterestsSection />
       <PreferencesSection />
       <NotificationsSection />

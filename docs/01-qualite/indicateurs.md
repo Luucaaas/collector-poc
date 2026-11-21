@@ -106,6 +106,22 @@ Revue de fin de sprint : le Lead Developer relève les cinq valeurs, les compare
 
 ## Relevés
 
+### Mesures du 21/11/2026 (refonte du front, tag `sha-6f1f63b`)
+
+Relevé complémentaire sur le front refondu (issue #61) ; les figures du relevé du 06/11/2026 ci-dessous restent celles de leur date. Le build est mesuré en local avec `npm run build` (même commande que la CI), sur les sources déployées.
+
+| Indicateur | Valeur mesurée | Seuil | Verdict | Source |
+| --- | --- | --- | --- | --- |
+| I2 front, taille du bundle | Fichier principal **312,9 Ko (96,2 Ko compressé)** au lieu de 609,4 Ko (184,1 Ko) ; 25 fichiers JavaScript pour 697,9 Ko au total, chargés à la demande par page ; **aucun avertissement** de Vite ; 1 082 modules | Pas de seuil (axe d'amélioration « découper par page » du relevé du 06/11) | Axe d'amélioration traité | `npm run build`, 21/11/2026 |
+| I2 front, taille du code | 27 fichiers `.tsx` et 3 264 lignes de TypeScript hors tests (1 756 le 06/11) ; plus long fichier : `InterestsPage.tsx` (340 lignes) | Sans seuil | Information | Comptages sur `frontend/src` |
+| Tests du front (Vitest) | **221 tests passés** dans 20 fichiers (62 le 06/11) | 100 % passés | Atteint | `npm test -- --run` |
+| I5 complément, parcours Playwright sur le cluster | **9 tests sur 9** passés en 1 min : les 6 parcours, la notification qui arrive seule, et le contrôle d'accessibilité sur ordinateur et sur mobile | 100 % passés | Atteint, sur la version démontrée (`sha-6f1f63b`) | `frontend/e2e/resultats/journal-cluster.txt` |
+| Accessibilité (axe-core 4.13.0, WCAG 2.0, 2.1 et 2.2, niveaux A et AA) | **0 violation** sur l'accueil, le catalogue, la page d'un article, la page d'erreur, la page vendeur (avec avertissement, rejet et historique), les centres d'intérêt et les catégories ; connecté et non connecté ; à 1280 et à 375 px, menu mobile ouvert compris | 0 violation | Atteint | Test 8 de `frontend/e2e/parcours.spec.ts` |
+| Délai d'apparition d'une notification dans l'interface | **8,0 s** après la publication, sans clic ni rechargement (interrogation toutes les 10 s) | Au plus 10 s plus le traitement de l'événement | Atteint | Test 7 de `parcours.spec.ts` (une mesure) |
+| `smoke.sh` | **25 contrôles sur 25** | 25 sur 25 | Atteint | `deploy/local/smoke.sh`, après `deploy.sh services sha-6f1f63b` |
+
+L'outil d'accessibilité automatique ne remplace pas un essai au lecteur d'écran, qui n'a pas été fait (limite).
+
 ### Mesures du 06/11/2026 (phase 8)
 
 **Version mesurée.** Les cinq indicateurs portent sur le même état du POC : le commit `22364bc` de `main`, avec deux runs verts relus le 06/11/2026 (13:47).
@@ -213,7 +229,7 @@ Une seule ligne porte une règle de validation du code (et non une règle de ges
 | I2 | `mypy --strict` ne couvre pas les dossiers `tests/` : **15 erreurs** (5 catalog, 10 notification), 4 catégories | Corriger les 15 erreurs (annotations, clé de test typée, stubs `types-jsonschema` en dépendance de développement : à décider, car c'est une dépendance de plus), puis étendre l'étape `mypy` de `lint` aux tests | Typage contrôlé sur les 26 fichiers de tests des services en plus des 34 de `src` | **Replanifié en phase 9** : la phase 8 mesure sans corriger (périmètre de P8-04) ; effort estimé à environ une heure |
 | I2 | Socle recopié dans les deux services : **531 lignes identiques ×2 (34,6 % des lignes de `src`)**, hors de portée de SonarCloud | Cible : paquet partagé pour `auth`, `correlation`, `errors`, `logging`, `health` ; pour le POC : un test qui compare les deux copies et échoue si elles divergent | Un seul endroit à corriger ; fin du code mort recopié (`get_optional_user` de notification, 3 lignes non couvertes) | Paquet partagé : cible (à ajouter à `architecture-cible.md`) ; test de comparaison : phase 9 si le temps le permet |
 | I2 | Complexité cognitive par fonction non mesurée directement (indice : complexité cyclomatique maximale 10) | Garder la règle du profil Sonar way (seuil 15) ; relever à chaque revue le maximum de C901 de Ruff | Une fonction devenue illisible est repérée avant le seuil | Continu |
-| I2 front | Bundle de **609 Ko** (184 Ko compressé) en un seul fichier, avertissement de Vite | Découper par page (`React.lazy` et `import()`) | Premier chargement allégé avant que MUI et les pages ne fassent grossir le bundle | Cible (le POC a 4 pages : gain faible) |
+| I2 front | Bundle de **609 Ko** (184 Ko compressé) en un seul fichier, avertissement de Vite | Découper par page (`React.lazy` et `import()`) | Premier chargement allégé avant que MUI et les pages ne fassent grossir le bundle | **Fait le 21/11/2026** (refonte du front, issue #56) : fichier principal de 312,9 Ko, voir le relevé du 21/11/2026 |
 | I3 | Plafond de l'HPA atteint à environ 200 utilisateurs : 5 réplicas à 72–75 % de CPU (cible 70 %), sans marge | Relever `maxReplicas` (par exemple 8) dans les values du chart, ou la requête CPU (100m) après mesure, puis rejouer le pic | Marge au-delà de 200 utilisateurs ; le coût est la mémoire du Mac (8 Go alloués à Docker) | Cible : les ressources du Mac bornent le POC (limite déjà notée dans le protocole 5) |
 | I3 | Une seule exécution de référence par scénario, sur le même Mac que le générateur de charge | Répéter l'exécution 3 fois et relever l'écart des p95 ; si possible, lancer Locust depuis une autre machine | Marge réelle (21 ms contre 300 ms) mieux établie ; une régression se distingue du bruit | Phase 9, si le temps le permet |
 | I4 | **10 vulnérabilités modérées** dans l'outillage du front (chaîne ESLint) ; Trivy 0.76.0 alors que la 0.76.2 est sortie | Monter ESLint et `typescript-eslint` (essai en branche, correction marquée « majeure » par npm) ; monter Trivy en relevant la nouvelle somme SHA-256 | 0 vulnérabilité signalée par `npm audit` (outillage compris) ; scanner à jour | Phase 9 (plan de remédiation de sécurité) |

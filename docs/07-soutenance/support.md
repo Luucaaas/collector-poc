@@ -70,7 +70,7 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 | [`cycle-devsecops.svg`](../01-qualite/img/cycle-devsecops.svg) | Existant, utilisé tel quel | 11 | Rapport 2,6 : 1, lisible |
 | [`pyramide-tests.svg`](../01-qualite/img/pyramide-tests.svg) | Existant, utilisé tel quel | 10 | Rapport 1,75 : 1, lisible |
 | [`grafana-pic-catalog-service.png`](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png) | Capture de la seconde exécution du protocole 5 (11/11), axe du panneau « Taux d'erreur » corrigé (0 à 2 %) | 8 | Lisible ; remplace celle du 06/11, dont l'axe allait jusqu'à « 10000 % » |
-| [Captures 01, 03, 04 et 06](../../frontend/e2e/resultats/captures/) | Existantes, utilisées telles quelles | 1, 6 | Lisibles ; à placer côte à côte |
+| [Captures 01, 03, 04 et 06](../../frontend/e2e/resultats/captures/) | Régénérées le 21/11/2026 sur un cluster neuf en `sha-1123688`, avec les données de démonstration (`donnees-demo.sh`) | 1, 6 | Lisibles ; à placer côte à côte |
 | [`pipeline-backend.svg`](../01-qualite/img/pipeline-backend.svg), [`matrice-risques.svg`](../06-securite/img/matrice-risques.svg), [`sequence-authentification.svg`](../02-architecture/img/sequence-authentification.svg) | Existants, en annexe seulement | A1, A2, A6 | Denses : réservés aux questions |
 | [`architecture-poc.svg`](../02-architecture/img/architecture-poc.svg) | **Existant mais à ne pas projeter** : en annexe A5 | (diapositive 3) | 3 638 × 793, rapport 4,6 : 1 : le texte devient minuscule sur un écran 16:9. Remplacé par un schéma simplifié |
 | [`architecture-cible.svg`](../02-architecture/img/architecture-cible.svg) | **Existant mais à ne pas projeter** | (diapositive 2) | 2 067 × 2 315 (portrait) : illisible en diapositive. Remplacé par un tableau à 4 lignes |
@@ -253,7 +253,7 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 | Chiffre | Source |
 | --- | --- |
 | 17 critères d'acceptation sur 17, en 9,84 s | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
-| 6 parcours Playwright sur 6 | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
+| 9 tests Playwright sur 9 (6 parcours, notification en direct, axe) | [indicateurs, relevé du 21/11/2026](../01-qualite/indicateurs.md#mesures-du-21112026-refonte-du-front-tag-sha-6f1f63b) |
 
 **Critères** : 3 (fonctionnalité métier), 7 (tests d'acceptation).
 
@@ -359,7 +359,7 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 | I1 couverture | 98,45 % et 97,66 % | ≥ 80 % | Règle de frais de port à 1 000 000 € absente de RM-01 : à arbitrer |
 | I2 dette | 0 min ; duplication 0,0 % | Note A ; < 3 % | 531 lignes recopiées (34,6 %) : paquet partagé |
 | I3 charge | p95 de 21 ms et de 23 ms ; 0 sur 6 564 | < 300 ms ; < 500 ms | Plafond de l'HPA vers 200 utilisateurs |
-| I4 et I5 | 0 CRITICAL ou HIGH avec correctif ; 17 sur 17 | 0 ; 17 | Bundle front de 609,4 Ko ; 15 erreurs mypy dans les tests |
+| I4 et I5 | 0 CRITICAL ou HIGH avec correctif ; 17 sur 17 | 0 ; 17 | Bundle front de 609,4 Ko (312,9 Ko le 21/11) ; 15 erreurs mypy dans les tests |
 
 **Visuel** : tableau à dessiner (4 lignes, 4 colonnes) avec une pastille verte « dans le seuil » par ligne. Note de bas de page : « Mesures sur le même code des services : images de `22364bc`, charge sur `9d2c96e`, code identique. »
 
@@ -372,7 +372,7 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 | p95 de 21 ms en lecture, de 23 ms en publication ; 0 sur 6 564 requêtes | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
 | 0 vulnérabilité CRITICAL ou HIGH avec correctif ; 17 sur 17 | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
 | Images de `22364bc`, charge sur `9d2c96e`, code des services identique | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
-| 531 lignes dupliquées (34,6 %) ; 15 erreurs mypy ; bundle de 609,4 Ko | [indicateurs, axes d'amélioration](../01-qualite/indicateurs.md#axes-damélioration-contre-la-dette-technique) |
+| 531 lignes dupliquées (34,6 %) ; 15 erreurs mypy ; bundle de 609,4 Ko (312,9 Ko le 21/11) | [indicateurs, axes d'amélioration](../01-qualite/indicateurs.md#axes-damélioration-contre-la-dette-technique) |
 | Frais de port plafonnés à 1 000 000 €, règle absente de RM-01, à arbitrer | [indicateurs, axes d'amélioration](../01-qualite/indicateurs.md#axes-damélioration-contre-la-dette-technique) |
 
 **Critères** : 6 (indicateurs mesurés et axes d'amélioration), 7 (tests qui alimentent I1 et I5).
@@ -391,7 +391,7 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 
 - Unitaires, intégration et API (pytest, testcontainers) : 289 et 203 tests passés.
 - Acceptation (pytest, httpx) : 17 sur 17 ; non-régression : la suite est rejouée à chaque push.
-- Front : 62 tests Vitest, 6 parcours Playwright.
+- Front : 221 tests Vitest, 9 tests Playwright dont un contrôle d'accessibilité axe.
 - Charge et disponibilité (Locust) ; sécurité : SAST (SonarCloud), SCA (Trivy, `npm audit`), audit dynamique (ZAP).
 
 **Visuel** : [`pyramide-tests.svg`](../01-qualite/img/pyramide-tests.svg), avec les quatre repères en légende à droite.
@@ -403,7 +403,7 @@ Vérification : 1:00 × 5 + 0:45 + 1:15 + 6:00 + 1:00 + 1:15 + 1:00 + 0:45 + 1:0
 | Dix types de tests formalisés (lignes du tableau des types) | [processus de test](../01-qualite/processus-test.md) |
 | 289 passed (`catalog-service`) et 203 passed (`notification-service`) | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
 | 17 passed (acceptation) | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
-| 62 tests passés (Vitest), 6 parcours sur 6 (Playwright) | [indicateurs, relevé de la phase 8](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8) |
+| 221 tests passés (Vitest), 9 tests sur 9 (Playwright) | [indicateurs, relevé du 21/11/2026](../01-qualite/indicateurs.md#mesures-du-21112026-refonte-du-front-tag-sha-6f1f63b) |
 | Tous les seuils sont respectés (charge) ; 0 échec sur 533 requêtes (disponibilité) | [résumé de la charge](../../tests/load/resultats/20261106-1106/resume.md) et [index des expérimentations](../04-experimentations/README.md) |
 | `catalog-service` relancé le 11/11/2026 sur le dépôt actuel : 294 passed | [fiche P10-01, journal](../suivi/taches/P10-01.md) |
 

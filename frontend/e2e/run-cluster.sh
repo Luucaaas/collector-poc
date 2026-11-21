@@ -4,7 +4,7 @@
 # the environment of this process only: they are never displayed, passed as arguments or written.
 # The mkcert certificate must be trusted by Chromium (mkcert -install done): TLS verification
 # is never disabled.
-#   ./run-cluster.sh               the 6 journeys
+#   ./run-cluster.sh               the 9 tests (6 journeys, live notification, axe on desktop and mobile)
 #   CAPTURES=1 ./run-cluster.sh    the screenshot spec (e2e/resultats/captures/)
 #   ./run-cluster.sh -g "alice"    options of `playwright test`
 set -euo pipefail

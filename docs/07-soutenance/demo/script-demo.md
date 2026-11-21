@@ -76,7 +76,7 @@ Revenir au terminal : le déploiement est fini (ou presque). Montrer, de haut en
 
 **Ce qu'on dit.** « Le script vérifie d'abord que les trois images existent sur GHCR et note leur empreinte, le digest. Puis `helm upgrade` remplace les pods un par un : Kubernetes n'éteint l'ancien pod que quand le nouveau répond à sa sonde de santé, donc il n'y a pas d'interruption. Ensuite un test de fumée de 25 contrôles passe par l'Ingress, comme un vrai client. Et si un seul échoue, le script revient tout seul à la version précédente. Dernier point : le digest que le cluster exécute réellement, affiché dans le bloc « Running images (imageID) » en fin de sortie, est celui publié par la CI : c'est la traçabilité du commit au pod. »
 
-**Ce que le jury doit voir** : la ligne `smoke.sh` avec ses contrôles `OK` (25), les lignes `deployment ... successfully rolled out`, le bloc « Running images (imageID) » avec les `sha256:...` des pods, puis la liste finale des pods en `Running` et `2/2` dans la colonne `READY` des trois composants.
+**Ce que le jury doit voir** : la ligne `smoke.sh` avec ses contrôles `OK` (25), les lignes `deployment ... successfully rolled out`, le bloc « Running images (imageID) » avec les `sha256:...` des pods, puis la liste finale (`kubectl get deploy,hpa,pods`) : les trois Deployments à `2/2` dans la colonne `READY` (deux réplicas prêts sur deux voulus), les HPA, et les pods des trois composants en `Running` et `1/1` (ceux de l'observabilité ont plusieurs conteneurs : `3/3` pour Grafana, `2/2` pour Prometheus) (un conteneur prêt sur un).
 
 **Plan de secours étape 1.**
 
@@ -93,7 +93,7 @@ Revenir au terminal : le déploiement est fini (ou presque). Montrer, de haut en
 
 ### 2a. Le catalogue (navigateur normal, onglet 2, 1:20 à 1:30)
 
-Ouvrir « Catalogue » : 11 articles de collection crédibles, 5 catégories.
+Ouvrir « Catalogue » : 11 articles de collection crédibles en cartes (illustration, prix, frais de port), 5 catégories en puces de filtre au-dessus. Cliquer une puce (par exemple « Figurines ») pour filtrer ; cliquer une carte ouvre la page de l'article.
 
 **Ce qu'on dit.** « Voici le catalogue, public : figurines, cartes, jeux vidéo rétro. Chloe, une acheteuse, a choisi de suivre la catégorie Figurines. »
 
@@ -103,31 +103,31 @@ Formulaire « Mettre un article en vente » (boutique et catégorie « Figurines
 
 | Champ | Valeur à saisir |
 | --- | --- |
-| Titre | `Boba Fett Kenner 1979` |
+| Titre | `Figurine Boba Fett Kenner 1979` |
 | Description | `Figurine originale Kenner de 1979, complète, très bon état.` |
-| Adresse de la photo | `https://images.example.com/boba.jpg` |
+| Adresse de la photo (https) | `https://images.example.com/boba.jpg` |
 | Prix | `120,00` |
 | Frais de port | `8,00` |
 
-Cliquer « Mettre en vente » : le message **« Article publié »** apparaît.
+Pendant la saisie, l'**aperçu de l'annonce** à droite se met à jour et les champs se valident en direct. Cliquer « Mettre en vente » : une notification verte (toast) « Figurine Boba Fett Kenner 1979 est en vente dans le catalogue » et le message **« Article publié »** sous le formulaire apparaissent.
 
 **Ce qu'on dit.** « Alice, vendeuse, publie une figurine. Le service catalogue applique un contrôle automatique : champs obligatoires, prix positif, et aucun email ni numéro de téléphone dans le texte, pour empêcher de contourner la commission. Ici l'article est conforme : statut publié. »
 
 ### 2c. Le rejet (même formulaire, 2:10 à 2:30) — à sauter si tu es en retard
 
-Titre `Annonce suspecte`, description `Appelez-moi au 06 12 34 56 78 pour traiter hors site.`, photo `https://images.example.com/x.jpg`, prix `50,00`, puis « Mettre en vente » : **« Article rejeté par le contrôle automatique »**, motif « le texte contient un numéro de téléphone ».
+Titre `Annonce suspecte`, description `Appelez-moi au 06 12 34 56 78 pour traiter hors site.`, photo `https://images.example.com/x.jpg`, prix `50,00`, (dès la saisie du numéro, un avertissement « Cette annonce serait rejetée » apparaît sous la description : il ne bloque pas, c'est l'API qui décide), puis « Mettre en vente » : **« Article rejeté par le contrôle automatique »**, motif « le texte contient un numéro de téléphone » avec un conseil. L'annonce refusée reste listée dans « Mes articles » avec la pastille « Rejeté » jusqu'au rechargement de la page.
 
 **Ce qu'on dit.** « Même formulaire avec un numéro de téléphone : l'article est rejeté, avec le motif. C'est la règle de gestion qui protège le modèle économique. »
 
 ### 2d. Le changement de prix (onglet 2, 2:30 à 2:45)
 
-Descendre à « Mes articles publiés », ligne « Boba Fett Kenner 1979 », champ « Nouveau prix » : `95`, « Modifier le prix ».
+Descendre à « Mes articles », carte « Figurine Boba Fett Kenner 1979 », champ « Nouveau prix (€) » : `95`, « Modifier le prix » (toast de confirmation), puis « Historique des prix » : le tableau montre 120,00 € puis 95,00 €.
 
 **Ce qu'on dit.** « Alice baisse le prix à 95 euros. L'historique des prix est conservé, et un deuxième événement part. »
 
 ### 2e. Chloe est notifiée (fenêtre privée, 2:45 à 3:15)
 
-Basculer sur la fenêtre privée de chloe, page « Mes centres d'intérêt ». La liste se met à jour toute seule (toutes les 10 secondes, onglet visible) et le badge de « Mes centres d'intérêt » dans la navigation passe à 2 ; le bouton **« Actualiser »** force la mise à jour sans attendre. Deux notifications apparaissent, « Nouvel article : Boba Fett Kenner 1979 » (120,00) et « Changement de prix » (de 120,00 à 95,00).
+Basculer sur la fenêtre privée de chloe, page « Mes centres d'intérêt ». La liste se met à jour toute seule (toutes les 10 secondes, onglet visible) et le badge de « Mes centres d'intérêt » dans la navigation passe à 2 ; le bouton **« Actualiser »** force la mise à jour sans attendre. Deux notifications apparaissent, « Nouvel article : Figurine Boba Fett Kenner 1979 » (120,00) et « Changement de prix » (de 120,00 à 95,00).
 
 **Ce qu'on dit.** « Chloe n'a rien fait : le service catalogue a publié deux événements dans RabbitMQ, le service notification les a consommés et lui a créé ses notifications. Les deux services ne s'appellent jamais directement : ils ne communiquent que par les événements. C'est aussi là que se branchera plus tard l'outil anti-fraude, sans toucher au catalogue. »
 
@@ -142,7 +142,7 @@ Basculer sur la fenêtre privée de chloe, page « Mes centres d'intérêt ». L
 | Une saisie se passe mal (champ refusé, faute de frappe) | Corriger sans commenter, ne pas recommencer tout le formulaire |
 | La notification n'arrive pas | Cliquer sur « Actualiser » (l'événement est asynchrone, 1 à 2 s, et la liste se met à jour seule toutes les 10 s) ; au bout de 10 s, passer à l'étape suivante et dire « les notifications sont asynchrones, je reviens dessus à la fin » |
 | Session expirée ou page perdue | Cliquer « Connexion » : la session Keycloak ramène sans mot de passe. Sinon, copier le mot de passe sans le montrer : `docs/07-soutenance/demo/mot-de-passe.sh alice` (ou `chloe`), puis Cmd+V dans le champ ; le presse-papiers est vidé après 30 s |
-| Tout le parcours échoue | Montrer les 7 captures : `frontend/e2e/resultats/captures/` (catalogue, connexion, article publié, rejeté, historique des prix, notifications), et c'est tout. **Cas extrême seulement** : rejouer le parcours automatisé `frontend/e2e/run-cluster.sh --headed` (11 à 20 s, 6 parcours sur 6) **ajoute des données de test (« E2E ») au catalogue** : à réserver à une démonstration déjà perdue |
+| Tout le parcours échoue | Montrer les 10 captures : `frontend/e2e/resultats/captures/` (catalogue, connexion, article publié, rejeté, historique des prix, notifications, catégories, accueil, page d'un article, catalogue sur mobile), et c'est tout. **Cas extrême seulement** : rejouer le parcours automatisé `frontend/e2e/run-cluster.sh --headed` (environ 1 minute : 6 parcours, notification en direct et contrôle d'accessibilité, 9 tests sur 9) **ajoute des données de test (« E2E ») au catalogue** : à réserver à une démonstration déjà perdue |
 | Plus rien ne marche | Vidéo de secours (enregistrée par toi) |
 
 ## Étape 3 : pic de charge, Grafana et suppression d'un pod (3:15 à 5:10)
@@ -208,6 +208,8 @@ docs/07-soutenance/demo/donnees-demo.sh    # relançable sans doublon
 # 3. Vérification de tout
 docs/07-soutenance/demo/preparer.sh        # doit finir par « READY »
 ```
+
+**Captures d'écran à refaire (rarement)** : elles se prennent sur un cluster neuf avec le jeu de données, **avant** tout parcours, dans cet ordre exact : `cluster.sh delete`, `cluster.sh create`, `deploy.sh all sha-XXXXXXX`, `donnees-demo.sh`, puis `cd frontend && CAPTURES=1 ./e2e/run-cluster.sh`, et seulement après, si besoin, les parcours. Les captures laissent un article « Figurine Boba Fett Kenner 1979 » et deux notifications chez chloe : **recréer ensuite le cluster** (les trois commandes ci-dessus puis `preparer.sh`) avant la répétition ou la démonstration.
 
 - [ ] **Les 4 hôtes déclarés dans `/etc/hosts`** (une seule fois, par toi, mot de passe demandé) :
   ```bash

@@ -98,7 +98,7 @@ Les termes à employer **exactement** devant un jury technique. Chaque ligne don
 | **Test d'intégration** | Teste le code avec une vraie dépendance. | testcontainers : PostgreSQL et RabbitMQ jetables |
 | **Test d'acceptation** | Prouve qu'un critère de la user story est satisfait de bout en bout. | 17 tests pytest + httpx, un par critère |
 | **Test de non-régression** | Rejeu de la suite pour vérifier qu'une modification n'a rien cassé. | Toute la suite à chaque push |
-| **Locust, Playwright, Vitest** | Locust : tests de charge ; Playwright : parcours dans un navigateur ; Vitest : tests de composants du front. | Locust et Playwright hors CI ; 62 tests Vitest |
+| **Locust, Playwright, Vitest** | Locust : tests de charge ; Playwright : parcours dans un navigateur ; Vitest : tests de composants du front. | Locust et Playwright hors CI ; 221 tests Vitest |
 | **RFC 9457** | Format standard d'erreur HTTP (*Problem Details*). | Réponses `application/problem+json` |
 | **`correlation_id`** | Identifiant qui suit une requête dans les logs et les événements. | Repris de `X-Request-ID` s'il est valide (128 caractères au plus) |
 

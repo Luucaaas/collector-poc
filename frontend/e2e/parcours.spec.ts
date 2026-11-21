@@ -1,4 +1,4 @@
-import { expect, goTo, login, RUN, test } from "./helpers";
+import { expect, expectNoAccessibilityViolation, goTo, login, RUN, test } from "./helpers";
 
 // The journeys run in sequence (the category created in 1 is used in 2 and 3, the articles of 3 in 4).
 test.describe.configure({ mode: "serial" });
@@ -21,7 +21,7 @@ test("1. admin creates a category", async ({ page }) => {
 test("2. chloe picks this category as an interest", async ({ page }) => {
   await login(page, "chloe");
   await goTo(page, "Mes centres d'intérêt");
-  const group = page.getByRole("group", { name: "Catégories d'intérêt" });
+  const group = page.getByRole("group", { name: "Catégories suivies" });
   const ours = group.getByRole("checkbox", { name: CATEGORY, exact: true });
   await expect(ours).toBeVisible();
   // Keep only this run's category: previous runs must not pile up (maximum 20).
@@ -33,7 +33,7 @@ test("2. chloe picks this category as an interest", async ({ page }) => {
   await page.getByRole("button", { name: "Enregistrer mes centres d'intérêt" }).click();
   await expect(page.getByText("Centres d'intérêt enregistrés.")).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("group", { name: "Catégories d'intérêt" }).getByRole("checkbox", { name: CATEGORY, exact: true })).toBeChecked();
+  await expect(page.getByRole("group", { name: "Catégories suivies" }).getByRole("checkbox", { name: CATEGORY, exact: true })).toBeChecked();
 });
 
 test("3. alice creates a shop, publishes, sees a rejection, changes the price", async ({ page }) => {
@@ -74,6 +74,13 @@ test("3. alice creates a shop, publishes, sees a rejection, changes the price", 
   const rejectedRow = page.getByRole("listitem").filter({ hasText: REJECTED_TITLE });
   await expect(rejectedRow.getByText("Rejeté")).toBeVisible();
   await expect(rejectedRow.getByLabel(/Nouveau prix/)).toHaveCount(0);
+  // The API lists only published articles: the rejected one survives navigation inside the
+  // application (not a reload), then is looked up again when the shop is selected.
+  await goTo(page, "Catalogue");
+  await expect(page.getByRole("heading", { level: 1, name: "Catalogue" })).toBeVisible();
+  await goTo(page, "Vendre");
+  await page.getByLabel("Boutique des articles").selectOption({ label: SHOP });
+  await expect(page.getByRole("listitem").filter({ hasText: REJECTED_TITLE }).getByText("Rejeté")).toBeVisible();
   await row.getByLabel(/Nouveau prix/).fill("95");
   await row.getByRole("button", { name: "Modifier le prix" }).click();
   await expect(row.getByText(/Prix modifié : 95,00/)).toBeVisible();
@@ -89,12 +96,10 @@ test("4. chloe sees both notifications", async ({ page }) => {
   const list = page.getByRole("list", { name: "Liste des notifications" });
   const newArticle = list.getByRole("listitem").filter({ hasText: `Nouvel article : « ${ACCEPTED_TITLE} »` });
   const priceChanged = list.getByRole("listitem").filter({ hasText: `Changement de prix : « ${ACCEPTED_TITLE} » passe de` });
-  // RabbitMQ events are asynchronous: refresh until they arrive.
-  await expect(async () => {
-    await page.getByRole("button", { name: "Actualiser" }).click();
-    await expect(newArticle).toBeVisible({ timeout: 1_500 });
-    await expect(priceChanged).toBeVisible({ timeout: 1_500 });
-  }).toPass({ timeout: 30_000 });
+  // RabbitMQ events are asynchronous and the page polls the API every 10 s (no click, no reload):
+  // the notifications must appear by themselves.
+  await expect(newArticle).toBeVisible({ timeout: 25_000 });
+  await expect(priceChanged).toBeVisible({ timeout: 25_000 });
   await expect(newArticle).toContainText(/120,00/);
   await expect(priceChanged).toContainText(/120,00.*95,00/);
 });
@@ -123,3 +128,128 @@ test("6. no token in localStorage or sessionStorage after sign-in", async ({ pag
   }
   expect(stored.local).toHaveLength(0);
 });
+
+test("7. chloe sees a new notification arrive by itself (at most 10 s), switches and chips work", async ({ page, browser, baseURL }) => {
+  const liveTitle = `Live ${RUN}`;
+  await login(page, "chloe");
+  await goTo(page, "Mes centres d'intérêt");
+  await expect(page.getByRole("list", { name: "Liste des notifications" })).toBeVisible();
+
+  // Alice publishes in the category followed by chloe, from another browser context.
+  const context = await browser.newContext({ baseURL, locale: "fr-FR" });
+  const alicePage = await context.newPage();
+  await login(alicePage, "alice");
+  await goTo(alicePage, "Vendre");
+  const form = alicePage.getByRole("form", { name: "Mettre un article en vente" });
+  await form.getByLabel("Boutique", { exact: true }).selectOption({ label: SHOP });
+  await form.getByLabel("Catégorie").selectOption({ label: CATEGORY });
+  await form.getByLabel(/Titre de l'article/).fill(liveTitle);
+  await form.getByLabel(/Description de l'article/).fill("Seconde annonce, publiée pendant que l'acheteuse regarde sa page.");
+  await form.getByLabel(/Adresse de la photo/).fill(PHOTO);
+  await form.getByLabel(/Prix \(€\)/).fill("40,00");
+  await form.getByRole("button", { name: "Mettre en vente" }).click();
+  await expect(alicePage.getByText(`« ${liveTitle} » est en vente dans le catalogue.`)).toBeVisible();
+  const publishedAt = Date.now();
+  await context.close();
+
+  // No click on "Actualiser", no reload: the polling loop brings it, 10 s at most plus the event processing.
+  const live = page.getByRole("list", { name: "Liste des notifications" }).getByRole("listitem").filter({ hasText: `Nouvel article : « ${liveTitle} »` });
+  await expect(live).toBeVisible({ timeout: 15_000 });
+  console.log(`notification arrived ${((Date.now() - publishedAt) / 1000).toFixed(1)} s after publication, without click`);
+  await expect(page.getByRole("link", { name: "Mes centres d'intérêt", exact: false })).toContainText(/\d+/); // badge
+
+  // Switches: on = primary colour (dark blue track), off = grey track, contrast 3:1 at least.
+  const track = (name: string) =>
+    page.getByRole("switch", { name }).evaluate((input) => {
+      const root = input.closest(".MuiSwitch-root");
+      return getComputedStyle(root?.querySelector(".MuiSwitch-track") as Element).backgroundColor;
+    });
+  const newArticleSwitch = page.getByRole("switch", { name: "Être prévenu d'un nouvel article" });
+  await expect(newArticleSwitch).toBeChecked();
+  await expect.poll(() => track("Être prévenu d'un nouvel article")).toBe("rgb(31, 58, 95)");
+  await newArticleSwitch.uncheck();
+  // The colour change is animated: poll until the transition ends.
+  await expect.poll(() => track("Être prévenu d'un nouvel article")).toBe("rgb(107, 114, 128)");
+  await newArticleSwitch.check(); // nothing was saved
+
+  // Filter chips by keyboard: Enter on a category, Space on "Toutes les catégories".
+  await goTo(page, "Catalogue");
+  const chip = page.getByRole("button", { name: CATEGORY, exact: true });
+  const all = page.getByRole("button", { name: "Toutes les catégories" });
+  await expect(all).toHaveAttribute("aria-pressed", "true");
+  await chip.focus();
+  await page.keyboard.press("Enter");
+  await expect(chip).toHaveAttribute("aria-pressed", "true");
+  await expect(all).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("link", { name: new RegExp(ACCEPTED_TITLE) })).toBeVisible();
+  await all.focus();
+  await page.keyboard.press("Space");
+  await expect(all).toHaveAttribute("aria-pressed", "true");
+  await expect(chip).toHaveAttribute("aria-pressed", "false");
+});
+
+for (const screen of [
+  { name: "desktop", viewport: { width: 1280, height: 800 }, mobile: false },
+  { name: "mobile", viewport: { width: 375, height: 812 }, mobile: true },
+]) {
+  test(`8. axe finds no WCAG A or AA violation on any page (${screen.name})`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize(screen.viewport);
+
+    // Signed out: home, catalogue, article page, unknown route.
+    await page.goto("/");
+    await expectNoAccessibilityViolation(page, `${screen.name}, home, signed out`);
+    await goTo(page, "Catalogue");
+    await expect(page.getByRole("heading", { level: 1, name: "Catalogue" })).toBeVisible();
+    await expect(page.getByText(ACCEPTED_TITLE).first()).toBeVisible();
+    await expectNoAccessibilityViolation(page, `${screen.name}, catalogue, signed out`);
+    await page.getByRole("link", { name: new RegExp(ACCEPTED_TITLE) }).first().click();
+    await expect(page.getByRole("heading", { level: 1, name: ACCEPTED_TITLE })).toBeVisible();
+    await expectNoAccessibilityViolation(page, `${screen.name}, article page, signed out`);
+    await page.goto("/page-inconnue");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expectNoAccessibilityViolation(page, `${screen.name}, not found, signed out`);
+
+    // Signed in: home and the page of each role.
+    const pages: Array<["admin" | "alice" | "chloe", string, string]> = [
+      ["admin", "Catégories", "categories"],
+      ["alice", "Vendre", "seller area"],
+      ["chloe", "Mes centres d'intérêt", "interests and notifications"],
+    ];
+    for (const [account, menu, label] of pages) {
+      await login(page, account, undefined, screen.mobile);
+      await expectNoAccessibilityViolation(page, `${screen.name}, home, ${account}`);
+      await goTo(page, menu);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expectNoAccessibilityViolation(page, `${screen.name}, ${label}, ${account}`);
+      if (account === "alice") {
+        // The seller page with a rejected article and a price history on screen.
+        const form = page.getByRole("form", { name: "Mettre un article en vente" });
+        await form.getByLabel("Boutique", { exact: true }).selectOption({ label: SHOP });
+        await form.getByLabel("Catégorie").selectOption({ label: CATEGORY });
+        await form.getByLabel(/Titre de l'article/).fill(`Axe ${RUN} ${screen.name}`);
+        await form.getByLabel(/Description de l'article/).fill("Écrivez-moi à axe@example.com pour conclure hors du site.");
+        await expect(form.getByRole("status")).toBeVisible(); // live warning (contact details)
+        await expectNoAccessibilityViolation(page, `${screen.name}, seller form with a warning`);
+        await form.getByLabel(/Adresse de la photo/).fill(PHOTO);
+        await form.getByLabel(/Prix \(€\)/).fill("10,00");
+        await form.getByRole("button", { name: "Mettre en vente" }).click();
+        await expect(page.getByText("Article rejeté par le contrôle automatique")).toBeVisible();
+        await page.getByLabel("Boutique des articles").selectOption({ label: SHOP });
+        const row = page.getByRole("listitem").filter({ hasText: ACCEPTED_TITLE });
+        await row.getByRole("button", { name: "Historique des prix" }).click();
+        await expect(row.getByRole("table", { name: "Historique des prix" })).toBeVisible();
+        await expectNoAccessibilityViolation(page, `${screen.name}, seller page with rejection and history`);
+      }
+      if (screen.mobile) {
+        await page.getByRole("button", { name: "Ouvrir le menu" }).click();
+        await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
+        await expectNoAccessibilityViolation(page, `${screen.name}, open menu, ${account}`);
+        await page.getByRole("dialog", { name: "Menu" }).getByRole("button", { name: "Déconnexion" }).click();
+      } else {
+        await page.getByRole("button", { name: "Déconnexion" }).click();
+      }
+      await expect(page.getByRole("button", { name: screen.mobile ? "Ouvrir le menu" : "Connexion" })).toBeVisible();
+    }
+  });
+}

@@ -92,7 +92,8 @@ FIGURES: list[tuple[str, str, str, str]] = [
     ("Tests d'acceptation", '17 passed', '17 passed', 'docs/01-qualite/indicateurs.md'),
     ('Tests catalog relancés le 11/11', '294 passed', '294 passed', 'docs/suivi/taches/P10-01.md'),
     ('Couverture catalog relancée le 11/11', '98,66 %', '98,66 %', 'docs/suivi/taches/P10-01.md'),
-    ('Tests Vitest', '62 tests passés', '62 tests passés', 'docs/01-qualite/indicateurs.md'),
+    ('Tests Vitest', '221 tests passés', '221 tests passés', 'docs/01-qualite/indicateurs.md'),
+    ('Tests Playwright', '9 tests sur 9', '9 tests sur 9', 'docs/01-qualite/indicateurs.md'),
     ('Décision Playwright hors CI', 'décision du 31/10/2026', 'décision du 31/10/2026', 'docs/01-qualite/processus-test.md'),
     ('Registre des risques', 'registre de 62 risques', 'registre de 62 risques', 'docs/06-securite/plan-remediation.md'),
     ('Risques critiques', '7 critiques et 30 élevés', '7 critiques, 30 élevés', 'docs/06-securite/plan-remediation.md'),
@@ -133,8 +134,8 @@ SUPPORT_FIGURES: list[tuple[str, str, str, str, str]] = [
     ('8', 'HPA 2 à 5', '2 à 5 réplicas prêts en 60 s', '2 à 5 réplicas prêts en 60 s', 'docs/04-experimentations/README.md'),
     ('6', 'Acceptation', "17 critères d'acceptation sur 17", '17 sur 17', 'docs/01-qualite/indicateurs.md'),
     ('6', 'Durée acceptation', 'en 9,84 s', 'en 9,84 s', 'docs/01-qualite/indicateurs.md'),
-    ('6', 'Playwright', '6 parcours Playwright sur 6', '6 parcours sur 6', 'docs/01-qualite/indicateurs.md'),
-    ('10', 'Playwright', '6 parcours sur 6 (Playwright)', '6 parcours sur 6', 'docs/01-qualite/indicateurs.md'),
+    ('6', 'Playwright', '9 tests Playwright sur 9', '9 tests sur 9', 'docs/01-qualite/indicateurs.md'),
+    ('10', 'Playwright', '9 tests sur 9 (Playwright)', '9 tests sur 9', 'docs/01-qualite/indicateurs.md'),
     ('7', 'Run backend', '11 jobs verts, run 42219458020', '11 jobs verts', 'docs/01-qualite/indicateurs.md'),
     ('7', 'Run backend, identifiant', '42219458020', '42219458020', 'docs/01-qualite/indicateurs.md'),
     ('7', 'Premier run, durée', '5 min 47 s', 'Durée totale : 5 min 47 s', 'docs/01-qualite/conformite-pipeline.md'),
@@ -168,7 +169,7 @@ SUPPORT_FIGURES: list[tuple[str, str, str, str, str]] = [
     ('10', 'Tests catalog', '289 passed', '289 passed', 'docs/01-qualite/indicateurs.md'),
     ('10', 'Tests notification', '203 passed', '203 passed', 'docs/01-qualite/indicateurs.md'),
     ('10', "Tests d'acceptation", '17 passed', '17 passed', 'docs/01-qualite/indicateurs.md'),
-    ('10', 'Tests Vitest', '62 tests passés', '62 tests passés', 'docs/01-qualite/indicateurs.md'),
+    ('10', 'Tests Vitest', '221 tests passés', '221 tests passés', 'docs/01-qualite/indicateurs.md'),
     ('10', 'Charge', 'Tous les seuils sont respectés', 'Tous les seuils sont respectés', 'tests/load/resultats/20261106-1106/resume.md'),
     ('10', 'Tests relancés le 11/11', '294 passed', '294 passed', 'docs/suivi/taches/P10-01.md'),
     ('14', 'Délai du README', '174 s', '174 s', 'docs/suivi/taches/P10-01.md'),
@@ -320,7 +321,7 @@ def check_counts(failures: list[str]) -> int:
         for f in (ROOT / "tests/acceptance").glob("test_us*.py")
     )
     expect("acceptance tests (functions test_usXX_caY_)", tests, 17)
-    expect("screenshots of the walkthrough", len(list((ROOT / "frontend/e2e/resultats/captures").glob("*.png"))), 7)
+    expect("screenshots of the walkthrough", len(list((ROOT / "frontend/e2e/resultats/captures").glob("*.png"))), 10)
     section10 = guide.split("## 10. Qualité de la présentation", 1)[1].split("**Démonstration.**", 1)[0]
     schemas = {m.group(1) for m in re.finditer(r"\]\(([^)]+\.svg)\)", section10)}
     expect("SVG diagrams cited in section 10 (the guide announces 14)", len(schemas), 14)

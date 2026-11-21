@@ -1,6 +1,6 @@
 # Front React de Collector.shop
 
-Application web en **React + TypeScript** (outil de build : Vite), interface **MUI** en français. Elle couvre les 5 user stories : connexion à Keycloak, appels aux deux API, et 5 pages : accueil et les 4 pages métier (voir ci-dessous).
+Application web en **React + TypeScript** (outil de build : Vite), interface **MUI** en français. Elle couvre les 5 user stories : connexion à Keycloak, appels aux deux API, et 6 pages : accueil, catalogue, détail d'un article, espace vendeur, centres d'intérêt et catégories (voir ci-dessous).
 
 ## Prérequis
 
@@ -66,7 +66,7 @@ Un prix identique au prix actuel n'est pas envoyé à l'API : l'interface dit qu
 - Contrastes : toutes les paires texte et fond du thème atteignent 4,5:1 (WCAG AA), contrôlées par `src/theme.test.ts` ; les couleurs d'avertissement et d'information par défaut de MUI (3,1:1 et 3,9:1 sous un texte blanc) sont remplacées. L'état « éteint » d'un interrupteur atteint 3:1.
 - Clavier : lien « Aller au contenu », anneau de focus de 3 px sur tous les éléments interactifs (blanc dans l'en-tête), focus ramené au contenu après chaque navigation, menu mobile qui garde et rend le focus. Mouvements réduits respectés (`prefers-reduced-motion`).
 - Lecteurs d'écran : un seul `h1` par page, titre d'onglet par page, formulaires nommés, erreurs reliées à leur champ (`aria-invalid`, `aria-describedby`), compteurs et badge annoncés en texte (« Mes centres d'intérêt (3 notifications) »), liens « Voir l'article « titre » » distincts.
-- Contrôle automatique : axe-core 4.10.2 (règles WCAG 2.0 et 2.1 A et AA, plus bonnes pratiques) lancé hors dépôt sur les sept pages à 1280 px et 375 px, menu mobile ouvert compris : 0 violation après correction de deux écarts (liste du menu mobile invalide, boîte de dialogue sans nom). Les lecteurs d'écran eux-mêmes n'ont pas été essayés.
+- Contrôle automatique : axe-core 4.10.2 (règles WCAG 2.0 et 2.1 A et AA, plus bonnes pratiques) lancé hors dépôt pendant la refonte (P12-04), puis rendu reproductible par `@axe-core/playwright` 4.13.0 dans le test 8 des parcours (P12-05), sur les sept pages à 1280 px et 375 px, menu mobile ouvert compris : 0 violation après correction de deux écarts (liste du menu mobile invalide, boîte de dialogue sans nom). Les lecteurs d'écran eux-mêmes n'ont pas été essayés.
 
 ## Image Docker (nginx)
 
@@ -87,11 +87,13 @@ Avec un système de fichiers en lecture seule, `/tmp` et `/etc/nginx/conf.d` doi
 
 Six parcours dans `e2e/parcours.spec.ts` : (1) `admin` crée une catégorie, (2) `chloe` la choisit, (3) `alice` crée une boutique, publie un article accepté puis un article rejeté (téléphone dans la description), change le prix et voit l'historique, (4) `chloe` voit les notifications `NEW_ARTICLE` et `PRICE_CHANGED`, (5) la déconnexion revient sur l'application, (6) aucun jeton dans `localStorage` ni `sessionStorage`. Les noms contiennent un suffixe horodaté : les parcours se relancent sans réinitialiser la base.
 
+Deux tests complètent les parcours : (7) `chloe` voit arriver seule une notification publiée par `alice` pendant qu'elle regarde sa page (au plus 10 s, sans clic ni rechargement), puis les interrupteurs activés en couleur primaire et les puces de filtre au clavier (Entrée, Espace) sont vérifiés ; (8) **contrôle d'accessibilité reproductible** avec `@axe-core/playwright` (fonction `expectNoAccessibilityViolation` de `e2e/helpers.ts`, règles WCAG 2.0, 2.1 et 2.2 de niveaux A et AA) sur chaque page, connecté et non connecté, à 1280 px puis à 375 px (menu mobile ouvert compris), avec 0 violation attendue. Les tests 7 et 8 s'appuient sur la catégorie, la boutique et les articles créés par les parcours 1 à 3 : on lance donc toujours la suite entière (pas de `-g`).
+
 ```bash
 deploy/compose/up.sh                      # pile locale (une fois)
 cd frontend && npm ci
 npx playwright install chromium           # une fois ; Chromium est stocké dans ~/Library/Caches/ms-playwright, hors du dépôt
-./e2e/run-compose.sh                      # lance Vite (npm run dev) puis les 6 parcours
+./e2e/run-compose.sh                      # lance Vite (npm run dev) puis les parcours et le contrôle axe
 ```
 
 `run-compose.sh` lit les mots de passe des comptes de démonstration dans `deploy/compose/.env` et les exporte (`E2E_ADMIN_PASSWORD`, `E2E_ALICE_PASSWORD`, `E2E_CHLOE_PASSWORD`) pour ce seul processus. Ils ne sont ni affichés ni écrits. La configuration Playwright coupe les traces, captures et vidéos et n'écrit pas de rapport HTML, car ils reprennent les valeurs saisies ; la saisie du mot de passe passe par `evaluate`, dont les arguments n'apparaissent pas dans les messages d'erreur. Pour viser une autre adresse : `E2E_BASE_URL=...`, avec les trois variables définies.
@@ -99,15 +101,25 @@ npx playwright install chromium           # une fois ; Chromium est stocké dans
 ### Sur le cluster k3d
 
 ```bash
-./e2e/run-cluster.sh                 # les 6 parcours sur https://app.127.0.0.1.sslip.io (cluster déjà déployé)
-CAPTURES=1 ./e2e/run-cluster.sh      # la spécification des captures d'écran (e2e/resultats/captures/)
+./e2e/run-cluster.sh                 # les parcours et le contrôle d'accessibilité sur https://app.127.0.0.1.sslip.io (cluster déjà déployé)
+CAPTURES=1 ./e2e/run-cluster.sh      # la spécification des captures d'écran (e2e/resultats/captures/) : ordre imposé, voir ci-dessous
 ```
 
 `run-cluster.sh` lit les mots de passe dans `deploy/local/.env` (même principe que `run-compose.sh`), vérifie que `https://app.` et `https://auth.` répondent, puis lance Playwright. La vérification TLS n'est jamais désactivée : le certificat mkcert doit être reconnu par Chromium (`mkcert -install`). Les parcours créent des données de démonstration (catégories, boutiques, articles) et se relancent sans réinitialisation.
 
 Contrôles ajoutés à chaque test (`watchBrowser` dans `e2e/helpers.ts`, pile compose et cluster) : aucune violation de la Content-Security-Policy (événement `securitypolicyviolation` et messages de console) et aucune erreur sur les appels `/api/v1/` (échec réseau ou statut 4xx/5xx). À la connexion, la page de Keycloak doit être en français (`lang="fr"`) et, sur le cluster, servie par `https://auth.127.0.0.1.sslip.io`.
 
-Preuves versionnées dans `e2e/resultats/` : `journal-cluster.txt` (deux exécutions 6 sur 6, tag `sha-cd5751f`, digests des images), `journal-compose.txt`, et `captures/` (7 PNG en 1280 de large : catalogue public, connexion Keycloak champs vides, article publié, article rejeté, historique des prix, notifications de `chloe`, catégories de `admin`). La spécification des captures ne tourne jamais avec les parcours ; aucune capture n'est prise après la saisie d'un mot de passe.
+Captures d'écran de la soutenance : elles montrent le jeu de données de démonstration, donc l'**ordre est imposé** :
+
+1. cluster neuf : `deploy/local/cluster.sh delete`, puis `deploy/local/cluster.sh create` ;
+2. `deploy/local/deploy.sh all sha-<7>` (un tag publié par la CI) ;
+3. `docs/07-soutenance/demo/donnees-demo.sh` (5 catégories, 2 boutiques, 11 articles, `chloe` suit « Figurines ») ;
+4. `cd frontend && CAPTURES=1 ./e2e/run-cluster.sh` (la spécification `e2e/captures.spec.ts`, qui vérifie que les données de démonstration sont là et qu'elle n'a pas déjà tourné) ;
+5. seulement ensuite, si on le veut, les parcours (`./e2e/run-cluster.sh`), qui ajoutent des données « E2E ».
+
+Les captures publient un article (« Figurine Boba Fett Kenner 1979 », prix passé à 95 €) et créent 2 notifications pour `chloe` : le catalogue n'est plus celui de la démonstration. **Après les captures (et les parcours), recréer le cluster** (étapes 1 à 3) avant de répéter la démonstration.
+
+Preuves versionnées dans `e2e/resultats/` : `journal-cluster.txt` (exécutions 6 sur 6 puis 9 sur 9, tags `sha-cd5751f`, `sha-6f1f63b` et `sha-1123688`, digests des images), `journal-compose.txt`, et `captures/` (10 PNG : 9 en 1280 de large et le catalogue sur mobile en 375 : catalogue public, connexion Keycloak champs vides, article publié, article rejeté, historique des prix, notifications de `chloe`, catégories de `admin`, accueil, page d'un article, catalogue mobile). La spécification des captures ne tourne jamais avec les parcours ; aucune capture n'est prise après la saisie d'un mot de passe.
 
 ## La connexion en 5 lignes (Authorization Code + PKCE)
 

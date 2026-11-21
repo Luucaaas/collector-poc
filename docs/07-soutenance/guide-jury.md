@@ -12,14 +12,14 @@ Ce guide répond à une question : **pour chacun des 10 critères de la grille, 
 | --- | --- | --- | --- |
 | 1 | Protocole d'expérimentation | [5 protocoles reproductibles](../04-experimentations/README.md) | 0 message perdu sur 2 × 1 000, broker prêt en 10 s, déploiement à froid en 199 s |
 | 2 | Qualité du POC | [Architecture du POC](../02-architecture/architecture-poc.md), [README exécutable](../../README.md) | README suivi tel quel sur un cluster neuf : déploiement en 174 s, 6 parcours sur 6 |
-| 3 | Fonctionnalité métier | [5 user stories](../03-backlog/user-stories.md) | 17 critères d'acceptation sur 17, 6 parcours Playwright sur 6 |
+| 3 | Fonctionnalité métier | [5 user stories](../03-backlog/user-stories.md) | 17 critères d'acceptation sur 17, 9 tests Playwright sur 9 dont un contrôle d'accessibilité axe (21/11/2026) |
 | 4 | CI/CD | [Schéma](../01-qualite/cicd.md) et [conformité du pipeline](../01-qualite/conformite-pipeline.md) | Run `backend` de 11 jobs verts, blocages démontrés par des runs rouges |
 | 5 | Environnement d'exécution | [Protocole 5](../04-experimentations/05-charge-disponibilite/protocole.md) | HPA de 2 à 5 réplicas en 60 s, pod remplacé en 4,9 s sans erreur |
 | 6 | Indicateurs qualité | [5 indicateurs mesurés](../01-qualite/indicateurs.md) | Couverture 98,45 % et 97,66 %, 0 réponse 5xx, dette chiffrée et axes d'amélioration |
 | 7 | Processus de test | [Processus de test](../01-qualite/processus-test.md) | Tests unitaires, d'intégration, d'acceptation, de composants, de bout en bout, de charge et de sécurité, tous verts |
 | 8 | Sécurité | [Plan de remédiation](../06-securite/plan-remediation.md) | 62 risques, 58 actions, 17 bonnes pratiques prouvées dans le POC |
 | 9 | Compétences | [Matrice](../05-competences/matrice.md) et [plan de formation](../05-competences/plan-formation.md) | 26 compétences, 3 recrutements, formation de 28 heures |
-| 10 | Présentation | [Schémas du dépôt](#10-qualité-de-la-présentation) et démonstration par le README | 14 schémas SVG, 7 captures d'écran du parcours complet |
+| 10 | Présentation | [Schémas du dépôt](#10-qualité-de-la-présentation) et démonstration par le README | 14 schémas SVG, 10 captures d'écran du parcours complet |
 
 ## 1. Fiabilité du protocole d'expérimentation
 
@@ -155,7 +155,7 @@ Ce guide répond à une question : **pour chacun des 10 critères de la grille, 
 | I4 vulnérabilités | 0 vulnérabilité CRITICAL ou HIGH avec correctif, 0 secret | 0 | idem |
 | I5 critères d'acceptation | 17 sur 17 | 17 sur 17 | idem |
 
-**Dette mise en évidence, avec ses actions** (même relevé) : socle recopié dans les deux services (531 lignes en double, 34,6 % des lignes de `src`, invisible pour SonarCloud, cible : paquet partagé) ; 15 erreurs de `mypy --strict` dans les dossiers de tests, qui ne sont pas contrôlés en CI ; bundle du front de 609,4 Ko ; plafond de l'HPA atteint à environ 200 utilisateurs.
+**Dette mise en évidence, avec ses actions** (même relevé) : socle recopié dans les deux services (531 lignes en double, 34,6 % des lignes de `src`, invisible pour SonarCloud, cible : paquet partagé) ; 15 erreurs de `mypy --strict` dans les dossiers de tests, qui ne sont pas contrôlés en CI ; bundle du front de 609,4 Ko (ramené à 312,9 Ko le 21/11/2026 par le découpage par page) ; plafond de l'HPA atteint à environ 200 utilisateurs.
 
 **Limites assumées.** Une seule exécution de référence par scénario de charge, sur le même Mac que le cluster ; la complexité cognitive par fonction n'est mesurée que par un indice (complexité cyclomatique).
 
@@ -168,7 +168,7 @@ Ce guide répond à une question : **pour chacun des 10 critères de la grille, 
 | [Processus de test](../01-qualite/processus-test.md) | Pyramide, tableau des types de tests (outil, emplacement, moment, sortie attendue, responsable), correspondance avec les jobs de la CI, traçabilité, RACI, gestion des anomalies. Schéma : [pyramide des tests](../01-qualite/img/pyramide-tests.svg) |
 | `services/*/tests/` | Tests unitaires, d'intégration (testcontainers), d'API et de sécurité (pytest) |
 | [`tests/acceptance/`](../../tests/acceptance/README.md) | 17 tests d'acceptation, un par critère |
-| [`frontend/`](../../frontend/README.md) | Tests de composants (Vitest) et 6 parcours de bout en bout (Playwright, [journal](../../frontend/e2e/resultats/journal-cluster.txt)) |
+| [`frontend/`](../../frontend/README.md) | Tests de composants (Vitest) et 9 tests de bout en bout (Playwright : 6 parcours, notification en direct, contrôle axe ; 9 sur 9 le 21/11/2026, [journal](../../frontend/e2e/resultats/journal-cluster.txt)) |
 | [`tests/load/`](../../tests/load/README.md) | Charge et disponibilité (Locust) |
 
 **Preuves mesurées** (tests verts)
@@ -179,8 +179,8 @@ Ce guide répond à une question : **pour chacun des 10 critères de la grille, 
 | Idem, `notification-service` | 203 passed, couverture de 97,66 % | idem |
 | `catalog-service` relancé le 11/11/2026 sur le dépôt actuel (après les corrections de la phase 9) | 294 passed, couverture de 98,66 %, Ruff et `mypy --strict` sans erreur | [fiche P10-01, journal](../suivi/taches/P10-01.md) |
 | Acceptation | 17 passed | idem |
-| Front, composants (Vitest) | 62 tests passés | idem |
-| Front, bout en bout (Playwright) | 6 parcours sur 6 | idem |
+| Front, composants (Vitest) | 221 tests passés (21/11/2026, front refondu) | [indicateurs, relevé du 21/11/2026](../01-qualite/indicateurs.md#mesures-du-21112026-refonte-du-front-tag-sha-6f1f63b) |
+| Front, bout en bout (Playwright) | 9 tests sur 9 dont axe (21/11/2026, `sha-6f1f63b`) | idem |
 | Charge (Locust) | tous les seuils respectés | [résumé de la charge](../../tests/load/resultats/20261106-1106/resume.md) |
 | Sécurité (SAST, dépendances, image, audit dynamique) | quality gate SonarCloud passée, Trivy et ZAP rejoués | [rapport des scans](../06-securite/rapport-scans.md) |
 
@@ -239,7 +239,7 @@ Ce guide répond à une question : **pour chacun des 10 critères de la grille, 
 | Données | [catalog](../02-architecture/img/donnees-catalog.svg), [notification](../02-architecture/img/donnees-notification.svg) |
 | Processus | [pipeline CI/CD](../01-qualite/img/pipeline-cicd.svg), [pipeline backend](../01-qualite/img/pipeline-backend.svg), [cycle DevSecOps](../01-qualite/img/cycle-devsecops.svg), [pyramide des tests](../01-qualite/img/pyramide-tests.svg) |
 | Sécurité | [matrice des risques](../06-securite/img/matrice-risques.svg) |
-| Application | [7 captures d'écran](../../frontend/e2e/resultats/captures/) du parcours complet |
+| Application | [10 captures d'écran](../../frontend/e2e/resultats/captures/) du parcours complet |
 | Observabilité | [captures Grafana (11/11)](../04-experimentations/05-charge-disponibilite/resultats/20261111-1930/grafana-pic-catalog-service.png) |
 
 **Démonstration.** Elle s'appuie sur le cluster déployé par les commandes du [README](../../README.md) : application sur `https://app.127.0.0.1.sslip.io`, comptes `admin`, `alice`, `bob` et `chloe`, Grafana, `kubectl get hpa`. Les parcours à montrer sont décrits dans la section « Utiliser l'application » du README ; le journal Playwright et les captures prouvent qu'ils fonctionnent.

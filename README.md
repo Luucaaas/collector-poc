@@ -140,7 +140,7 @@ Détails du déploiement (scripts, chart, retour arrière, observabilité) : [`d
 | Qualité du code d'un service | `services/<service>/` | `uv run ruff check && uv run ruff format --check && uv run mypy --strict src` | |
 | Acceptation (17 critères, un test par critère) | `tests/acceptance/` | `deploy/compose/up.sh`, puis `cd tests/acceptance && uv run pytest` | pile `docker compose` ci-dessous |
 | Front : composants (Vitest) | `frontend/src/` | `cd frontend && npm ci && npm test` | Node 22 |
-| Front : parcours de bout en bout (Playwright, 6 parcours) | `frontend/e2e/` | `cd frontend && npm ci && npx playwright install chromium && ./e2e/run-cluster.sh` | cluster déployé, `mkcert -install` fait |
+| Front : parcours de bout en bout (Playwright : 6 parcours, notification en direct, contrôle d'accessibilité axe) | `frontend/e2e/` | `cd frontend && npm ci && npx playwright install chromium && ./e2e/run-cluster.sh` | cluster déployé, `mkcert -install` fait |
 | Charge et disponibilité (Locust) | `tests/load/` | `tests/load/run.sh` (50 utilisateurs, environ 7 min 30) | cluster déployé |
 
 `run-cluster.sh` et `tests/load/run.sh` lisent les mots de passe dans `deploy/local/.env` sans jamais les afficher. Détails : [`frontend/README.md`](frontend/README.md), [`tests/acceptance/README.md`](tests/acceptance/README.md), [`tests/load/README.md`](tests/load/README.md). Montée en charge de l'HPA et disponibilité (pod supprimé sous charge) : [protocole 5](docs/04-experimentations/05-charge-disponibilite/protocole.md). Les résultats de référence et leurs sources sont dans le [guide du jury](docs/07-soutenance/guide-jury.md).

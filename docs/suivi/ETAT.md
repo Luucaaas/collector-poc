@@ -76,13 +76,13 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P12-02 | Front : catalogue et page de détail d'un article | developpeur | `phase-12/front-catalogue` | fusionnée |
 | P12-03 | Front : espace vendeur et formulaires | developpeur | `phase-12/front-vendeur` | fusionnée |
 | P12-04 | Front : centres d'intérêt, notifications et catégories | developpeur | `phase-12/front-acheteur-admin` | fusionnée |
-| P12-05 | Front refondu sur le cluster : Playwright, captures et démo | developpeur | `phase-12/front-demo` | en cours |
+| P12-05 | Front refondu sur le cluster : Playwright, captures et démo | developpeur | `phase-12/front-demo` | fusionnée |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Phase 12 (issue #61, refonte du front, demande de Lucas du 21/11/2026) : P12-01 à P12-04 fusionnées ; P12-05 (cluster, Playwright, captures, démo), une à la fois. Décision du chef : pas de photo d'article (l'API n'en gère pas, ce serait un changement de périmètre), illustration générée localement.
+Aucune tâche d'agent en cours. Phase 12 (issue #61, refonte du front) terminée : P12-01 à P12-05 fusionnées le 21/11/2026. Commentaire de clôture de #61 préparé, à publier avec l'accord de Lucas. Le cluster (en `sha-1123688`) contient des données de parcours après les captures : la veille de la soutenance, suivre « La veille » de `docs/07-soutenance/demo/script-demo.md` (cluster neuf, `deploy.sh all <dernier tag vert>`, `donnees-demo.sh`, `preparer.sh --veille 3`).
 
 ## Décisions en attente
 
@@ -93,6 +93,8 @@ Phase 12 (issue #61, refonte du front, demande de Lucas du 21/11/2026) : P12-01 
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+21/11/2026 11:42 — P12-05 fusionnée : refonte du front déployée sur un cluster neuf en `sha-1123688`, `smoke.sh` 25/25, Playwright 9/9 avec axe (0 violation), 10 captures de soutenance refaites sur les données de démonstration, documents à jour. Phase 12 terminée.
 
 21/11/2026 11:01 — P12-04 fusionnée (notifications toutes les 10 s sans rechargement, badge, pages acheteur et admin refondues, passe d'accessibilité, 221 tests) ; P12-05 lancée.
 

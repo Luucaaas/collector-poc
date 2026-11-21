@@ -76,7 +76,7 @@ RabbitMQ et PostgreSQL ne sont jamais exposés. On y accède par `kubectl port-f
 
 ### Front
 
-Quatre pages React (MUI, React Router) : **catalogue** public filtrable par catégorie, **espace vendeur** (boutique, mise en vente, modification du prix), **espace acheteur** (centres d'intérêt, préférences, notifications), **catégories** pour l'admin. L'interface est en français. L'internationalisation et le contrôle d'accessibilité restent dans la cible.
+Six pages React (MUI, React Router) : **accueil**, **catalogue** public filtrable par catégorie, **détail d'un article**, **espace vendeur** (boutiques, mise en vente avec aperçu, statuts et motifs de rejet, modification du prix et historique), **espace acheteur** (centres d'intérêt, préférences, notifications mises à jour seules toutes les 10 s) et **catégories** pour l'admin. L'interface est en français. L'accessibilité est contrôlée automatiquement (axe-core, WCAG A et AA, 0 violation, test Playwright reproductible) ; l'internationalisation reste dans la cible.
 
 ## 2. Vue physique
 
@@ -114,7 +114,7 @@ flowchart TB
 
 | Couche | Solution | Rôle dans le POC | ADR |
 | --- | --- | --- | --- |
-| Front | React + TypeScript (Vite), MUI, React Router, react-oidc-context | 4 pages, OIDC + PKCE, jetons en mémoire | 0005 |
+| Front | React + TypeScript (Vite), MUI, React Router, react-oidc-context | 6 pages (accueil, catalogue, détail d'un article, espace vendeur, centres d'intérêt, catégories), OIDC + PKCE, jetons en mémoire | 0005 |
 | Services | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0 (asynchrone), Alembic | API REST, validation, accès aux données, migrations | 0002 |
 | Messagerie | RabbitMQ, client aio-pika | Exchange `topic` `article.events`, une file durable | 0003 |
 | Données | PostgreSQL, une instance, une base logique par service | Données séparées par service, isolées par les droits PostgreSQL | 0001, 0007 |

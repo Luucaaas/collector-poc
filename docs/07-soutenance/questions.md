@@ -401,7 +401,7 @@ Les chiffres viennent de fichiers du dépôt, cités en lien relatif ; `python3 
 
 **Critères** : 6.
 
-**À dire.** Elle existe, les seuils ne la voient pas. Un : 531 lignes de socle recopiées entre les deux services, 34,6 % des lignes de `src`, invisibles pour SonarCloud qui analyse un projet par service ; cible : un paquet partagé. Deux : 15 erreurs de `mypy --strict` dans les tests, que la CI ne contrôle pas. Trois : un bundle front de 609,4 Ko. Quatre : le plafond de l'HPA atteint vers 200 utilisateurs. J'ai aussi trouvé un plafond de frais de port à 1 000 000 € dans le code, absent des règles métier : à arbitrer avec le Product Owner.
+**À dire.** Elle existe, les seuils ne la voient pas. Un : 531 lignes de socle recopiées entre les deux services, 34,6 % des lignes de `src`, invisibles pour SonarCloud qui analyse un projet par service ; cible : un paquet partagé. Deux : 15 erreurs de `mypy --strict` dans les tests, que la CI ne contrôle pas. Trois : un bundle front de 609,4 Ko, ramené à 312,9 Ko le 21/11/2026 par le découpage par page. Quatre : le plafond de l'HPA atteint vers 200 utilisateurs. J'ai aussi trouvé un plafond de frais de port à 1 000 000 € dans le code, absent des règles métier : à arbitrer avec le Product Owner.
 
 **Chiffres.** 531 lignes (34,6 %) ; 15 erreurs ; 609,4 Ko ([axes d'amélioration](../01-qualite/indicateurs.md#axes-damélioration-contre-la-dette-technique)).
 
@@ -783,9 +783,9 @@ Les chiffres viennent de fichiers du dépôt, cités en lien relatif ; `python3 
 
 **Critères** : 2, 9.
 
-**À dire.** Le front doit être crédible pour une vraie place de marché, et Collector recrutera : React avec TypeScript est la technologie la plus répandue. Une interface rendue côté serveur en Python aurait lié le front à un service, contre le découpage. C'est une compétence nouvelle pour moi, je l'assume, c'est l'objet de l'action de formation et j'ai réduit le périmètre à quatre pages.
+**À dire.** Le front doit être crédible pour une vraie place de marché, et Collector recrutera : React avec TypeScript est la technologie la plus répandue. Une interface rendue côté serveur en Python aurait lié le front à un service, contre le découpage. C'est une compétence nouvelle pour moi, je l'assume, c'est l'objet de l'action de formation et j'ai réduit le périmètre à six pages (accueil, catalogue, détail d'un article, espace vendeur, centres d'intérêt, catégories).
 
-**Chiffres.** 4 pages ; 62 tests Vitest ; 6 parcours Playwright ([ADR 0005](../02-architecture/adr/0005-react-typescript.md), [indicateurs](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8)).
+**Chiffres.** 6 pages ; 221 tests Vitest ; 9 tests Playwright dont un contrôle d'accessibilité axe (0 violation) ([ADR 0005](../02-architecture/adr/0005-react-typescript.md), [indicateurs](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8)).
 
 **À montrer.** [ADR 0005](../02-architecture/adr/0005-react-typescript.md) ; [captures](../../frontend/e2e/resultats/captures/).
 
@@ -889,7 +889,7 @@ Les chiffres viennent de fichiers du dépôt, cités en lien relatif ; `python3 
 
 **Chiffres.** Démonstration : 5 min 10 prévues avec 50 s de marge, trois étapes de 1 min 20, 1 min 55 et 1 min 55 ([script](demo/script-demo.md)).
 
-**À montrer.** [Plans de secours](demo/script-demo.md) de chaque étape ; [7 captures](../../frontend/e2e/resultats/captures/).
+**À montrer.** [Plans de secours](demo/script-demo.md) de chaque étape ; [10 captures](../../frontend/e2e/resultats/captures/).
 
 **Limite à reconnaître.** La saisie humaine de l'étape 2 est la seule durée estimée.
 

@@ -374,7 +374,7 @@ ASSERTIONS = [
     ("deploy/compose/postgres-init/10-roles.sh", 15, r"REVOKE ALL"),
     ("frontend/nginx/security-headers.inc.template", 8, r"img-src 'self' data:"),
     ("frontend/nginx/security-headers.inc.template", 15, r"Strict-Transport-Security"),
-    ("frontend/e2e/helpers.ts", 62, r"securitypolicyviolation"),
+    ("frontend/e2e/helpers.ts", 103, r"securitypolicyviolation"),
     (".github/workflows/backend.yml", 22, r"contents: read"),
     (".github/workflows/backend.yml", 45, r"persist-credentials: false"),
     (".github/workflows/backend.yml", 171, r"sha256sum --check"),

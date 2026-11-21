@@ -1,35 +1,73 @@
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardContent,
   Checkbox,
-  CircularProgress,
   FormControlLabel,
   FormGroup,
+  Link as MuiLink,
   Pagination,
   Stack,
+  Switch,
   Typography,
 } from "@mui/material";
-import { PageHeader } from "../components/PageHeader";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { Link } from "react-router";
 import type { AppNotification, Category, Interests, Page, Preferences } from "../api/types";
 import { useAction } from "../api/useAction";
 import { useApi } from "../api/useApi";
 import { useAsync } from "../api/useAsync";
-import { formatDateTime, formatMoney } from "../format";
+import { EmptyState } from "../components/EmptyState";
+import { Tile } from "../components/ItemCard";
+import { LoadingSkeleton } from "../components/LoadingSkeleton";
+import { NOTIFICATIONS_PAGE_SIZE, useNotifications } from "../components/Notifications";
+import { PageHeader } from "../components/PageHeader";
+import { useToast } from "../components/Toast";
+import { formatDateTime, formatMoney, formatTime } from "../format";
 
-export const NOTIFICATIONS_PAGE_SIZE = 10;
+/** The API refuses more than 20 followed categories (RM-08, `TOO_MANY_CATEGORIES`). */
+export const MAX_INTERESTS = 20;
 
-/** "Mes centres d'intérêt" page (buyer, US-05): categories, preferences, notifications. */
+/** "Mes centres d'intérêt" page (buyer, US-05): notifications, followed categories, preferences. */
 export function InterestsPage() {
   return (
-    <Stack spacing={4}>
-      <PageHeader title="Mes centres d'intérêt" />
-      <InterestsSection />
-      <PreferencesSection />
-      <NotificationsSection />
+    <Stack spacing={3}>
+      <PageHeader
+        title="Mes centres d'intérêt"
+        subtitle="Suivez des catégories : vous êtes prévenu dès qu'un article y est publié ou change de prix."
+      />
+      <Box
+        sx={{
+          display: "grid",
+          gap: 3,
+          alignItems: "start",
+          gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 7fr) minmax(0, 5fr)" },
+        }}
+      >
+        <NotificationsSection />
+        <Stack spacing={3}>
+          <InterestsSection />
+          <PreferencesSection />
+        </Stack>
+      </Box>
     </Stack>
+  );
+}
+
+function SettingsCard({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <Card component="section" aria-labelledby={id}>
+      <CardContent>
+        <Stack spacing={2}>
+          <Typography variant="h5" component="h2" id={id}>
+            {title}
+          </Typography>
+          {children}
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -39,32 +77,38 @@ function InterestsSection() {
   const interests = useAsync((signal) => api.notification<Interests>("/me/interests", { signal }), [api]);
 
   return (
-    <Stack spacing={2} component="section" aria-labelledby="interests-title">
-      <Typography variant="h5" component="h2" id="interests-title">
-        Catégories suivies
-      </Typography>
+    <SettingsCard id="interests-title" title="Catégories suivies">
       {(categories.status === "loading" || interests.status === "loading") && (
-        <CircularProgress aria-label="Chargement des catégories" />
+        <LoadingSkeleton label="Chargement des catégories" />
       )}
       {categories.status === "error" && <Alert severity="error">{categories.message}</Alert>}
       {interests.status === "error" && <Alert severity="error">{interests.message}</Alert>}
       {categories.status === "success" && interests.status === "success" && (
         <InterestsForm categories={categories.data.items} initial={interests.data.category_ids} />
       )}
-    </Stack>
+    </SettingsCard>
   );
+}
+
+function sameSet(a: Set<string>, b: Set<string>): boolean {
+  return a.size === b.size && [...a].every((id) => b.has(id));
 }
 
 function InterestsForm({ categories, initial }: { categories: Category[]; initial: string[] }) {
   const api = useApi();
+  const toast = useToast();
   const [selected, setSelected] = useState<Set<string>>(new Set(initial));
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<Set<string>>(new Set(initial));
   const action = useAction();
 
-  if (categories.length === 0) return <Alert severity="info">Aucune catégorie n'existe encore.</Alert>;
+  if (categories.length === 0) {
+    return <EmptyState title="Aucune catégorie n'existe encore." description="L'administrateur n'en a pas encore créé." />;
+  }
+
+  const dirty = !sameSet(selected, saved);
+  const tooMany = selected.size > MAX_INTERESTS;
 
   function toggle(id: string) {
-    setSaved(false);
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -74,16 +118,22 @@ function InterestsForm({ categories, initial }: { categories: Category[]; initia
   }
 
   async function save() {
-    setSaved(false);
     const result = await action.run(() =>
       api.notification<Interests>("/me/interests", { method: "PUT", body: { category_ids: [...selected] } }),
     );
-    if (result) setSaved(true);
+    if (result) {
+      setSaved(new Set(selected));
+      toast("Centres d'intérêt enregistrés.", "success");
+    }
   }
 
   return (
     <>
-      <FormGroup role="group" aria-label="Catégories d'intérêt">
+      <FormGroup
+        role="group"
+        aria-labelledby="interests-title"
+        sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "1fr" } }}
+      >
         {categories.map((category) => (
           <FormControlLabel
             key={category.id}
@@ -92,11 +142,15 @@ function InterestsForm({ categories, initial }: { categories: Category[]; initia
           />
         ))}
       </FormGroup>
-      <Button variant="contained" onClick={save} disabled={action.pending} sx={{ alignSelf: "flex-start" }}>
+      <Typography variant="body2" color={tooMany ? "error" : "text.secondary"} role="status">
+        {tooMany
+          ? `Vous ne pouvez pas suivre plus de ${MAX_INTERESTS} catégories : décochez-en ${selected.size - MAX_INTERESTS}.`
+          : `${selected.size} sur ${MAX_INTERESTS} catégories au maximum${dirty ? ". Modifications non enregistrées." : "."}`}
+      </Typography>
+      <Button variant="contained" onClick={save} disabled={action.pending || tooMany} sx={{ alignSelf: "flex-start" }}>
         {action.pending ? "Enregistrement…" : "Enregistrer mes centres d'intérêt"}
       </Button>
       {action.message && <Alert severity="error">{action.message}</Alert>}
-      {saved && <Alert severity="success">Centres d'intérêt enregistrés.</Alert>}
     </>
   );
 }
@@ -106,51 +160,79 @@ function PreferencesSection() {
   const preferences = useAsync((signal) => api.notification<Preferences>("/me/preferences", { signal }), [api]);
 
   return (
-    <Stack spacing={2} component="section" aria-labelledby="preferences-title">
-      <Typography variant="h5" component="h2" id="preferences-title">
-        Préférences de notification
-      </Typography>
-      {preferences.status === "loading" && <CircularProgress aria-label="Chargement des préférences" />}
+    <SettingsCard id="preferences-title" title="Préférences de notification">
+      {preferences.status === "loading" && <LoadingSkeleton label="Chargement des préférences" />}
       {preferences.status === "error" && <Alert severity="error">{preferences.message}</Alert>}
       {preferences.status === "success" && <PreferencesForm initial={preferences.data} />}
-    </Stack>
+    </SettingsCard>
+  );
+}
+
+function PreferenceSwitch({
+  label,
+  help,
+  id,
+  checked,
+  onChange,
+}: {
+  label: string;
+  help: string;
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <Box>
+      <FormControlLabel
+        label={label}
+        control={
+          <Switch
+            checked={checked}
+            onChange={(e) => onChange(e.target.checked)}
+            slotProps={{ input: { "aria-describedby": id } }}
+          />
+        }
+      />
+      <Typography id={id} variant="body2" color="text.secondary" sx={{ ml: 6 }}>
+        {help}
+      </Typography>
+    </Box>
   );
 }
 
 function PreferencesForm({ initial }: { initial: Preferences }) {
   const api = useApi();
+  const toast = useToast();
   const [values, setValues] = useState<Preferences>(initial);
-  const [saved, setSaved] = useState(false);
   const action = useAction();
 
-  function change(patch: Partial<Preferences>) {
-    setSaved(false);
-    setValues((v) => ({ ...v, ...patch }));
-  }
-
   async function save() {
-    setSaved(false);
     const result = await action.run(() => api.notification<Preferences>("/me/preferences", { method: "PUT", body: values }));
-    if (result) setSaved(true);
+    if (result) toast("Préférences enregistrées.", "success");
   }
 
   return (
     <>
-      <FormGroup role="group" aria-label="Types de notification">
-        <FormControlLabel
+      <FormGroup role="group" aria-labelledby="preferences-title" sx={{ gap: 1 }}>
+        <PreferenceSwitch
+          id="pref-new-article-help"
           label="Être prévenu d'un nouvel article"
-          control={<Checkbox checked={values.new_article} onChange={(e) => change({ new_article: e.target.checked })} />}
+          help="Un article vient d'être publié dans l'une de vos catégories."
+          checked={values.new_article}
+          onChange={(new_article) => setValues((v) => ({ ...v, new_article }))}
         />
-        <FormControlLabel
+        <PreferenceSwitch
+          id="pref-price-changed-help"
           label="Être prévenu d'un changement de prix"
-          control={<Checkbox checked={values.price_changed} onChange={(e) => change({ price_changed: e.target.checked })} />}
+          help="Le vendeur modifie le prix d'un article de l'une de vos catégories."
+          checked={values.price_changed}
+          onChange={(price_changed) => setValues((v) => ({ ...v, price_changed }))}
         />
       </FormGroup>
       <Button variant="contained" onClick={save} disabled={action.pending} sx={{ alignSelf: "flex-start" }}>
         {action.pending ? "Enregistrement…" : "Enregistrer mes préférences"}
       </Button>
       {action.message && <Alert severity="error">{action.message}</Alert>}
-      {saved && <Alert severity="success">Préférences enregistrées.</Alert>}
     </>
   );
 }
@@ -163,51 +245,89 @@ export function notificationText(n: AppNotification): string {
   return `Changement de prix : « ${c.title} » passe de ${money(c.old_price)} à ${money(c.new_price)}`;
 }
 
-function NotificationsSection() {
+function NotificationList({ items }: { items: AppNotification[] }) {
+  return (
+    <Stack component="ul" spacing={1} sx={{ listStyle: "none", p: 0, m: 0 }} aria-label="Liste des notifications">
+      {items.map((n) => (
+        <Card component="li" key={n.id}>
+          <CardContent sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+            <Tile seed={n.content.title ?? n.type} size={44} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography>{notificationText(n)}</Typography>
+              <Stack direction="row" useFlexGap sx={{ gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+                <Typography variant="caption" color="text.secondary">
+                  {formatDateTime(n.created_at)}
+                </Typography>
+                <MuiLink
+                  component={Link}
+                  to={`/catalogue/${encodeURIComponent(n.article_id)}`}
+                  variant="body2"
+                  aria-label={`Voir l'article « ${n.content.title ?? ""} »`}
+                >
+                  Voir l'article
+                </MuiLink>
+              </Stack>
+            </Box>
+          </CardContent>
+        </Card>
+      ))}
+    </Stack>
+  );
+}
+
+/** Pages after the first one: loaded once, and again when the total changes (the first page comes from the shared feed). */
+function OlderNotifications({ page, total }: { page: number; total: number }) {
   const api = useApi();
-  const [page, setPage] = useState(1);
-  const [version, setVersion] = useState(0);
-  const notifications = useAsync(
+  const older = useAsync(
     (signal) =>
       api.notification<Page<AppNotification>>(
         `/me/notifications?limit=${NOTIFICATIONS_PAGE_SIZE}&offset=${(page - 1) * NOTIFICATIONS_PAGE_SIZE}`,
         { signal },
       ),
-    [api, page, version],
+    [api, page, total],
   );
+  if (older.status === "loading") return <LoadingSkeleton label="Chargement des notifications" />;
+  if (older.status === "error") return <Alert severity="error">{older.message}</Alert>;
+  return <NotificationList items={older.data.items} />;
+}
+
+function NotificationsSection() {
+  const feed = useNotifications();
+  const [page, setPage] = useState(1);
+  const total = feed.page?.total ?? 0;
 
   return (
     <Stack spacing={2} component="section" aria-labelledby="notifications-title">
-      <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+      <Stack direction="row" useFlexGap sx={{ gap: 2, alignItems: "center", flexWrap: "wrap" }}>
         <Typography variant="h5" component="h2" id="notifications-title">
           Mes notifications
         </Typography>
-        <Button variant="outlined" onClick={() => setVersion((v) => v + 1)} disabled={notifications.status === "loading"}>
+        <Button variant="outlined" size="small" onClick={feed.refresh} disabled={feed.loading}>
           Actualiser
         </Button>
+        {feed.updatedAt && (
+          <Typography variant="caption" color="text.secondary">
+            Mis à jour à {formatTime(feed.updatedAt)}, puis toutes les 10 secondes
+          </Typography>
+        )}
       </Stack>
-      {notifications.status === "loading" && <CircularProgress aria-label="Chargement des notifications" />}
-      {notifications.status === "error" && <Alert severity="error">{notifications.message}</Alert>}
-      {notifications.status === "success" && notifications.data.items.length === 0 && (
-        <Alert severity="info">Aucune notification pour le moment.</Alert>
+      {!feed.page && !feed.message && <LoadingSkeleton label="Chargement des notifications" />}
+      {feed.message && <Alert severity={feed.page ? "warning" : "error"}>{feed.message}</Alert>}
+      {feed.page && feed.page.items.length === 0 && (
+        <EmptyState
+          title="Aucune notification pour le moment."
+          description="Elles apparaîtront ici dès qu'un article sera publié, ou changera de prix, dans l'une de vos catégories suivies."
+        />
       )}
-      {notifications.status === "success" && notifications.data.items.length > 0 && (
+      {feed.page && feed.page.items.length > 0 && (
         <>
-          <Stack component="ul" spacing={1} sx={{ listStyle: "none", p: 0, m: 0 }} aria-label="Liste des notifications">
-            {notifications.data.items.map((n) => (
-              <Card component="li" key={n.id} variant="outlined">
-                <CardContent>
-                  <Typography>{notificationText(n)}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDateTime(n.created_at)}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-          {notifications.data.total > NOTIFICATIONS_PAGE_SIZE && (
+          <Typography variant="body2" color="text.secondary" role="status">
+            {total} notification{total > 1 ? "s" : ""} au total
+          </Typography>
+          {page === 1 ? <NotificationList items={feed.page.items} /> : <OlderNotifications page={page} total={total} />}
+          {total > NOTIFICATIONS_PAGE_SIZE && (
             <Pagination
-              count={Math.ceil(notifications.data.total / NOTIFICATIONS_PAGE_SIZE)}
+              count={Math.ceil(total / NOTIFICATIONS_PAGE_SIZE)}
               page={page}
               onChange={(_e, value) => setPage(value)}
               aria-label="Pagination des notifications"

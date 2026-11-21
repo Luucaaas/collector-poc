@@ -127,7 +127,7 @@ Descendre à « Mes articles publiés », ligne « Boba Fett Kenner 1979 », cha
 
 ### 2e. Chloe est notifiée (fenêtre privée, 2:45 à 3:15)
 
-Basculer sur la fenêtre privée de chloe, page « Mes centres d'intérêt », bouton **« Actualiser »** dans la liste des notifications : deux notifications apparaissent, « Nouvel article : Boba Fett Kenner 1979 » (120,00) et « Changement de prix » (de 120,00 à 95,00).
+Basculer sur la fenêtre privée de chloe, page « Mes centres d'intérêt ». La liste se met à jour toute seule (toutes les 10 secondes, onglet visible) et le badge de « Mes centres d'intérêt » dans la navigation passe à 2 ; le bouton **« Actualiser »** force la mise à jour sans attendre. Deux notifications apparaissent, « Nouvel article : Boba Fett Kenner 1979 » (120,00) et « Changement de prix » (de 120,00 à 95,00).
 
 **Ce qu'on dit.** « Chloe n'a rien fait : le service catalogue a publié deux événements dans RabbitMQ, le service notification les a consommés et lui a créé ses notifications. Les deux services ne s'appellent jamais directement : ils ne communiquent que par les événements. C'est aussi là que se branchera plus tard l'outil anti-fraude, sans toucher au catalogue. »
 
@@ -140,7 +140,7 @@ Basculer sur la fenêtre privée de chloe, page « Mes centres d'intérêt », b
 | Problème | Que faire |
 | --- | --- |
 | Une saisie se passe mal (champ refusé, faute de frappe) | Corriger sans commenter, ne pas recommencer tout le formulaire |
-| La notification n'arrive pas | Recliquer sur « Actualiser » (l'événement est asynchrone, 1 à 2 s) ; au bout de 10 s, passer à l'étape suivante et dire « les notifications sont asynchrones, je reviens dessus à la fin » |
+| La notification n'arrive pas | Cliquer sur « Actualiser » (l'événement est asynchrone, 1 à 2 s, et la liste se met à jour seule toutes les 10 s) ; au bout de 10 s, passer à l'étape suivante et dire « les notifications sont asynchrones, je reviens dessus à la fin » |
 | Session expirée ou page perdue | Cliquer « Connexion » : la session Keycloak ramène sans mot de passe. Sinon, copier le mot de passe sans le montrer : `docs/07-soutenance/demo/mot-de-passe.sh alice` (ou `chloe`), puis Cmd+V dans le champ ; le presse-papiers est vidé après 30 s |
 | Tout le parcours échoue | Montrer les 7 captures : `frontend/e2e/resultats/captures/` (catalogue, connexion, article publié, rejeté, historique des prix, notifications), et c'est tout. **Cas extrême seulement** : rejouer le parcours automatisé `frontend/e2e/run-cluster.sh --headed` (11 à 20 s, 6 parcours sur 6) **ajoute des données de test (« E2E ») au catalogue** : à réserver à une démonstration déjà perdue |
 | Plus rien ne marche | Vidéo de secours (enregistrée par toi) |

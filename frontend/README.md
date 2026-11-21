@@ -39,7 +39,7 @@ L'application charge `/config.json` **avant** de démarrer : `authority` (adress
 | `auth/` | `oidc.ts` (réglages OIDC), `roles.ts` (lecture des rôles), `RequireRole.tsx` (garde de route) |
 | `api/` | `client.ts` (fonction unique `apiRequest`), `errors.ts` (erreurs RFC 9457 traduites en français), `types.ts` (réponses, d'après `docs/02-architecture/contrats.md`), `useApi.ts` et `useAsync.ts` (hooks maison) |
 | `theme.ts`, `usePageTitle.ts` | Thème MUI unique (palette, typographie système sans police externe, formes) ; titre de l'onglet par page |
-| `components/` | `Layout.tsx` (en-tête, navigation par rôle, menu mobile, lien d'évitement), `Logo`, `PageHeader` (seul `h1` + titre de page), `EmptyState`, `LoadingSkeleton`, `ItemCard` (illustration générée localement : couleur et initiales), `Toast` (notifications globales, `useToast`) |
+| `components/` | `Layout.tsx` (en-tête, navigation par rôle, menu mobile, lien d'évitement), `Logo`, `PageHeader` (seul `h1` + titre de page), `EmptyState`, `LoadingSkeleton`, `ItemCard` (illustration générée localement : couleur et initiales), `Toast` (notifications globales, `useToast`), `Notifications.tsx` (source unique de l'interrogation périodique des notifications d'un acheteur, lue par la page et par le badge de la navigation) |
 | `pages/` | Une page par route (détail ci-dessous) ; `pages/sell/` : formulaire de mise en vente et liste des articles du vendeur |
 | `format.ts`, `money.ts`, `reasons.ts` | Montants en euros et dates en `fr-FR` ; validation des montants saisis (chaîne décimale, jamais de `number`) ; motifs de rejet traduits |
 | `api/useAction.ts` | Hook d'envoi de formulaire : bouton désactivé pendant l'envoi, erreur traduite, pas de double soumission |
@@ -57,9 +57,16 @@ Chaque page est chargée à la demande (`React.lazy` + `Suspense` dans `App.tsx`
 | `/catalogue` Catalogue | public | Articles `PUBLISHED`, filtre par catégorie, pagination |
 | `/categories` Catégories | `admin` (US-01) | Liste et création ; nom déjà utilisé ou invalide affiché en français |
 | `/vendre` Vendre | `seller` (US-02 à US-04) | Mes boutiques et création ; mise en vente avec le résultat du contrôle automatique (`Article publié`, `Article rejeté` avec motifs, ou `Saisie à corriger` pour un 422) ; mes articles par boutique, modification du prix et historique |
-| `/centres-interet` Mes centres d'intérêt | `buyer` (US-05) | Catégories suivies, préférences `new_article` et `price_changed`, notifications (bouton « Actualiser », pas de rafraîchissement automatique) |
+| `/centres-interet` Mes centres d'intérêt | `buyer` (US-05) | Catégories suivies, préférences `new_article` et `price_changed`, notifications mises à jour toutes les 10 s sans recharger la page (arrêt quand l'onglet est caché, une requête à la fois, bouton « Actualiser » pour forcer) ; badge du nombre de notifications dans la navigation |
 
 Un prix identique au prix actuel n'est pas envoyé à l'API : l'interface dit qu'aucune modification n'a été enregistrée (RM-04 : pas de ligne d'historique).
+
+## Accessibilité (passe de P12-04, sans internationalisation)
+
+- Contrastes : toutes les paires texte et fond du thème atteignent 4,5:1 (WCAG AA), contrôlées par `src/theme.test.ts` ; les couleurs d'avertissement et d'information par défaut de MUI (3,1:1 et 3,9:1 sous un texte blanc) sont remplacées. L'état « éteint » d'un interrupteur atteint 3:1.
+- Clavier : lien « Aller au contenu », anneau de focus de 3 px sur tous les éléments interactifs (blanc dans l'en-tête), focus ramené au contenu après chaque navigation, menu mobile qui garde et rend le focus. Mouvements réduits respectés (`prefers-reduced-motion`).
+- Lecteurs d'écran : un seul `h1` par page, titre d'onglet par page, formulaires nommés, erreurs reliées à leur champ (`aria-invalid`, `aria-describedby`), compteurs et badge annoncés en texte (« Mes centres d'intérêt (3 notifications) »), liens « Voir l'article « titre » » distincts.
+- Contrôle automatique : axe-core 4.10.2 (règles WCAG 2.0 et 2.1 A et AA, plus bonnes pratiques) lancé hors dépôt sur les sept pages à 1280 px et 375 px, menu mobile ouvert compris : 0 violation après correction de deux écarts (liste du menu mobile invalide, boîte de dialogue sans nom). Les lecteurs d'écran eux-mêmes n'ont pas été essayés.
 
 ## Image Docker (nginx)
 

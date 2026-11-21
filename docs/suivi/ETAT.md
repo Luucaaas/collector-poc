@@ -75,14 +75,14 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P12-01 | Front : socle visuel, navigation et performance | developpeur | `phase-12/front-socle` | fusionnée |
 | P12-02 | Front : catalogue et page de détail d'un article | developpeur | `phase-12/front-catalogue` | fusionnée |
 | P12-03 | Front : espace vendeur et formulaires | developpeur | `phase-12/front-vendeur` | fusionnée |
-| P12-04 | Front : centres d'intérêt, notifications et catégories | developpeur | `phase-12/front-acheteur-admin` | en cours |
-| P12-05 | Front refondu sur le cluster : Playwright, captures et démo | developpeur | `phase-12/front-demo` | à venir |
+| P12-04 | Front : centres d'intérêt, notifications et catégories | developpeur | `phase-12/front-acheteur-admin` | fusionnée |
+| P12-05 | Front refondu sur le cluster : Playwright, captures et démo | developpeur | `phase-12/front-demo` | en cours |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Phase 12 (issue #61, refonte du front, demande de Lucas du 21/11/2026) : P12-01 à P12-03 fusionnées ; P12-04 (acheteur, admin, notifications sans rechargement, accessibilité), P12-05 (cluster, Playwright, captures, démo), une à la fois. Décision du chef : pas de photo d'article (l'API n'en gère pas, ce serait un changement de périmètre), illustration générée localement.
+Phase 12 (issue #61, refonte du front, demande de Lucas du 21/11/2026) : P12-01 à P12-04 fusionnées ; P12-05 (cluster, Playwright, captures, démo), une à la fois. Décision du chef : pas de photo d'article (l'API n'en gère pas, ce serait un changement de périmètre), illustration générée localement.
 
 ## Décisions en attente
 
@@ -93,6 +93,8 @@ Phase 12 (issue #61, refonte du front, demande de Lucas du 21/11/2026) : P12-01 
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+21/11/2026 11:01 — P12-04 fusionnée (notifications toutes les 10 s sans rechargement, badge, pages acheteur et admin refondues, passe d'accessibilité, 221 tests) ; P12-05 lancée.
 
 21/11/2026 10:39 — P12-03 fusionnée (espace vendeur, validation en direct, aperçu, rejets expliqués, détection des coordonnées identique au serveur, 181 tests) ; P12-04 lancée.
 

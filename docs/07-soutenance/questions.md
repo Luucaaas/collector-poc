@@ -227,7 +227,7 @@ Les chiffres viennent de fichiers du dépôt, cités en lien relatif ; `python3 
 
 **Critères** : 3, 2.
 
-**À dire.** Le vendeur doit connaître le statut de son article dès la réponse HTTP : le contrôle est donc synchrone. La diffusion, elle, ne doit ni allonger sa réponse ni dépendre de `notification-service` : elle est asynchrone. Le délai entre l'événement et la création de la notification, mesuré par la métrique `notification_delay_seconds`, est inférieur à 0,1 seconde pour un seuil de 2 secondes. Dans le POC, l'acheteur voit ses notifications en cliquant sur « Actualiser » : il n'y a pas de poussée en temps réel.
+**À dire.** Le vendeur doit connaître le statut de son article dès la réponse HTTP : le contrôle est donc synchrone. La diffusion, elle, ne doit ni allonger sa réponse ni dépendre de `notification-service` : elle est asynchrone. Le délai entre l'événement et la création de la notification, mesuré par la métrique `notification_delay_seconds`, est inférieur à 0,1 seconde pour un seuil de 2 secondes. Dans le POC, le front interroge l'API toutes les 10 secondes tant que l'onglet est visible (le bouton « Actualiser » force la mise à jour) : il n'y a pas de poussée serveur en temps réel, donc une notification apparaît au plus 10 secondes après son enregistrement.
 
 **Chiffres.** p95 de moins de 0,1 s (0,095 s, interpolé) pour un seuil de 2 s, ENF-14 ([indicateurs](../01-qualite/indicateurs.md#mesures-du-06112026-phase-8), ligne I3 ENF-14).
 

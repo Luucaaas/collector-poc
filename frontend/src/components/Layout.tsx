@@ -7,6 +7,7 @@ import {
   Drawer,
   IconButton,
   List,
+  ListItem,
   ListItemButton,
   ListItemText,
   Stack,
@@ -16,22 +17,23 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { getRoles, type Role } from "../auth/roles";
 import { AccountBlock } from "./AccountBlock";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { LoadingSkeleton } from "./LoadingSkeleton";
+import { NotificationBadge, NotificationsProvider } from "./Notifications";
 import { Logo } from "./Logo";
 import { RejectedArticlesProvider } from "./RejectedArticles";
 import { ToastProvider } from "./Toast";
 
-const NAV: { to: string; label: string; role?: Role }[] = [
+const NAV: { to: string; label: string; role?: Role; badge?: boolean }[] = [
   { to: "/", label: "Accueil" },
   { to: "/catalogue", label: "Catalogue" },
   { to: "/vendre", label: "Vendre", role: "seller" },
-  { to: "/centres-interet", label: "Mes centres d'intérêt", role: "buyer" },
+  { to: "/centres-interet", label: "Mes centres d'intérêt", role: "buyer", badge: true },
   { to: "/categories", label: "Catégories", role: "admin" },
 ];
 
@@ -52,10 +54,24 @@ export function Layout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const roles = getRoles(auth.user);
   const items = NAV.filter((item) => !item.role || roles.includes(item.role));
+  const isBuyer = auth.isAuthenticated && roles.includes("buyer");
+  const mainRef = useRef<HTMLElement>(null);
+  const shownPath = useRef(location.pathname);
+
+  // After a navigation inside the application, keyboard and screen-reader users start again from the
+  // content (not from the menu), and the new page opens at its top.
+  useEffect(() => {
+    // Compared with the path already shown, not with a "first run" flag: StrictMode replays effects in development.
+    if (shownPath.current === location.pathname) return;
+    shownPath.current = location.pathname;
+    window.scrollTo(0, 0);
+    mainRef.current?.focus({ preventScroll: true });
+  }, [location.pathname]);
 
   return (
     <ToastProvider>
       <RejectedArticlesProvider>
+      <NotificationsProvider key={auth.user?.profile?.sub ?? "anonymous"} enabled={isBuyer}>
       <Box component="a" href="#main" sx={skipLink}>
         Aller au contenu
       </Box>
@@ -91,6 +107,7 @@ export function Layout() {
               {items.map((item) => (
                 <Button key={item.to} color="inherit" component={NavLink} to={item.to} end sx={navLink}>
                   {item.label}
+                  {item.badge && <NotificationBadge />}
                 </Button>
               ))}
             </Stack>
@@ -100,7 +117,7 @@ export function Layout() {
         </Toolbar>
       </AppBar>
 
-      <Drawer anchor="left" open={mobile && drawerOpen} onClose={() => setDrawerOpen(false)} slotProps={{ paper: { id: "mobile-menu" } }}>
+      <Drawer anchor="left" open={mobile && drawerOpen} onClose={() => setDrawerOpen(false)} slotProps={{ paper: { id: "mobile-menu", "aria-label": "Menu" } }}>
         <Box sx={{ width: 280, p: 2 }} role="presentation">
           <Typography variant="h6" component="p" sx={{ mb: 1 }}>
             Menu
@@ -108,16 +125,18 @@ export function Layout() {
           <Box component="nav" aria-label="Navigation principale">
             <List>
               {items.map((item) => (
-                <ListItemButton
-                  key={item.to}
-                  component={NavLink}
-                  to={item.to}
-                  end
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{ borderRadius: 2, "&.active": { bgcolor: "action.selected" } }}
-                >
-                  <ListItemText primary={item.label} />
-                </ListItemButton>
+                <ListItem key={item.to} disablePadding>
+                  <ListItemButton
+                    component={NavLink}
+                    to={item.to}
+                    end
+                    onClick={() => setDrawerOpen(false)}
+                    sx={{ borderRadius: 2, "&.active": { bgcolor: "action.selected" } }}
+                  >
+                    <ListItemText primary={item.label} />
+                    {item.badge && <NotificationBadge />}
+                  </ListItemButton>
+                </ListItem>
               ))}
             </List>
           </Box>
@@ -126,13 +145,14 @@ export function Layout() {
         </Box>
       </Drawer>
 
-      <Container component="main" id="main" tabIndex={-1} sx={{ py: { xs: 3, md: 5 }, px: { xs: 2, sm: 3 } }}>
+      <Container component="main" id="main" ref={mainRef} tabIndex={-1} sx={{ py: { xs: 3, md: 5 }, px: { xs: 2, sm: 3 }, outline: "none" }}>
         <ErrorBoundary key={location.pathname}>
           <Suspense fallback={<LoadingSkeleton />}>
             <Outlet />
           </Suspense>
         </ErrorBoundary>
       </Container>
+      </NotificationsProvider>
       </RejectedArticlesProvider>
     </ToastProvider>
   );

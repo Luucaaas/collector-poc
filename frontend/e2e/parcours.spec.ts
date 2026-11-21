@@ -70,7 +70,10 @@ test("3. alice creates a shop, publishes, sees a rejection, changes the price", 
   await page.getByLabel("Boutique des articles").selectOption({ label: SHOP });
   const row = page.getByRole("listitem").filter({ hasText: ACCEPTED_TITLE });
   await expect(row).toBeVisible();
-  await expect(page.getByRole("listitem").filter({ hasText: REJECTED_TITLE })).toHaveCount(0);
+  // The rejected article stays listed for this visit, with its status and no price form.
+  const rejectedRow = page.getByRole("listitem").filter({ hasText: REJECTED_TITLE });
+  await expect(rejectedRow.getByText("Rejeté")).toBeVisible();
+  await expect(rejectedRow.getByLabel(/Nouveau prix/)).toHaveCount(0);
   await row.getByLabel(/Nouveau prix/).fill("95");
   await row.getByRole("button", { name: "Modifier le prix" }).click();
   await expect(row.getByText(/Prix modifié : 95,00/)).toBeVisible();

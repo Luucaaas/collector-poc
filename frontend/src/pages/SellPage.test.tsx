@@ -1,13 +1,24 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Article } from "../api/types";
 import { json, problem, renderWithConfig, stubApi, type Call } from "../test/api";
+import { ToastProvider } from "../components/Toast";
 import { SellPage } from "./SellPage";
 import { authorLabel } from "./sell/ShopArticles";
 
 vi.mock("react-oidc-context", () => ({ useAuth: () => ({ user: { access_token: "jeton-vendeur", profile: { sub: "u1" } } }) }));
 afterEach(() => vi.unstubAllGlobals());
+
+const renderPage = () =>
+  renderWithConfig(
+    <MemoryRouter>
+      <ToastProvider>
+        <SellPage />
+      </ToastProvider>
+    </MemoryRouter>,
+  );
 
 const SHOP = { id: "s1", owner_id: "u1", name: "Boutique Alice", description: null, seller_type: "INDIVIDUAL", created_at: "2026-11-01T00:00:00Z" };
 const CATEGORIES = { items: [{ id: "c1", name: "Figurines", slug: "figurines", created_at: "2026-11-01T00:00:00Z" }], total: 1 };
@@ -64,7 +75,7 @@ describe("SellPage: shops", () => {
         return c.path === "/shops/me" ? json({ items: shops, total: shops.length }) : undefined;
       },
     });
-    renderWithConfig(<SellPage />);
+    renderPage();
     expect(await screen.findByText(/pas encore de boutique/)).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText(/Nom de la boutique/), "Boutique Alice");
     await userEvent.click(screen.getByRole("button", { name: "Créer la boutique" }));
@@ -80,7 +91,7 @@ describe("SellPage: shops", () => {
       extra: (c) =>
         c.method === "POST" ? problem(422, { errors: [{ field: "description", code: "CONTACT_PHONE" }] }) : undefined,
     });
-    renderWithConfig(<SellPage />);
+    renderPage();
     await screen.findByText(/pas encore de boutique/);
     await userEvent.type(screen.getByLabelText(/Nom de la boutique/), "Boutique Bob");
     await userEvent.type(screen.getByLabelText(/Description de la boutique/), "Appelez le 06 12 34 56 78");
@@ -93,7 +104,7 @@ describe("SellPage: shops", () => {
 describe("SellPage: listing", () => {
   it("publishes an accepted article, price sent as a decimal string", async () => {
     const calls = api({ extra: (c) => (c.method === "POST" && c.path === "/articles" ? json(article(), 201) : undefined) });
-    renderWithConfig(<SellPage />);
+    renderPage();
     await fillArticle();
     await userEvent.click(screen.getByRole("button", { name: "Mettre en vente" }));
     expect(await screen.findByText("Article publié")).toBeInTheDocument();
@@ -109,7 +120,7 @@ describe("SellPage: listing", () => {
           ? json(article({ status: "REJECTED", rejection_reasons: ["CONTACT_EMAIL", "CONTACT_PHONE"] }), 201)
           : undefined,
     });
-    renderWithConfig(<SellPage />);
+    renderPage();
     await fillArticle({ description: "Écrivez à moi@example.com ou au 06 12 34 56 78" });
     await userEvent.click(screen.getByRole("button", { name: "Mettre en vente" }));
     expect(await screen.findByText("Article rejeté par le contrôle automatique")).toBeInTheDocument();
@@ -126,7 +137,7 @@ describe("SellPage: listing", () => {
           ? problem(422, { errors: [{ field: "title", code: "STRING_TOO_SHORT" }] })
           : undefined,
     });
-    renderWithConfig(<SellPage />);
+    renderPage();
     await fillArticle();
     await userEvent.click(screen.getByRole("button", { name: "Mettre en vente" }));
     expect(await screen.findByText("Saisie à corriger")).toBeInTheDocument();
@@ -136,7 +147,7 @@ describe("SellPage: listing", () => {
 
   it("rejects a zero or three-decimal price in the browser, without calling the API", async () => {
     const calls = api();
-    renderWithConfig(<SellPage />);
+    renderPage();
     await fillArticle({ price: "0" });
     await userEvent.click(screen.getByRole("button", { name: "Mettre en vente" }));
     expect(await screen.findByText("Le prix doit être supérieur à 0.")).toBeInTheDocument();
@@ -171,7 +182,7 @@ describe("SellPage: article prices", () => {
         return undefined;
       },
     });
-    renderWithConfig(<SellPage />);
+    renderPage();
     const form = await priceForm();
     await userEvent.type(within(form).getByLabelText(/Nouveau prix/), "95");
     await userEvent.click(within(form).getByRole("button", { name: "Modifier le prix" }));
@@ -188,7 +199,7 @@ describe("SellPage: article prices", () => {
 
   it("says an identical price changes nothing, without calling the API", async () => {
     const calls = api();
-    renderWithConfig(<SellPage />);
+    renderPage();
     const form = await priceForm();
     await userEvent.type(within(form).getByLabelText(/Nouveau prix/), "120,00");
     await userEvent.click(within(form).getByRole("button", { name: "Modifier le prix" }));
@@ -198,7 +209,7 @@ describe("SellPage: article prices", () => {
 
   it("shows the 409 conflict of an unpublished article", async () => {
     api({ extra: (c) => (c.method === "PUT" ? problem(409) : undefined) });
-    renderWithConfig(<SellPage />);
+    renderPage();
     const form = await priceForm();
     await userEvent.type(within(form).getByLabelText(/Nouveau prix/), "95");
     await userEvent.click(within(form).getByRole("button", { name: "Modifier le prix" }));
@@ -221,7 +232,7 @@ describe("SellPage: article prices", () => {
         return Promise.resolve(json({ items: [article()], total: 1 }));
       }),
     );
-    renderWithConfig(<SellPage />);
+    renderPage();
     const form = await priceForm();
     await userEvent.type(within(form).getByLabelText(/Nouveau prix/), "95");
     const button = within(form).getByRole("button", { name: "Modifier le prix" });

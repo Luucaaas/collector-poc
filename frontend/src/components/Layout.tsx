@@ -24,6 +24,7 @@ import { AccountBlock } from "./AccountBlock";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { Logo } from "./Logo";
+import { RejectedArticlesProvider } from "./RejectedArticles";
 import { ToastProvider } from "./Toast";
 
 const NAV: { to: string; label: string; role?: Role }[] = [
@@ -54,6 +55,7 @@ export function Layout() {
 
   return (
     <ToastProvider>
+      <RejectedArticlesProvider>
       <Box component="a" href="#main" sx={skipLink}>
         Aller au contenu
       </Box>
@@ -131,6 +133,7 @@ export function Layout() {
           </Suspense>
         </ErrorBoundary>
       </Container>
+      </RejectedArticlesProvider>
     </ToastProvider>
   );
 }

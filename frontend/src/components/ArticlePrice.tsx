@@ -9,11 +9,12 @@ export function ArticlePrice({
   large = false,
 }: {
   price: string;
-  shippingFee: string;
+  /** Missing or invalid fee (live preview): shown as "—" instead of a made-up amount. */
+  shippingFee?: string;
   currency: string;
   large?: boolean;
 }) {
-  const free = Number(shippingFee) === 0;
+  const free = shippingFee !== undefined && Number(shippingFee) === 0;
   return (
     <Stack direction="row" spacing={1.5} sx={{ alignItems: "baseline", flexWrap: "wrap" }}>
       <Typography
@@ -23,7 +24,7 @@ export function ArticlePrice({
         {formatMoney(price, currency)}
       </Typography>
       <Typography component="span" variant="body2" color="text.secondary">
-        {free ? "Livraison offerte" : `Frais de port : ${formatMoney(shippingFee, currency)}`}
+        {free ? "Livraison offerte" : `Frais de port : ${shippingFee === undefined ? "—" : formatMoney(shippingFee, currency)}`}
       </Typography>
     </Stack>
   );

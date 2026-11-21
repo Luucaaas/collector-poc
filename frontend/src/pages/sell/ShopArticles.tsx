@@ -1,27 +1,49 @@
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardContent,
-  CircularProgress,
+  Chip,
+  Link as MuiLink,
   Pagination,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
 import { useState, type FormEvent } from "react";
 import { useAuth } from "react-oidc-context";
+import { Link } from "react-router";
 import type { Article, Page, PriceHistoryEntry, Shop } from "../../api/types";
 import { useAction } from "../../api/useAction";
 import { useApi } from "../../api/useApi";
 import { useAsync } from "../../api/useAsync";
+import { ArticlePrice } from "../../components/ArticlePrice";
+import { EmptyState } from "../../components/EmptyState";
+import { Tile } from "../../components/ItemCard";
+import { LoadingSkeleton } from "../../components/LoadingSkeleton";
+import { useRejectedArticles } from "../../components/RejectedArticles";
+import { useToast } from "../../components/Toast";
 import { formatDateTime, formatMoney } from "../../format";
 import { validatePrice } from "../../money";
+import { adviceForReason, shortReason } from "../../reasons";
 
 export const ARTICLES_PAGE_SIZE = 10;
 
-/** My published articles, per shop, with price change and history (US-04). */
-export function ShopArticles({ shops, version }: { shops: Shop[]; version: number }) {
+interface Props {
+  shops: Shop[];
+  version: number;
+}
+
+/** My articles, per shop: published ones with price change and history (US-04), rejected ones with their reasons. */
+export function ShopArticles({ shops, version }: Props) {
+  const { rejected } = useRejectedArticles();
   const api = useApi();
   const [shopId, setShopId] = useState(shops[0]?.id ?? "");
   const [page, setPage] = useState(1);
@@ -33,11 +55,13 @@ export function ShopArticles({ shops, version }: { shops: Shop[]; version: numbe
       ),
     [api, shopId, page, version],
   );
+  // Refused listings are not on the server list: shown once, above the first page only.
+  const shopRejected = page === 1 ? rejected.filter((a) => a.shop_id === shopId) : [];
 
   return (
     <Stack spacing={2} component="section" aria-labelledby="my-articles-title">
       <Typography variant="h5" component="h2" id="my-articles-title">
-        Mes articles publiés
+        Mes articles
       </Typography>
       <TextField
         select
@@ -57,17 +81,20 @@ export function ShopArticles({ shops, version }: { shops: Shop[]; version: numbe
         ))}
       </TextField>
       <Typography variant="body2" color="text.secondary">
-        Les articles rejetés par le contrôle automatique ne sont affichés qu'au moment de leur création.
+        Les annonces refusées restent visibles ici jusqu'au rechargement de la page.
       </Typography>
 
-      {articles.status === "loading" && <CircularProgress aria-label="Chargement des articles" />}
+      {articles.status === "loading" && <LoadingSkeleton label="Chargement des articles" />}
       {articles.status === "error" && <Alert severity="error">{articles.message}</Alert>}
-      {articles.status === "success" && articles.data.items.length === 0 && (
-        <Alert severity="info">Aucun article publié dans cette boutique.</Alert>
+      {articles.status === "success" && articles.data.items.length === 0 && shopRejected.length === 0 && (
+        <EmptyState title="Aucun article dans cette boutique" description="Mettez un premier article en vente avec le formulaire ci-dessus." />
       )}
-      {articles.status === "success" && articles.data.items.length > 0 && (
+      {articles.status === "success" && (articles.data.items.length > 0 || shopRejected.length > 0) && (
         <>
           <Stack component="ul" spacing={2} sx={{ listStyle: "none", p: 0, m: 0 }} aria-label="Liste de mes articles">
+            {shopRejected.map((article) => (
+              <RejectedRow key={article.id} article={article} />
+            ))}
             {articles.data.items.map((article) => (
               <ArticleRow key={article.id} initial={article} />
             ))}
@@ -86,26 +113,76 @@ export function ShopArticles({ shops, version }: { shops: Shop[]; version: numbe
   );
 }
 
+function ArticleTitle({ article }: { article: Article }) {
+  return (
+    <Stack direction="row" spacing={2} sx={{ alignItems: "flex-start" }}>
+      <Tile seed={article.title} />
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="h6" component="h3" sx={{ overflowWrap: "anywhere" }}>
+          <MuiLink component={Link} to={`/catalogue/${encodeURIComponent(article.id)}`} color="inherit" underline="hover">
+            {article.title}
+          </MuiLink>
+        </Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.5 }}>
+          <Chip
+            size="small"
+            variant="outlined"
+            color={article.status === "PUBLISHED" ? "success" : "error"}
+            label={article.status === "PUBLISHED" ? "Publié" : "Rejeté"}
+          />
+          <Typography variant="body2" color="text.secondary">
+            {formatDateTime(article.created_at)}
+          </Typography>
+        </Stack>
+      </Box>
+    </Stack>
+  );
+}
+
+function RejectedRow({ article }: { article: Article }) {
+  return (
+    <Card component="li" variant="outlined">
+      <CardContent>
+        <Stack spacing={1.5}>
+          <ArticleTitle article={article} />
+          <Typography>
+            Motif{article.rejection_reasons.length > 1 ? "s" : ""} du rejet :{" "}
+            {article.rejection_reasons.map(shortReason).join(", ")}.
+          </Typography>
+          {article.rejection_reasons.map((reason) => {
+            const advice = adviceForReason(reason);
+            return advice ? (
+              <Typography key={reason} variant="body2" color="text.secondary">
+                {advice}
+              </Typography>
+            ) : null;
+          })}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
 // The article keeps its own state: after a price change, the row updates without reloading the list.
 function ArticleRow({ initial }: { initial: Article }) {
   const api = useApi();
   const [article, setArticle] = useState(initial);
   const [newPrice, setNewPrice] = useState("");
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
+  const toast = useToast();
   const [info, setInfo] = useState<{ severity: "success" | "info"; text: string } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [historyVersion, setHistoryVersion] = useState(0);
   const action = useAction();
+  // Live check: the message follows the typing; an empty field is only reported after a submit attempt.
+  const parsed = validatePrice(newPrice);
+  const localError = "error" in parsed && (attempted || newPrice.trim() !== "") ? parsed.error : null;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setInfo(null);
-    const parsed = validatePrice(newPrice);
-    if ("error" in parsed) {
-      setLocalError(parsed.error);
-      return;
-    }
-    setLocalError(null);
+    setAttempted(true);
+    if ("error" in parsed) return;
     if (parsed.value === article.price) {
       // RM-04: an identical price creates no history row or event; do not pretend a change happened.
       setInfo({ severity: "info", text: "Ce prix est identique au prix actuel : aucune modification n'a été enregistrée." });
@@ -113,12 +190,17 @@ function ArticleRow({ initial }: { initial: Article }) {
     }
     const updated = await action.run(() =>
       api.catalog<Article>(`/articles/${article.id}/price`, { method: "PUT", body: { price: parsed.value } }),
-      { conflict: "Cet article n'est plus publié : son prix ne peut pas être modifié." },
+      {
+        conflict: "Cet article n'est plus publié : son prix ne peut pas être modifié.",
+        onError: () => toast("Le prix n'a pas été modifié : voir le message sous le champ.", "error"),
+      },
     );
     if (updated) {
       setInfo({ severity: "success", text: `Prix modifié : ${formatMoney(updated.price, updated.currency)}.` });
+      toast(`Le prix de « ${updated.title} » est maintenant de ${formatMoney(updated.price, updated.currency)}.`, "success");
       setArticle(updated);
       setNewPrice("");
+      setAttempted(false);
       setHistoryVersion((v) => v + 1);
     }
   }
@@ -127,13 +209,9 @@ function ArticleRow({ initial }: { initial: Article }) {
     <Card component="li" variant="outlined">
       <CardContent>
         <Stack spacing={2}>
-          <Typography variant="h6" component="h3">
-            {article.title}
-          </Typography>
-          <Typography>
-            Prix actuel : <strong>{formatMoney(article.price, article.currency)}</strong>
-          </Typography>
-          <Stack component="form" direction="row" spacing={2} onSubmit={submit} noValidate aria-label={`Modifier le prix de ${article.title}`}>
+          <ArticleTitle article={article} />
+          <ArticlePrice price={article.price} shippingFee={article.shipping_fee} currency={article.currency} />
+          <Stack component="form" direction={{ xs: "column", sm: "row" }} spacing={2} onSubmit={submit} noValidate aria-label={`Modifier le prix de ${article.title}`}>
             <TextField
               size="small"
               label="Nouveau prix (€)"
@@ -166,30 +244,50 @@ function PriceHistory({ articleId, currency, version }: { articleId: string; cur
     (signal) => api.catalog<Page<PriceHistoryEntry>>(`/articles/${articleId}/price-history`, { signal }),
     [api, articleId, version],
   );
-  if (history.status === "loading") return <CircularProgress aria-label="Chargement de l'historique" />;
+  if (history.status === "loading") return <LoadingSkeleton label="Chargement de l'historique" />;
   if (history.status === "error") return <Alert severity="error">{history.message}</Alert>;
   if (history.data.items.length === 0) return <Alert severity="info">Aucun changement de prix pour cet article.</Alert>;
   return (
-    <table aria-label="Historique des prix">
-      <thead>
-        <tr>
-          <th scope="col">Date</th>
-          <th scope="col">Ancien prix</th>
-          <th scope="col">Nouveau prix</th>
-          <th scope="col">Auteur</th>
-        </tr>
-      </thead>
-      <tbody>
-        {history.data.items.map((entry) => (
-          <tr key={`${entry.changed_at}-${entry.new_price}`}>
-            <td>{formatDateTime(entry.changed_at)}</td>
-            <td>{formatMoney(entry.old_price, currency)}</td>
-            <td>{formatMoney(entry.new_price, currency)}</td>
-            <td>{authorLabel(entry.changed_by, userId)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <TableContainer>
+      <Table size="small" aria-label="Historique des prix" sx={{ "& th, & td": { px: 1 } }}>
+        <TableHead>
+          <TableRow>
+            <TableCell scope="col">Date</TableCell>
+            <TableCell scope="col" align="right">
+              Ancien prix
+            </TableCell>
+            <TableCell scope="col" align="right">
+              Nouveau prix
+            </TableCell>
+            <TableCell scope="col" sx={{ display: { xs: "none", sm: "table-cell" } }}>
+              Auteur
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {history.data.items.map((entry) => (
+            <TableRow key={`${entry.changed_at}-${entry.new_price}`}>
+              <TableCell sx={{ whiteSpace: "nowrap" }}>
+                {formatDateTime(entry.changed_at)}
+                {/* Narrow screens: the author moves under the date so the table never scrolls sideways. */}
+                <Box component="span" sx={{ display: { xs: "block", sm: "none" }, color: "text.secondary", fontSize: "0.8rem" }}>
+                  {authorLabel(entry.changed_by, userId)}
+                </Box>
+              </TableCell>
+              <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                {formatMoney(entry.old_price, currency)}
+              </TableCell>
+              <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                {formatMoney(entry.new_price, currency)}
+              </TableCell>
+              <TableCell sx={{ whiteSpace: "nowrap", display: { xs: "none", sm: "table-cell" } }}>
+                {authorLabel(entry.changed_by, userId)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }
 

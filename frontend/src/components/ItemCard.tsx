@@ -43,12 +43,24 @@ export function Tile({ seed, size = 56 }: { seed: string; size?: number }) {
 }
 
 /** Reusable card: generated illustration, title, free content; the whole card links to `to` when given. */
-export function ItemCard({ title, seed, to, children }: { title: string; seed?: string; to?: string; children?: ReactNode }) {
+export function ItemCard({
+  title,
+  seed,
+  to,
+  titleAs = "h2",
+  children,
+}: {
+  title: string;
+  seed?: string;
+  to?: string;
+  titleAs?: "h2" | "h3";
+  children?: ReactNode;
+}) {
   const content = (
     <CardContent sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
       <Tile seed={seed ?? title} />
       <Box sx={{ minWidth: 0 }}>
-        <Typography variant="h6" component="h2">
+        <Typography variant="h6" component={titleAs}>
           {title}
         </Typography>
         {children}

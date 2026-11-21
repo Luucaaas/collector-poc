@@ -72,12 +72,17 @@ Identifiant : `P<phase>-<numéro>` (ex. `P2-01`). Branche : `phase-<N>/<nom-tach
 | P11-05 | Déploiement en anglais | developpeur | `phase-11/en-deploy` | fusionnée |
 | P11-06 | Tests d'acceptation et de charge en anglais | developpeur | `phase-11/en-tests` | fusionnée |
 | P11-07 | Scripts de la documentation en anglais | developpeur | `phase-11/en-docs-scripts` | fusionnée |
+| P12-01 | Front : socle visuel, navigation et performance | developpeur | `phase-12/front-socle` | en cours |
+| P12-02 | Front : catalogue et page de détail d'un article | developpeur | `phase-12/front-catalogue` | à venir |
+| P12-03 | Front : espace vendeur et formulaires | developpeur | `phase-12/front-vendeur` | à venir |
+| P12-04 | Front : centres d'intérêt, notifications et catégories | developpeur | `phase-12/front-acheteur-admin` | à venir |
+| P12-05 | Front refondu sur le cluster : Playwright, captures et démo | developpeur | `phase-12/front-demo` | à venir |
 
 Statuts possibles : à faire / en cours / en audit / fusionnée.
 
 ## Prochaine action exacte
 
-Aucune tâche d'agent en cours. Tout le code est en anglais (P11-01 à P11-07 fusionnées le 20/11/2026) ; restent en français l'interface du front, les messages de l'API destinés à l'utilisateur, le realm Keycloak, le tableau de bord Grafana, les données de démonstration, les rapports générés pour le jury et la documentation. CI verte sur `703dc54`, les trois images existent au tag `sha-703dc54`. La veille de la soutenance : liste « La veille » de `docs/07-soutenance/demo/script-demo.md`, avec le dernier tag vert de `main` (les trois images au même tag) ; `smoke.sh` affiche désormais `OK` et `FAIL`, `preparer.sh` affiche `READY`.
+Phase 12 (issue #61, refonte du front, demande de Lucas du 21/11/2026) : P12-01 (socle visuel, navigation, découpage du bundle) en cours, puis P12-02 (catalogue et détail), P12-03 (espace vendeur), P12-04 (acheteur, admin, notifications sans rechargement, accessibilité), P12-05 (cluster, Playwright, captures, démo), une à la fois. Décision du chef : pas de photo d'article (l'API n'en gère pas, ce serait un changement de périmètre), illustration générée localement.
 
 ## Décisions en attente
 
@@ -88,6 +93,8 @@ Aucune tâche d'agent en cours. Tout le code est en anglais (P11-01 à P11-07 fu
 | Ancien cache npm `~/.npm-ancien` (fichiers de root) | Lucas (mot de passe) | Non bloquant, à supprimer avec `sudo` quand il veut. Node 22 et `check-tools.sh --cluster` faits le 04/11/2026 |
 
 ## Dernière mise à jour
+
+21/11/2026 10:01 — Phase 12 ouverte : issue #61 découpée en P12-01 à P12-05.
 
 20/11/2026 21:32 — CI verte sur `703dc54` (runs 44811062718 et 44811062431) : 17 tests d'acceptation passés, les trois images publiées au tag `sha-703dc54`.
 
